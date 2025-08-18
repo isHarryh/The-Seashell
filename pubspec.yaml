@@ -87,3 +87,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+  fonts:
+    - family: SourceHanSansSC
+      fonts:
+        - asset: assets/fonts/SourceHanSansSC-Regular.otf
