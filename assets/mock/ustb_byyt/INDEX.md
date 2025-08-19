@@ -1,0 +1,1 @@
+- me.json: POST https://byyt.ustb.edu.cn/user/me
