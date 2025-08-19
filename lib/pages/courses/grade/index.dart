@@ -11,10 +11,19 @@ class GradePage extends StatefulWidget {
 
 class _GradePageState extends State<GradePage> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
-  List<CourseGradeItem>? _grades;
+  final TextEditingController _searchController = TextEditingController();
+
+  // 原始数据和过滤后数据分离
+  List<CourseGradeItem>? _allGrades; // 原始完整数据
+  List<CourseGradeItem>? _filteredGrades; // 过滤后显示的数据
+
   bool _isLoading = false;
   String? _errorMessage;
-  DateTime? _lastRefreshTime;
+  String _currentSearchQuery = '';
+
+  // 选择状态管理
+  Set<String> _selectedCourseIds = {}; // 存储选中课程的ID
+  bool _isAllSelected = false; // 全选状态
 
   @override
   void initState() {
@@ -26,6 +35,7 @@ class _GradePageState extends State<GradePage> {
   @override
   void dispose() {
     _serviceProvider.removeListener(_onServiceStatusChanged);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -43,7 +53,8 @@ class _GradePageState extends State<GradePage> {
     if (!service.isOnline) {
       if (mounted) {
         setState(() {
-          _grades = null;
+          _allGrades = null;
+          _filteredGrades = null;
           _errorMessage = null;
           _isLoading = false;
         });
@@ -62,9 +73,13 @@ class _GradePageState extends State<GradePage> {
       final grades = await service.getGrades();
       if (mounted) {
         setState(() {
-          _grades = grades;
+          _allGrades = grades;
+          _filteredGrades = grades; // 初始时显示所有数据
           _isLoading = false;
-          _lastRefreshTime = DateTime.now();
+          // 如果有搜索查询，重新应用搜索
+          if (_currentSearchQuery.isNotEmpty) {
+            _performSearch(_currentSearchQuery);
+          }
         });
       }
     } catch (e) {
@@ -79,6 +94,227 @@ class _GradePageState extends State<GradePage> {
 
   Future<void> _refreshGrades() async {
     await _loadGrades();
+  }
+
+  void _performSearch(String query) {
+    if (_allGrades == null) return;
+
+    setState(() {
+      _currentSearchQuery = query;
+      if (query.isEmpty) {
+        _filteredGrades = _allGrades;
+      } else {
+        _filteredGrades = _searchGrades(_allGrades!, query);
+      }
+
+      // 清除被筛选隐藏的课程的选择状态
+      if (_filteredGrades != null) {
+        final visibleCourseIds = _filteredGrades!
+            .map((g) => g.courseId)
+            .toSet();
+        _selectedCourseIds.retainWhere(
+          (courseId) => visibleCourseIds.contains(courseId),
+        );
+
+        // 更新全选状态
+        _isAllSelected =
+            visibleCourseIds.isNotEmpty &&
+            visibleCourseIds.every((id) => _selectedCourseIds.contains(id));
+      }
+    });
+  }
+
+  List<CourseGradeItem> _searchGrades(
+    List<CourseGradeItem> grades,
+    String query,
+  ) {
+    final queryLower = query.toLowerCase();
+
+    // 按优先级排序的搜索结果
+    final List<CourseGradeItem> priorityResults = [];
+    final Set<String> addedIds = <String>{};
+
+    // 1. 课程名称及alt名称模糊匹配
+    for (final grade in grades) {
+      final courseNameMatch = grade.courseName.toLowerCase().contains(
+        queryLower,
+      );
+      final courseNameAltMatch =
+          grade.courseNameAlt?.toLowerCase().contains(queryLower) ?? false;
+
+      if (courseNameMatch || courseNameAltMatch) {
+        final id = '${grade.courseId}_${grade.termId}';
+        if (!addedIds.contains(id)) {
+          priorityResults.add(grade);
+          addedIds.add(id);
+        }
+      }
+    }
+
+    // 2. 课程代码模糊匹配
+    for (final grade in grades) {
+      final courseIdMatch = grade.courseId.toLowerCase().contains(queryLower);
+
+      if (courseIdMatch) {
+        final id = '${grade.courseId}_${grade.termId}';
+        if (!addedIds.contains(id)) {
+          priorityResults.add(grade);
+          addedIds.add(id);
+        }
+      }
+    }
+
+    // 3. 开课学院名称及alt名称模糊匹配
+    for (final grade in grades) {
+      final schoolNameMatch =
+          grade.schoolName?.toLowerCase().contains(queryLower) ?? false;
+      final schoolNameAltMatch =
+          grade.schoolNameAlt?.toLowerCase().contains(queryLower) ?? false;
+
+      if (schoolNameMatch || schoolNameAltMatch) {
+        final id = '${grade.courseId}_${grade.termId}';
+        if (!addedIds.contains(id)) {
+          priorityResults.add(grade);
+          addedIds.add(id);
+        }
+      }
+    }
+
+    // 4. 学期模糊匹配及alt名称模糊匹配
+    for (final grade in grades) {
+      final termNameMatch = grade.termName.toLowerCase().contains(queryLower);
+      final termNameAltMatch = grade.termNameAlt.toLowerCase().contains(
+        queryLower,
+      );
+
+      if (termNameMatch || termNameAltMatch) {
+        final id = '${grade.courseId}_${grade.termId}';
+        if (!addedIds.contains(id)) {
+          priorityResults.add(grade);
+          addedIds.add(id);
+        }
+      }
+    }
+
+    return priorityResults;
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _performSearch('');
+  }
+
+  // 选择管理方法
+  void _toggleSelectAll() {
+    if (_filteredGrades == null) return;
+
+    setState(() {
+      if (_isAllSelected) {
+        // 取消全选
+        _selectedCourseIds.clear();
+        _isAllSelected = false;
+      } else {
+        // 全选当前显示的课程
+        _selectedCourseIds.clear();
+        for (final grade in _filteredGrades!) {
+          _selectedCourseIds.add(grade.courseId);
+        }
+        _isAllSelected = true;
+      }
+    });
+  }
+
+  void _toggleCourseSelection(String courseId) {
+    setState(() {
+      if (_selectedCourseIds.contains(courseId)) {
+        _selectedCourseIds.remove(courseId);
+      } else {
+        _selectedCourseIds.add(courseId);
+      }
+
+      // 更新全选状态
+      if (_filteredGrades != null) {
+        final visibleCourseIds = _filteredGrades!
+            .map((g) => g.courseId)
+            .toSet();
+        _isAllSelected =
+            visibleCourseIds.isNotEmpty &&
+            visibleCourseIds.every((id) => _selectedCourseIds.contains(id));
+      }
+    });
+  }
+
+  void _showQuickCalculation() {
+    if (_selectedCourseIds.isEmpty) {
+      _showCalculationDialog(
+        title: '快捷计算',
+        content: '请先选择需要参与计算的课程，在左侧打勾。',
+        isError: true,
+      );
+      return;
+    }
+
+    if (_allGrades == null) return;
+
+    // 获取选中的课程成绩
+    final selectedGrades = _allGrades!
+        .where((grade) => _selectedCourseIds.contains(grade.courseId))
+        .toList();
+
+    if (selectedGrades.isEmpty) {
+      _showCalculationDialog(
+        title: '快捷计算',
+        content: '选中的课程中没有有效的成绩数据。',
+        isError: true,
+      );
+      return;
+    }
+
+    // 计算平均成绩和加权成绩
+    double totalScore = 0;
+    double totalWeightedScore = 0;
+    double totalCredits = 0;
+
+    for (final grade in selectedGrades) {
+      final score = grade.score.toDouble();
+      final credit = grade.credit.toDouble();
+
+      totalScore += score;
+      totalWeightedScore += score * credit;
+      totalCredits += credit;
+    }
+
+    final averageScore = totalScore / selectedGrades.length;
+    final weightedScore = totalWeightedScore / totalCredits;
+
+    _showCalculationDialog(
+      title: '快捷计算',
+      content:
+          '已选择课程数：${selectedGrades.length}\n'
+          '平均成绩：${averageScore.toStringAsFixed(4)}\n'
+          '加权成绩：${weightedScore.toStringAsFixed(4)}',
+      isError: false,
+    );
+  }
+
+  void _showCalculationDialog({
+    required String title,
+    required String content,
+    required bool isError,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -142,7 +378,8 @@ class _GradePageState extends State<GradePage> {
       );
     }
 
-    if (_grades == null || _grades!.isEmpty) {
+    // 如果还没有加载数据，显示无数据状态
+    if (_allGrades == null) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -161,10 +398,53 @@ class _GradePageState extends State<GradePage> {
         children: [
           _buildActionBar(),
           const SizedBox(height: 16),
-          Expanded(child: _buildResponsiveTable()),
+          Expanded(child: _buildTableOrEmptyState()),
         ],
       ),
     );
+  }
+
+  Widget _buildTableOrEmptyState() {
+    if (_filteredGrades == null || _filteredGrades!.isEmpty) {
+      if (_currentSearchQuery.isNotEmpty) {
+        // 有搜索但没有结果，在表格位置显示搜索无结果
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.search_off, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                '没有找到匹配"$_currentSearchQuery"的成绩',
+                style: const TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _clearSearch,
+                child: const Text('清除搜索'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // 没有搜索但也没有数据
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.assessment, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                '暂无成绩数据',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    return _buildResponsiveTable();
   }
 
   Widget _buildActionBar() {
@@ -172,6 +452,37 @@ class _GradePageState extends State<GradePage> {
 
     return Row(
       children: [
+        // 搜索框
+        Expanded(
+          flex: 3,
+          child: SizedBox(
+            height: 36,
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '搜索课程名称、代码、学院或学期...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _currentSearchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 16),
+                        onPressed: _clearSearch,
+                        padding: EdgeInsets.zero,
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.all(8),
+                isDense: true,
+              ),
+              style: const TextStyle(fontSize: 14),
+              onChanged: _performSearch,
+              onSubmitted: _performSearch,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // 刷新按钮
         ElevatedButton.icon(
           onPressed: (service.isOnline && !_isLoading) ? _refreshGrades : null,
           icon: _isLoading
@@ -182,34 +493,24 @@ class _GradePageState extends State<GradePage> {
                 )
               : const Icon(Icons.refresh, size: 18),
           label: Text(_isLoading ? '刷新中...' : '刷新'),
-        ),
-        const SizedBox(width: 16),
-        if (_lastRefreshTime != null)
-          Text(
-            '上次刷新: ${_formatTime(_lastRefreshTime!)}',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: const Size(0, 40),
           ),
-        const Spacer(),
-        // 预留位置给未来的按钮组
+        ),
+        const SizedBox(width: 12),
+        // 快捷计算按钮
+        ElevatedButton.icon(
+          onPressed: _showQuickCalculation,
+          icon: const Icon(Icons.calculate, size: 18),
+          label: const Text('快捷计算'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: const Size(0, 40),
+          ),
+        ),
       ],
     );
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
-
-    if (difference.inMinutes < 1) {
-      return '刚刚';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}小时前';
-    } else {
-      return '${time.month}/${time.day} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-    }
   }
 
   Widget _buildResponsiveTable() {
@@ -219,6 +520,7 @@ class _GradePageState extends State<GradePage> {
 
         // 定义列的配置
         final columnConfig = [
+          {'name': '', 'minWidth': 50.0, 'flex': 0, 'isNumeric': false},
           {'name': '学期', 'minWidth': 80.0, 'flex': 2, 'isNumeric': false},
           {'name': '开课院系', 'minWidth': 80.0, 'flex': 2, 'isNumeric': false},
           {'name': '课程代码', 'minWidth': 80.0, 'flex': 2, 'isNumeric': false},
@@ -309,16 +611,34 @@ class _GradePageState extends State<GradePage> {
               children: columnConfig.asMap().entries.map((entry) {
                 final index = entry.key;
                 final column = entry.value;
-                return _buildHeaderCell(
-                  column['name'] as String,
-                  columnWidths[index],
-                  isNumeric: column['isNumeric'] as bool,
-                );
+                final isCheckbox = index == 0;
+
+                if (isCheckbox) {
+                  // 全选checkbox列
+                  return Container(
+                    width: columnWidths[index],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 4.0,
+                    ),
+                    child: Checkbox(
+                      value: _isAllSelected,
+                      onChanged: (_) => _toggleSelectAll(),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  );
+                } else {
+                  return _buildHeaderCell(
+                    column['name'] as String,
+                    columnWidths[index],
+                    isNumeric: column['isNumeric'] as bool,
+                  );
+                }
               }).toList(),
             ),
           ),
           // 数据行
-          ..._grades!.asMap().entries.map((entry) {
+          ..._filteredGrades!.asMap().entries.map((entry) {
             final index = entry.key;
             final grade = entry.value;
             final isEven = index % 2 == 0;
@@ -345,34 +665,43 @@ class _GradePageState extends State<GradePage> {
 
   List<Widget> _buildDataRow(CourseGradeItem grade, List<double> columnWidths) {
     return [
-      _buildDataCell(_buildTermCell(grade), columnWidths[0]),
-      _buildDataCell(_buildSchoolCell(grade), columnWidths[1]),
+      // Checkbox列
+      _buildDataCell(
+        Checkbox(
+          value: _selectedCourseIds.contains(grade.courseId),
+          onChanged: (_) => _toggleCourseSelection(grade.courseId),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        columnWidths[0],
+      ),
+      _buildDataCell(_buildTermCell(grade), columnWidths[1]),
+      _buildDataCell(_buildSchoolCell(grade), columnWidths[2]),
       _buildDataCell(
         Text(grade.courseId, style: const TextStyle(fontSize: 14)),
-        columnWidths[2],
+        columnWidths[3],
       ),
-      _buildDataCell(_buildCourseNameCell(grade), columnWidths[3]),
+      _buildDataCell(_buildCourseNameCell(grade), columnWidths[4]),
       _buildDataCell(
         Text(grade.type, style: const TextStyle(fontSize: 14)),
-        columnWidths[4],
+        columnWidths[5],
       ),
       _buildDataCell(
         Text(grade.category, style: const TextStyle(fontSize: 14)),
-        columnWidths[5],
+        columnWidths[6],
       ),
-      _buildDataCell(_buildMakeupStatusCell(grade), columnWidths[6]),
+      _buildDataCell(_buildMakeupStatusCell(grade), columnWidths[7]),
       _buildDataCell(
         Text(grade.examType ?? '-', style: const TextStyle(fontSize: 14)),
-        columnWidths[7],
+        columnWidths[8],
       ),
       _buildDataCell(
         Text(grade.hours.toString()),
-        columnWidths[8],
+        columnWidths[9],
         isNumeric: true,
       ),
       _buildDataCell(
         Text(grade.credit.toString()),
-        columnWidths[9],
+        columnWidths[10],
         isNumeric: true,
       ),
       _buildDataCell(
@@ -383,7 +712,7 @@ class _GradePageState extends State<GradePage> {
             color: grade.score >= 60 ? Colors.green : Colors.red,
           ),
         ),
-        columnWidths[10],
+        columnWidths[11],
         isNumeric: true,
       ),
     ];
