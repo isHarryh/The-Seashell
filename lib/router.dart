@@ -6,6 +6,7 @@ import 'pages/index.dart';
 import 'pages/courses/selection/index.dart';
 import 'pages/courses/curriculum/index.dart';
 import 'pages/courses/grade/index.dart';
+import 'pages/courses/account/index.dart';
 
 // App router definition with auto_route package
 // See: https://github.com/Milad-Akarie/auto_route_library
@@ -16,6 +17,11 @@ class AppRouter {
         name: 'HomeRoute',
         path: '/',
         builder: (context, data) => const MainLayout(child: HomePage()),
+      ),
+      NamedRouteDef(
+        name: 'AccountRoute',
+        path: '/courses/account',
+        builder: (context, data) => const MainLayout(child: AccountPage()),
       ),
       NamedRouteDef(
         name: 'CourseSelectionRoute',
@@ -172,6 +178,15 @@ class _MainLayoutState extends State<MainLayout> {
                       color: Colors.grey[600],
                     ),
                   ),
+                ),
+                _buildNavItem(
+                  icon: Icons.account_circle,
+                  title: '账户',
+                  isSelected: _currentPath == '/courses/account',
+                  onTap: () {
+                    _navigateToPage('/courses/account');
+                    if (isDrawer) Navigator.pop(context);
+                  },
                 ),
                 _buildNavItem(
                   icon: Icons.school,
