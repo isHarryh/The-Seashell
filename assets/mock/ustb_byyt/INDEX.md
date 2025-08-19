@@ -1,5 +1,22 @@
 - me.json:
-  POST https://byyt.ustb.edu.cn/user/me
+  - POST https://byyt.ustb.edu.cn/user/me
+  - data: no data
+- queryCourseDistricts.json
+  - POST https://byyt.ustb.edu.cn/component/queryXiaoqu?pylx=3
+  - data: no data
+- queryCourseHosts.json:
+  - POST https://byyt.ustb.edu.cn/component/queryKkyx
+  - data: `nodataqx=1`
+- queryCoursePeriods.json:
+  - POST https://byyt.ustb.edu.cn/component/queryKbjg
+  - data: `xn=2025-2026&xq=1`
+- queryCourseTerms.json:
+  - POST https://byyt.ustb.edu.cn/component/queryXnxq
+  - data: `cTnrJ54+H2bKCT5c1Gq1+w==`
+  - unencrypted: `{"rwlx":""}`
+- queryCourseYears.json:
+  - POST https://byyt.ustb.edu.cn/component/queryNj
+  - data: `pylx=1&njsfsypylx=0`
 - queryGrade.json:
-  POST https://byyt.ustb.edu.cn/cjgl/grcjcx/grcjcx
-  `{"xn":null,"xq":null,"kcmc":null,"cxbj":"-1","pylx":"1","current":1,"pageSize":100,"sffx":null}`
+  - POST https://byyt.ustb.edu.cn/cjgl/grcjcx/grcjcx
+  - data: `{"xn":null,"xq":null,"kcmc":null,"cxbj":"-1","pylx":"1","current":1,"pageSize":100,"sffx":null}`
