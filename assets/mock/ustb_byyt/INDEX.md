@@ -17,6 +17,9 @@
 - queryCourseYears.json:
   - POST https://byyt.ustb.edu.cn/component/queryNj
   - data: `pylx=1&njsfsypylx=0`
+- queryCurriculumPersonal.json:
+  - POST https://byyt.ustb.edu.cn/Xskbcx/queryXskbcxList
+  - data: `bs=2&xn=2025-2026&xq=1`
 - queryGrade.json:
   - POST https://byyt.ustb.edu.cn/cjgl/grcjcx/grcjcx
   - data: `{"xn":null,"xq":null,"kcmc":null,"cxbj":"-1","pylx":"1","current":1,"pageSize":100,"sffx":null}`
