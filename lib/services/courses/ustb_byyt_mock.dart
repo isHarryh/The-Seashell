@@ -31,6 +31,37 @@ class UstbByytMorkService extends BaseCoursesService {
   }
 
   @override
+  Future<List<CourseGradeItem>> getGrades() async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+      await Future.delayed(Duration(seconds: 1));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryGrade.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      if (jsonData['code'] != 200) {
+        throw Exception(
+          'API returned error: ${jsonData['msg'] ?? 'Unknown error'}',
+        );
+      }
+
+      final List<dynamic> gradeList =
+          jsonData['content']['list'] as List<dynamic>? ?? [];
+
+      return gradeList
+          .map((item) => CourseGradeItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      setNetworkError('Failed to load grades: $e');
+      throw Exception('Failed to load grades: $e');
+    }
+  }
+
+  @override
   Future<void> login() async {
     try {
       setPending();
