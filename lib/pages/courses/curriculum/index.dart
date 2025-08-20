@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
+import '/types/preferences.dart';
 
 class MajorPeriodInfo {
   final int id;
@@ -26,10 +27,10 @@ class _CurriculumPageState extends State<CurriculumPage> {
   bool _isLoading = false;
   String? _errorMessage;
   int _currentWeek = 1;
+  CurriculumSettings _settings = CurriculumSettings.defaultSettings;
 
   // 课表配置
   static const int maxWeeks = 20;
-  static const int daysPerWeek = 7;
   static const List<String> dayNames = ['一', '二', '三', '四', '五', '六', '日'];
 
   @override
@@ -108,8 +109,20 @@ class _CurriculumPageState extends State<CurriculumPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('课程表')),
+      appBar: AppBar(
+        title: const Text('课程表'),
+        actions: [
+          Builder(
+            builder: (context) => IconButton(
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+              icon: const Icon(Icons.settings),
+              tooltip: '课程表设置',
+            ),
+          ),
+        ],
+      ),
       body: _buildBody(),
+      endDrawer: _buildSettingsDrawer(),
     );
   }
 
@@ -311,8 +324,11 @@ class _CurriculumPageState extends State<CurriculumPage> {
     final periods = _allPeriods ?? [];
     final majorPeriods = _getMajorPeriods(periods);
 
-    // 计算列宽
-    final dayColumnWidth = (availableWidth - 2) / (daysPerWeek + 1);
+    // 根据设置和课程数据计算实际显示的天数
+    final courseDays = weekClasses.map((c) => c.day).toSet().toList();
+    final displayDays = _settings.calculateDisplayDays(courseDays);
+
+    final dayColumnWidth = (availableWidth - 2) / (displayDays + 1);
 
     return Container(
       width: availableWidth,
@@ -321,7 +337,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
       ),
       child: Table(
         columnWidths: {
-          for (int i = 0; i <= daysPerWeek + 1; i++)
+          for (int i = 0; i <= displayDays; i++)
             i: FixedColumnWidth(dayColumnWidth),
         },
         children: [
@@ -329,7 +345,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
           TableRow(
             children: [
               _buildHeaderCell('时间'),
-              for (int day = 1; day <= daysPerWeek; day++)
+              for (int day = 1; day <= displayDays; day++)
                 _buildHeaderCell('周${dayNames[day - 1]}'),
             ],
           ),
@@ -338,7 +354,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             TableRow(
               children: [
                 _buildMajorTimeCell(majorPeriod),
-                for (int day = 1; day <= daysPerWeek; day++)
+                for (int day = 1; day <= displayDays; day++)
                   _buildMajorClassCell(weekClasses, day, majorPeriod),
               ],
             ),
@@ -437,8 +453,9 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Widget _buildMajorTimeCell(MajorPeriodInfo majorPeriod) {
+    final cellHeight = _settings.tableSize.height;
     return Container(
-      height: 80,
+      height: cellHeight,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         color: Colors.grey.shade50,
@@ -478,8 +495,9 @@ class _CurriculumPageState extends State<CurriculumPage> {
       return classItem.day == day && classItem.period == majorPeriod.id;
     }).toList();
 
+    final cellHeight = _settings.tableSize.height;
     return Container(
-      height: 80,
+      height: cellHeight,
       decoration: BoxDecoration(
         color: classesInSlot.isEmpty
             ? Colors.white
@@ -581,6 +599,122 @@ class _CurriculumPageState extends State<CurriculumPage> {
             child: const Text('确定'),
           ),
         ],
+      ),
+    );
+  }
+
+  // 构建设置抽屉
+  Widget _buildSettingsDrawer() {
+    return Drawer(
+      child: Column(
+        children: [
+          // 抽屉头部
+          DrawerHeader(
+            child: const Row(
+              children: [
+                Icon(Icons.settings, size: 24),
+                SizedBox(width: 8),
+                Text(
+                  '课程表设置',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          // 设置项
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildWeekendDisplaySetting(),
+                const SizedBox(height: 16),
+                _buildTableSizeSetting(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 构建周末显示设置
+  Widget _buildWeekendDisplaySetting() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '显示周末',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 100,
+              child: DropdownButtonFormField<WeekendDisplayMode>(
+                initialValue: _settings.weekendMode,
+                items: WeekendDisplayMode.values.map((mode) {
+                  return DropdownMenuItem(
+                    value: mode,
+                    child: Text(mode.displayName),
+                  );
+                }).toList(),
+                onChanged: (WeekendDisplayMode? newMode) {
+                  if (newMode != null) {
+                    setState(() {
+                      _settings = _settings.copyWith(weekendMode: newMode);
+                    });
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 构建表格尺寸设置
+  Widget _buildTableSizeSetting() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '表格尺寸',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 100,
+              child: DropdownButtonFormField<TableSize>(
+                initialValue: _settings.tableSize,
+                items: TableSize.values.map((size) {
+                  return DropdownMenuItem(
+                    value: size,
+                    child: Text(size.displayName),
+                  );
+                }).toList(),
+                onChanged: (TableSize? newSize) {
+                  if (newSize != null) {
+                    setState(() {
+                      _settings = _settings.copyWith(tableSize: newSize);
+                    });
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
