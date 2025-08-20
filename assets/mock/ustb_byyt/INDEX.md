@@ -1,3 +1,9 @@
+- heartbeatFailure.json:
+  - POST https://byyt.ustb.edu.cn/component/online
+  - data: no data
+- heartbeatSuccess.json:
+  - POST https://byyt.ustb.edu.cn/component/online
+  - data: no data
 - me.json:
   - POST https://byyt.ustb.edu.cn/user/me
   - data: no data
