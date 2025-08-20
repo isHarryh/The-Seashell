@@ -227,6 +227,14 @@ class _AccountPageState extends State<AccountPage> {
                                   fontSize: 12,
                                 ),
                               ),
+                            if (service.isOnline)
+                              Text(
+                                _getLastHeartbeatText()!,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -447,5 +455,23 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ],
     );
+  }
+
+  String? _getLastHeartbeatText() {
+    final service = _serviceProvider.coursesService;
+    final lastHeartbeat = service.getLastHeartbeatTime();
+
+    if (lastHeartbeat == null) {
+      return '上次心跳: 暂无';
+    }
+
+    // yyyy-MM-dd hh:mm
+    final year = lastHeartbeat.year.toString();
+    final month = lastHeartbeat.month.toString().padLeft(2, '0');
+    final day = lastHeartbeat.day.toString().padLeft(2, '0');
+    final hour = lastHeartbeat.hour.toString().padLeft(2, '0');
+    final minute = lastHeartbeat.minute.toString().padLeft(2, '0');
+
+    return '上次心跳：$year-$month-$day $hour:$minute';
   }
 }

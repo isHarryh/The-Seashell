@@ -5,6 +5,8 @@ import '/services/base.dart';
 import '/services/courses/base.dart';
 
 class UstbByytMorkService extends BaseCoursesService {
+  DateTime? _lastHeartbeatTime;
+
   @override
   Future<UserInfo> getUserInfo() async {
     try {
@@ -150,9 +152,40 @@ class UstbByytMorkService extends BaseCoursesService {
       setPending();
       await Future.delayed(Duration(seconds: 1));
       setOffline();
+      _lastHeartbeatTime = null;
     } catch (e) {
       setNetworkError('Failed to logout: $e');
       rethrow;
     }
+  }
+
+  @override
+  Future<bool> sendHeartbeat() async {
+    try {
+      if (status == ServiceStatus.offline) {
+        return false;
+      }
+
+      await Future.delayed(Duration(milliseconds: 500));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/heartbeatSuccess.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      if (jsonData['code'] == 0) {
+        _lastHeartbeatTime = DateTime.now();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  DateTime? getLastHeartbeatTime() {
+    return _lastHeartbeatTime;
   }
 }
