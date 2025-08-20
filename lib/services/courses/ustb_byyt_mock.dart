@@ -62,6 +62,65 @@ class UstbByytMorkService extends BaseCoursesService {
   }
 
   @override
+  Future<List<ClassItem>> getCurriculum() async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+      await Future.delayed(Duration(seconds: 1));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCurriculumPersonal.json',
+      );
+      final List<dynamic> jsonData = json.decode(jsonString);
+
+      final classList = <ClassItem>[];
+      for (final item in jsonData) {
+        final classItem = ClassItem.fromJson(item as Map<String, dynamic>);
+        if (classItem != null) {
+          classList.add(classItem);
+        }
+      }
+
+      return classList;
+    } catch (e) {
+      setNetworkError('Failed to load curriculum: $e');
+      throw Exception('Failed to load curriculum: $e');
+    }
+  }
+
+  @override
+  Future<List<ClassPeriod>> getCoursePeriods() async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+      await Future.delayed(Duration(seconds: 1));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCoursePeriods.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      if (jsonData['code'] != 200) {
+        throw Exception(
+          'API returned error: ${jsonData['msg'] ?? 'Unknown error'}',
+        );
+      }
+
+      final List<dynamic> periodsList =
+          jsonData['content'] as List<dynamic>? ?? [];
+
+      return periodsList
+          .map((item) => ClassPeriod.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      setNetworkError('Failed to load course periods: $e');
+      throw Exception('Failed to load course periods: $e');
+    }
+  }
+
+  @override
   Future<void> login() async {
     try {
       setPending();
