@@ -188,4 +188,125 @@ class UstbByytMorkService extends BaseCoursesService {
   DateTime? getLastHeartbeatTime() {
     return _lastHeartbeatTime;
   }
+
+  @override
+  Future<List<CourseInfo>> getSelectedCourses() async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+
+      await Future.delayed(Duration(milliseconds: 800));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCourseAdded.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      if (jsonData['code'] != 200) {
+        throw Exception(
+          'API returned error: ${jsonData['msg'] ?? 'Unknown error'}',
+        );
+      }
+
+      final List<dynamic> courseList =
+          jsonData['yxkcList'] as List<dynamic>? ?? [];
+
+      return courseList.map((courseJson) {
+        return CourseInfo.fromJson(courseJson as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      setNetworkError('Failed to load selected courses: $e');
+      throw Exception('Failed to load selected courses: $e');
+    }
+  }
+
+  @override
+  Future<List<CourseInfo>> getSelectableCourses(
+    TermInfo termInfo,
+    String tab,
+  ) async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+
+      await Future.delayed(Duration(milliseconds: 800));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCourseList[$tab].json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      final Map<String, dynamic>? kxrwList =
+          jsonData['kxrwList'] as Map<String, dynamic>?;
+      final List<dynamic> courseList =
+          kxrwList?['list'] as List<dynamic>? ?? [];
+
+      return courseList.map((courseJson) {
+        return CourseInfo.fromJson(courseJson as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      setNetworkError('Failed to load selectable courses: $e');
+      throw Exception('Failed to load selectable courses: $e');
+    }
+  }
+
+  @override
+  Future<List<CourseTab>> getCourseTabs(TermInfo termInfo) async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+
+      await Future.delayed(Duration(milliseconds: 600));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCourseAdded.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      final List<dynamic> tabList =
+          jsonData['xkgzszList'] as List<dynamic>? ?? [];
+
+      return tabList.map((tabJson) {
+        return CourseTab.fromJson(tabJson as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      setNetworkError('Failed to load course tabs: $e');
+      throw Exception('Failed to load course tabs: $e');
+    }
+  }
+
+  @override
+  Future<List<TermInfo>> getTerms() async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+
+      await Future.delayed(Duration(milliseconds: 400));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCourseTerms.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      if (jsonData['code'] != 200) {
+        throw Exception(
+          'API returned error: ${jsonData['msg'] ?? 'Unknown error'}',
+        );
+      }
+
+      final List<dynamic> termList =
+          jsonData['content'] as List<dynamic>? ?? [];
+
+      return termList.map((termJson) {
+        return TermInfo.fromJson(termJson as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      setNetworkError('Failed to load terms: $e');
+      throw Exception('Failed to load terms: $e');
+    }
+  }
 }

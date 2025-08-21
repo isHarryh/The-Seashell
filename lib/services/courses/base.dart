@@ -15,4 +15,12 @@ abstract class BaseCoursesService extends BaseService {
   Future<bool> sendHeartbeat();
 
   DateTime? getLastHeartbeatTime();
+
+  Future<List<CourseInfo>> getSelectedCourses();
+
+  Future<List<CourseInfo>> getSelectableCourses(TermInfo termInfo, String tab);
+
+  Future<List<CourseTab>> getCourseTabs(TermInfo termInfo);
+
+  Future<List<TermInfo>> getTerms();
 }

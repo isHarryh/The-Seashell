@@ -418,3 +418,310 @@ class ClassPeriod {
     return termYear.hashCode ^ termSeason.hashCode ^ minorId.hashCode;
   }
 }
+
+class TermInfo {
+  final String year; // eg. "2024-2025"
+  final int season;
+
+  const TermInfo({required this.year, required this.season});
+
+  factory TermInfo.fromJson(Map<String, dynamic> json) {
+    return TermInfo(
+      year: json['xn'] as String,
+      season: int.parse(json['xq'].toString()),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'year': year, 'season': season};
+  }
+
+  @override
+  String toString() {
+    return 'TermInfo(year: $year, season: $season)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TermInfo && other.year == year && other.season == season;
+  }
+
+  @override
+  int get hashCode {
+    return year.hashCode ^ season.hashCode;
+  }
+}
+
+class CourseDetail {
+  final String classId; // 讲台代码
+  final String detail; // 详情描述
+  final String? detailAlt; // 详情描述英文
+  final String teacher; // 教师
+  final String classes; // 班级
+  final String selectionStatus; // 选课状态
+  final String selectionStartTime; // 讲台选课开始时间
+  final String selectionEndTime; // 讲台选课结束时间
+  final int ugTotal; // 本科生容量
+  final int ugReserved; // 本科生已选
+  final int pgTotal; // 研究生容量
+  final int pgReserved; // 研究生已选
+  final int? maleTotal; // 男生容量
+  final int? maleReserved; // 男生已选
+  final int? femaleTotal; // 女生容量
+  final int? femaleReserved; // 女生已选
+
+  const CourseDetail({
+    required this.classId,
+    required this.detail,
+    this.detailAlt,
+    required this.teacher,
+    required this.classes,
+    required this.selectionStatus,
+    required this.selectionStartTime,
+    required this.selectionEndTime,
+    required this.ugTotal,
+    required this.ugReserved,
+    required this.pgTotal,
+    required this.pgReserved,
+    this.maleTotal,
+    this.maleReserved,
+    this.femaleTotal,
+    this.femaleReserved,
+  });
+
+  factory CourseDetail.fromJson(Map<String, dynamic> json) {
+    return CourseDetail(
+      classId: json['id'] as String? ?? '',
+      detail: json['kcxx'] as String? ?? '',
+      detailAlt: json['kcxx_en'] as String?,
+      teacher: json['dgjsmc'] as String? ?? '',
+      classes: json['dgbjmc'] as String? ?? '',
+      selectionStatus: json['xkzt'] as String? ?? '',
+      selectionStartTime: json['ktxkkssj'] as String? ?? '',
+      selectionEndTime: json['ktxkjssj'] as String? ?? '',
+      ugTotal: int.tryParse(json['bksrl']?.toString() ?? '0') ?? 0,
+      ugReserved: int.tryParse(json['bksyxrlrs']?.toString() ?? '0') ?? 0,
+      pgTotal: int.tryParse(json['yjsrl']?.toString() ?? '0') ?? 0,
+      pgReserved: int.tryParse(json['yjsyxrlrs']?.toString() ?? '0') ?? 0,
+      maleTotal: json['nansrl'] != null
+          ? int.tryParse(json['nansrl'].toString())
+          : null,
+      maleReserved: json['nansyxrlrs'] != null
+          ? int.tryParse(json['nansyxrlrs'].toString())
+          : null,
+      femaleTotal: json['nvsrl'] != null
+          ? int.tryParse(json['nvsrl'].toString())
+          : null,
+      femaleReserved: json['nvsyxrlrs'] != null
+          ? int.tryParse(json['nvsyxrlrs'].toString())
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': classId,
+      'kcxx': detail,
+      'kcxx_en': detailAlt,
+      'dgjsmc': teacher,
+      'dgbjmc': classes,
+      'xkzt': selectionStatus,
+      'ktxkkssj': selectionStartTime,
+      'ktxkjssj': selectionEndTime,
+      'bksrl': ugTotal,
+      'bksyxrlrs': ugReserved,
+      'yjsrl': pgTotal,
+      'yjsyxrlrs': pgReserved,
+      'nansrl': maleTotal,
+      'nansyxrlrs': maleReserved,
+      'nvsrl': femaleTotal,
+      'nvsyxrlrs': femaleReserved,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'ClassDetail(classId: $classId, teacher: $teacher, classes: $classes, status: $selectionStatus)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is CourseDetail && other.classId == classId;
+  }
+
+  @override
+  int get hashCode {
+    return classId.hashCode;
+  }
+}
+
+class CourseInfo {
+  final String courseId; // 课程代码
+  final String courseName; // 课程名称
+  final String? courseNameAlt; // 课程名称英文
+  final String courseType; // 课程限制类型
+  final String? courseTypeAlt; // 课程限制类型英文
+  final String courseCategory; // 课程类别
+  final String? courseCategoryAlt; // 课程类别英文
+  final String districtName; // 校区名称
+  final String? districtNameAlt; // 校区名称英文
+  final String schoolName; // 开课院系名称
+  final String? schoolNameAlt; // 开课院系名称英文
+  final String termName; // 学年学期
+  final String? termNameAlt; // 学年学期英文
+  final String teachingLanguage; // 授课语言
+  final String? teachingLanguageAlt; // 授课语言英文
+  final double credits; // 学分
+  final double hours; // 学时
+  final CourseDetail? classDetail; // 讲台详情
+
+  const CourseInfo({
+    required this.courseId,
+    required this.courseName,
+    this.courseNameAlt,
+    required this.courseType,
+    this.courseTypeAlt,
+    required this.courseCategory,
+    this.courseCategoryAlt,
+    required this.districtName,
+    this.districtNameAlt,
+    required this.schoolName,
+    this.schoolNameAlt,
+    required this.termName,
+    this.termNameAlt,
+    required this.teachingLanguage,
+    this.teachingLanguageAlt,
+    required this.credits,
+    required this.hours,
+    this.classDetail,
+  });
+
+  factory CourseInfo.fromJson(Map<String, dynamic> json) {
+    // Check if id is present and valid
+    CourseDetail? classDetail;
+    if (json['id'] != null && json['id'].toString().isNotEmpty) {
+      classDetail = CourseDetail.fromJson(json);
+    }
+
+    return CourseInfo(
+      courseId: json['kcdm'] as String? ?? '',
+      courseName: json['kcmc'] as String? ?? '',
+      courseNameAlt: json['kcmc_en'] as String?,
+      courseType: json['kcxzmc'] as String? ?? '',
+      courseTypeAlt: json['kcxzmc_en'] as String?,
+      courseCategory: json['kclbmc'] as String? ?? '',
+      courseCategoryAlt: json['kclbmc_en'] as String?,
+      districtName: json['xiaoqumc'] as String? ?? '',
+      districtNameAlt: json['xiaoqumc_en'] as String?,
+      schoolName: json['kkyxmc'] as String? ?? '',
+      schoolNameAlt: json['kkyxmc_en'] as String?,
+      termName: json['xnxqmc'] as String? ?? '',
+      termNameAlt: json['xnxqmc_en'] as String?,
+      teachingLanguage: json['skyymc'] as String? ?? '',
+      teachingLanguageAlt: json['skyymc_en'] as String?,
+      credits: double.tryParse(json['xf']?.toString() ?? '0') ?? 0.0,
+      hours: double.tryParse(json['xs']?.toString() ?? '0') ?? 0.0,
+      classDetail: classDetail,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> result = {
+      'kcdm': courseId,
+      'kcmc': courseName,
+      'kcmc_en': courseNameAlt,
+      'kcxzmc': courseType,
+      'kcxzmc_en': courseTypeAlt,
+      'kclbmc': courseCategory,
+      'kclbmc_en': courseCategoryAlt,
+      'xiaoqumc': districtName,
+      'xiaoqumc_en': districtNameAlt,
+      'kkyxmc': schoolName,
+      'kkyxmc_en': schoolNameAlt,
+      'xnxqmc': termName,
+      'xnxqmc_en': termNameAlt,
+      'skyymc': teachingLanguage,
+      'skyymc_en': teachingLanguageAlt,
+      'xf': credits,
+      'xs': hours,
+    };
+
+    if (classDetail != null) {
+      result.addAll(classDetail!.toJson());
+    }
+
+    return result;
+  }
+
+  @override
+  String toString() {
+    return 'CourseInfo(courseId: $courseId, courseName: $courseName, credits: $credits, classDetail: $classDetail)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is CourseInfo &&
+        other.courseId == courseId &&
+        other.classDetail?.classId == classDetail?.classId;
+  }
+
+  @override
+  int get hashCode {
+    return courseId.hashCode ^ (classDetail?.classId.hashCode ?? 0);
+  }
+}
+
+class CourseTab {
+  final String tabId; // 选课标签页代码
+  final String tabName; // 标签页名称
+  final String? tabNameAlt; // 标签页名称英文
+  final String? selectionStartTime; // 选课开始时间
+  final String? selectionEndTime; // 选课结束时间
+
+  const CourseTab({
+    required this.tabId,
+    required this.tabName,
+    this.tabNameAlt,
+    this.selectionStartTime,
+    this.selectionEndTime,
+  });
+
+  factory CourseTab.fromJson(Map<String, dynamic> json) {
+    return CourseTab(
+      tabId: json['xkfsdm'] as String? ?? '',
+      tabName: json['xkfsmc'] as String? ?? '',
+      tabNameAlt: json['xkfsmc_en'] as String?,
+      selectionStartTime: json['ktxkkssj'] as String?,
+      selectionEndTime: json['ktxkjssj'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'xkfsdm': tabId,
+      'xkfsmc': tabName,
+      'xkfsmc_en': tabNameAlt,
+      'ktxkkssj': selectionStartTime,
+      'ktxkjssj': selectionEndTime,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'CourseTab(tabId: $tabId, tabName: $tabName)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is CourseTab && other.tabId == tabId;
+  }
+
+  @override
+  int get hashCode {
+    return tabId.hashCode;
+  }
+}
