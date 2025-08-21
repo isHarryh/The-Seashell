@@ -2,11 +2,65 @@
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'utils/app_bar.dart';
 import 'pages/index.dart';
 import 'pages/courses/selection/index.dart';
 import 'pages/courses/curriculum/index.dart';
 import 'pages/courses/grade/index.dart';
 import 'pages/courses/account/index.dart';
+
+// App constants
+class _AppConstants {
+  static const double wideScreenBreakpoint = 768.0;
+  static const double sideNavigationWidth = 240.0;
+  static const Duration navigationAnimationDuration = Duration(
+    milliseconds: 200,
+  );
+  static const String appName = '大贝壳';
+  static const IconData appIcon = Icons.waves;
+
+  static const List<_NavigationItem> navigationItems = [
+    _NavigationItem(icon: Icons.home, title: '主页', path: '/'),
+    _NavigationItem(
+      icon: Icons.account_circle,
+      title: '账户',
+      path: '/courses/account',
+      category: '课程',
+    ),
+    _NavigationItem(
+      icon: Icons.school,
+      title: '选课',
+      path: '/courses/selection',
+      category: '课程',
+    ),
+    _NavigationItem(
+      icon: Icons.calendar_today,
+      title: '课表',
+      path: '/courses/curriculum',
+      category: '课程',
+    ),
+    _NavigationItem(
+      icon: Icons.assessment,
+      title: '成绩',
+      path: '/courses/grade',
+      category: '课程',
+    ),
+  ];
+}
+
+class _NavigationItem {
+  final IconData icon;
+  final String title;
+  final String path;
+  final String? category;
+
+  const _NavigationItem({
+    required this.icon,
+    required this.title,
+    required this.path,
+    this.category,
+  });
+}
 
 // App router definition with auto_route package
 // See: https://github.com/Milad-Akarie/auto_route_library
@@ -53,6 +107,21 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
+  bool _isWideScreen = false;
+  Widget? _cachedChild;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final size = MediaQuery.of(context).size;
+    final newIsWideScreen = size.width > _AppConstants.wideScreenBreakpoint;
+    if (_isWideScreen != newIsWideScreen) {
+      setState(() {
+        _isWideScreen = newIsWideScreen;
+      });
+    }
+  }
+
   String get _currentPath {
     if (context.mounted) {
       final routeData = context.routeData;
@@ -61,33 +130,59 @@ class _MainLayoutState extends State<MainLayout> {
     return '/';
   }
 
-  void _navigateToPage(String path) {
-    if (context.mounted) {
-      context.router.pushPath(path);
+  void _navigateToPage(String path, {bool isDrawer = false}) {
+    if (context.mounted && _currentPath != path) {
+      if (_isWideScreen) {
+        // For wide screen, pop all and push new route to avoid history accumulation and smooth transition
+        context.router.popUntilRoot();
+        context.router.pushPath(path);
+      } else {
+        // For narrow screen, use normal navigation
+        context.router.pushPath(path);
+      }
+
+      if (isDrawer) {
+        Navigator.pop(context);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWideScreen = constraints.maxWidth > 768;
+    // Cache the child to prevent unnecessary rebuilds when switching layouts
+    _cachedChild ??= widget.child;
+    if (_cachedChild != widget.child) {
+      _cachedChild = widget.child;
+    }
 
-        if (isWideScreen) {
-          return _buildWideScreenLayout();
-        } else {
-          return _buildNarrowScreenLayout();
-        }
-      },
-    );
+    if (_isWideScreen) {
+      return _buildWideScreenLayout();
+    } else {
+      return _buildNarrowScreenLayout();
+    }
   }
 
   Widget _buildWideScreenLayout() {
     return Scaffold(
       body: Row(
         children: [
-          _buildSideNavigation(false),
-          Expanded(child: widget.child),
+          _SideNavigation(
+            isDrawer: false,
+            currentPath: _currentPath,
+            onNavigate: _navigateToPage,
+          ),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: _AppConstants.navigationAnimationDuration,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: KeyedSubtree(
+                key: ValueKey(_currentPath),
+                child: _cachedChild!,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -95,19 +190,34 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildNarrowScreenLayout() {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('大贝壳'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      appBar: const TopAppBar(),
+      drawer: Drawer(
+        child: _SideNavigation(
+          isDrawer: true,
+          currentPath: _currentPath,
+          onNavigate: (path) => _navigateToPage(path, isDrawer: true),
+        ),
       ),
-      drawer: Drawer(child: _buildSideNavigation(true)),
-      body: widget.child,
+      body: _cachedChild!,
     );
   }
+}
 
-  Widget _buildSideNavigation(bool isDrawer) {
+class _SideNavigation extends StatelessWidget {
+  final bool isDrawer;
+  final String currentPath;
+  final void Function(String path) onNavigate;
+
+  const _SideNavigation({
+    required this.isDrawer,
+    required this.currentPath,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: isDrawer ? null : 280,
+      width: isDrawer ? null : _AppConstants.sideNavigationWidth,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: isDrawer
@@ -123,13 +233,13 @@ class _MainLayoutState extends State<MainLayout> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.waves,
+                    _AppConstants.appIcon,
                     size: 32,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    '大贝壳',
+                    _AppConstants.appName,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -137,14 +247,18 @@ class _MainLayoutState extends State<MainLayout> {
             ),
             const Divider(),
           ] else ...[
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.transparent),
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Colors.transparent),
               child: Row(
                 children: [
-                  Icon(Icons.waves, size: 32),
-                  SizedBox(width: 12),
-                  Text(
-                    '大贝壳',
+                  Icon(
+                    _AppConstants.appIcon,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    _AppConstants.appName,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -154,68 +268,7 @@ class _MainLayoutState extends State<MainLayout> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                _buildNavItem(
-                  icon: Icons.home,
-                  title: '主页',
-                  isSelected: _currentPath == '/',
-                  onTap: () {
-                    _navigateToPage('/');
-                    if (isDrawer) Navigator.pop(context);
-                  },
-                ),
-                const Divider(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    '课程',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ),
-                _buildNavItem(
-                  icon: Icons.account_circle,
-                  title: '账户',
-                  isSelected: _currentPath == '/courses/account',
-                  onTap: () {
-                    _navigateToPage('/courses/account');
-                    if (isDrawer) Navigator.pop(context);
-                  },
-                ),
-                _buildNavItem(
-                  icon: Icons.school,
-                  title: '选课',
-                  isSelected: _currentPath == '/courses/selection',
-                  onTap: () {
-                    _navigateToPage('/courses/selection');
-                    if (isDrawer) Navigator.pop(context);
-                  },
-                ),
-                _buildNavItem(
-                  icon: Icons.calendar_today,
-                  title: '课表',
-                  isSelected: _currentPath == '/courses/curriculum',
-                  onTap: () {
-                    _navigateToPage('/courses/curriculum');
-                    if (isDrawer) Navigator.pop(context);
-                  },
-                ),
-                _buildNavItem(
-                  icon: Icons.assessment,
-                  title: '成绩',
-                  isSelected: _currentPath == '/courses/grade',
-                  onTap: () {
-                    _navigateToPage('/courses/grade');
-                    if (isDrawer) Navigator.pop(context);
-                  },
-                ),
-              ],
+              children: _buildNavigationItems(context),
             ),
           ),
         ],
@@ -223,7 +276,59 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
+  List<Widget> _buildNavigationItems(BuildContext context) {
+    final groupedItems = _getGroupedNavigationItems();
+    final widgets = <Widget>[];
+
+    for (final entry in groupedItems.entries) {
+      final category = entry.key;
+      final items = entry.value;
+
+      // Add category header if not null and not the first category (main)
+      if (category != null && widgets.isNotEmpty) {
+        widgets.addAll([
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              category,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+        ]);
+      }
+
+      // Add navigation items
+      for (final item in items) {
+        widgets.add(
+          _buildNavItem(
+            context: context,
+            icon: item.icon,
+            title: item.title,
+            isSelected: currentPath == item.path,
+            onTap: () => onNavigate(item.path),
+          ),
+        );
+      }
+    }
+
+    return widgets;
+  }
+
+  Map<String?, List<_NavigationItem>> _getGroupedNavigationItems() {
+    final Map<String?, List<_NavigationItem>> grouped = {};
+    for (final item in _AppConstants.navigationItems) {
+      grouped.putIfAbsent(item.category, () => []).add(item);
+    }
+    return grouped;
+  }
+
   Widget _buildNavItem({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required bool isSelected,
@@ -231,16 +336,37 @@ class _MainLayoutState extends State<MainLayout> {
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        selected: isSelected,
-        selectedTileColor: Theme.of(
-          context,
-        ).colorScheme.primary.withOpacity(0.1),
-        selectedColor: Theme.of(context).colorScheme.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                  : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              leading: Icon(
+                icon,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+              title: Text(
+                title,
+                style: TextStyle(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ),
       ),
     );
   }

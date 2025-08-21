@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
+import '/utils/app_bar.dart';
 
 class GradePage extends StatefulWidget {
   const GradePage({super.key});
@@ -320,7 +321,7 @@ class _GradePageState extends State<GradePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('成绩查询')),
+      appBar: const PageAppBar(title: '成绩查询'),
       body: _buildBody(),
     );
   }
@@ -665,7 +666,7 @@ class _GradePageState extends State<GradePage> {
 
   List<Widget> _buildDataRow(CourseGradeItem grade, List<double> columnWidths) {
     return [
-      // Checkbox列
+      // Checkbox
       _buildDataCell(
         Checkbox(
           value: _selectedCourseIds.contains(grade.courseId),

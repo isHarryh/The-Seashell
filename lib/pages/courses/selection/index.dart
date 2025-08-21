@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
+import '/utils/app_bar.dart';
 import 'list.dart';
 
 class CourseSelectionPage extends StatefulWidget {
@@ -120,9 +121,8 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('选课'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      appBar: PageAppBar(
+        title: '选课',
         leading: _showCourseList
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -172,7 +172,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
 
   Widget _buildTermSelectionView() {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

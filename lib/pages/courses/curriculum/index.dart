@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
 import '/types/preferences.dart';
+import '/utils/app_bar.dart';
 
 class MajorPeriodInfo {
   final int id;
@@ -109,8 +110,8 @@ class _CurriculumPageState extends State<CurriculumPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('课程表'),
+      appBar: PageAppBar(
+        title: '课程表',
         actions: [
           Builder(
             builder: (context) => IconButton(

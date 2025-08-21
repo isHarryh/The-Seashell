@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
-import '/services/provider.dart';
 import '/services/base.dart';
+import '/utils/page_mixins.dart';
 import '/types/courses.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,33 +11,24 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  final ServiceProvider _serviceProvider = ServiceProvider.instance;
+class _HomePageState extends State<HomePage>
+    with PageStateMixin, LoadingStateMixin {
   UserInfo? _userInfo;
 
   @override
-  void initState() {
-    super.initState();
-    _serviceProvider.addListener(_onServiceStatusChanged);
+  void onServiceInit() {
     _loadUserInfo();
   }
 
   @override
-  void dispose() {
-    _serviceProvider.removeListener(_onServiceStatusChanged);
-    super.dispose();
-  }
-
-  void _onServiceStatusChanged() {
-    if (mounted) {
-      setState(() {
-        _loadUserInfo();
-      });
-    }
+  void onServiceStatusChanged() {
+    setState(() {
+      _loadUserInfo();
+    });
   }
 
   Future<void> _loadUserInfo() async {
-    final service = _serviceProvider.coursesService;
+    final service = serviceProvider.coursesService;
 
     if (!service.isOnline) {
       if (mounted) {
@@ -49,7 +40,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      final userInfo = await _serviceProvider.coursesService.getUserInfo();
+      final userInfo = await serviceProvider.coursesService.getUserInfo();
       if (mounted) {
         setState(() {
           _userInfo = userInfo;
@@ -82,49 +73,89 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             const SizedBox(height: 32),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWideScreen = constraints.maxWidth > 600;
-                  return GridView.count(
-                    crossAxisCount: isWideScreen ? 4 : 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: isWideScreen ? 1.2 : 1.0,
-                    children: [
-                      _buildFeatureCard(
-                        context,
-                        '选课',
-                        'WIP',
-                        Icons.school,
-                        Colors.blue,
-                        () => context.router.pushPath('/courses/selection'),
-                      ),
-                      _buildFeatureCard(
-                        context,
-                        '课表',
-                        'WIP',
-                        Icons.calendar_today,
-                        Colors.green,
-                        () => context.router.pushPath('/courses/curriculum'),
-                      ),
-                      _buildFeatureCard(
-                        context,
-                        '成绩',
-                        'WIP',
-                        Icons.assessment,
-                        Colors.orange,
-                        () => context.router.pushPath('/courses/grade'),
-                      ),
-                      _buildAccountCard(context),
-                    ],
-                  );
-                },
-              ),
-            ),
+            Expanded(child: _buildFeatureGrid()),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFeatureGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate optimal grid layout based on available space
+        final double cardMinWidth = 200.0;
+        final double spacing = 16.0;
+
+        int crossAxisCount = 2;
+        if (constraints.maxWidth > 768) {
+          crossAxisCount = (constraints.maxWidth / (cardMinWidth + spacing))
+              .floor()
+              .clamp(2, 4);
+        } else if (constraints.maxWidth < 480) {
+          crossAxisCount = 1;
+        }
+
+        // Calculate aspect ratio based on available width
+        final double cardWidth =
+            (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+            crossAxisCount;
+        final double cardHeight = cardWidth.clamp(180.0, 220.0);
+        final double aspectRatio = cardWidth / cardHeight;
+
+        final List<Widget> cards = [
+          _buildFeatureCard(
+            context,
+            '选课',
+            '查看和管理课程',
+            Icons.school,
+            Colors.blue,
+            () => context.router.pushPath('/courses/selection'),
+          ),
+          _buildFeatureCard(
+            context,
+            '课表',
+            '查看课程安排',
+            Icons.calendar_today,
+            Colors.green,
+            () => context.router.pushPath('/courses/curriculum'),
+          ),
+          _buildFeatureCard(
+            context,
+            '成绩',
+            '查看考试成绩',
+            Icons.assessment,
+            Colors.orange,
+            () => context.router.pushPath('/courses/grade'),
+          ),
+          _buildAccountCard(context),
+        ];
+
+        if (crossAxisCount == 1) {
+          // For narrow screens, use a column layout
+          return SingleChildScrollView(
+            child: Column(
+              children: cards
+                  .map(
+                    (card) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: SizedBox(height: cardHeight, child: card),
+                    ),
+                  )
+                  .toList(),
+            ),
+          );
+        } else {
+          // For wider screens, use grid layout
+          return GridView.count(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: aspectRatio,
+            children: cards,
+          );
+        }
+      },
     );
   }
 
@@ -154,7 +185,7 @@ class _HomePageState extends State<HomePage> {
                     child: Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -192,7 +223,7 @@ class _HomePageState extends State<HomePage> {
                     child: Text(
                       '账户',
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -202,14 +233,14 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 8),
               Builder(
                 builder: (context) {
-                  final service = _serviceProvider.coursesService;
+                  final service = serviceProvider.coursesService;
 
                   if (service.isOnline && _userInfo != null) {
                     return Text(
                       '已作为${_userInfo!.userName}登录',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green[600],
+                        fontSize: 14,
+                        color: Colors.green[700],
                         fontWeight: FontWeight.w500,
                       ),
                     );
@@ -225,8 +256,8 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           '处理中...',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.orange[600],
+                            fontSize: 14,
+                            color: Colors.orange[700],
                           ),
                         ),
                       ],
@@ -236,12 +267,12 @@ class _HomePageState extends State<HomePage> {
                       service.status == ServiceStatus.errorAuth
                           ? '认证错误'
                           : '网络错误',
-                      style: TextStyle(fontSize: 12, color: Colors.red[600]),
+                      style: TextStyle(fontSize: 14, color: Colors.red[700]),
                     );
                   } else {
                     return Text(
-                      '请登录账户',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      '未登录账户',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     );
                   }
                 },

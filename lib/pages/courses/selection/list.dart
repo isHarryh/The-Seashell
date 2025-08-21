@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
+import '/utils/app_bar.dart';
 
 class CourseListPage extends StatefulWidget {
   final TermInfo termInfo;
@@ -71,11 +72,8 @@ class _CourseListPageState extends State<CourseListPage> {
 
     if (widget.showAppBar) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            '课程选择 - ${widget.termInfo.year} 第${widget.termInfo.season}学期',
-          ),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        appBar: PageAppBar(
+          title: '课程选择 - ${widget.termInfo.year} 第${widget.termInfo.season}学期',
         ),
         body: content,
       );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/services/base.dart';
 import '/types/courses.dart';
+import '/utils/app_bar.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -180,7 +181,7 @@ class _AccountPageState extends State<AccountPage> {
     final service = _serviceProvider.coursesService;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('账户'), centerTitle: true),
+      appBar: const PageAppBar(title: '账户'),
       body: RefreshIndicator(
         onRefresh: _loadUserInfo,
         child: SingleChildScrollView(
