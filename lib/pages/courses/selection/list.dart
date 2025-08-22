@@ -26,8 +26,11 @@ class _CourseListPageState extends State<CourseListPage> {
 
   List<CourseTab> _courseTabs = [];
   CourseTab? _selectedTab;
+  List<CourseInfo> _courses = [];
   bool _isLoading = false;
+  bool _isLoadingCourses = false;
   String? _errorMessage;
+  String? _expandedCourseId; // Current expanded course ID
 
   @override
   void initState() {
@@ -53,6 +56,7 @@ class _CourseListPageState extends State<CourseListPage> {
         _courseTabs = tabs;
         if (tabs.isNotEmpty) {
           _selectedTab = tabs.first;
+          _loadCourses(); // Load first tab
         }
         _isLoading = false;
       });
@@ -62,6 +66,34 @@ class _CourseListPageState extends State<CourseListPage> {
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadCourses() async {
+    if (_selectedTab == null || !mounted) return;
+
+    setState(() {
+      _isLoadingCourses = true;
+      _errorMessage = null;
+      _expandedCourseId = null;
+    });
+
+    try {
+      final courses = await _serviceProvider.coursesService
+          .getSelectableCourses(widget.termInfo, _selectedTab!.tabId);
+      if (!mounted) return;
+
+      setState(() {
+        _courses = courses;
+        _isLoadingCourses = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoadingCourses = false;
       });
     }
   }
@@ -181,10 +213,13 @@ class _CourseListPageState extends State<CourseListPage> {
                     selected: isSelected,
                     label: Text(tab.tabName),
                     onSelected: (selected) {
-                      if (selected && mounted) {
+                      if (selected &&
+                          mounted &&
+                          _selectedTab?.tabId != tab.tabId) {
                         setState(() {
                           _selectedTab = tab;
                         });
+                        _loadCourses();
                       }
                     },
                     selectedColor: Theme.of(
@@ -210,58 +245,681 @@ class _CourseListPageState extends State<CourseListPage> {
   }
 
   Widget _buildTabContent(CourseTab tab) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.list_alt,
-                size: 80,
-                color: Theme.of(context).primaryColor.withOpacity(0.5),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                tab.tabName,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (tab.selectionStartTime != null &&
-                  tab.selectionEndTime != null)
-                Text(
-                  '选课时间：${tab.selectionStartTime} - ${tab.selectionEndTime}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
-                  textAlign: TextAlign.center,
-                ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Text(
-                  '课程数据表展示功能正在开发中',
-                  style: TextStyle(
-                    color: Colors.orange.shade700,
-                    fontWeight: FontWeight.w500,
+    if (_isLoadingCourses) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('正在加载课程数据...'),
+          ],
+        ),
+      );
+    }
+
+    if (_courses.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.list_alt,
+              size: 80,
+              color: Theme.of(context).primaryColor.withOpacity(0.2),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '暂无课程数据',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _buildResponsiveCourseTable();
+  }
+
+  Widget _buildResponsiveCourseTable() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+
+        final columnConfig = [
+          {'name': '', 'minWidth': 40.0, 'flex': 0, 'isNumeric': false},
+          {'name': '课程代码', 'minWidth': 80.0, 'flex': 2, 'isNumeric': false},
+          {'name': '课程名称', 'minWidth': 120.0, 'flex': 4, 'isNumeric': false},
+          {'name': '性质', 'minWidth': 60.0, 'flex': 1, 'isNumeric': false},
+          {'name': '类别', 'minWidth': 60.0, 'flex': 1, 'isNumeric': false},
+          {'name': '学分', 'minWidth': 60.0, 'flex': 1, 'isNumeric': true},
+          {'name': '学时', 'minWidth': 60.0, 'flex': 1, 'isNumeric': true},
+        ];
+
+        final totalMinWidth = columnConfig.fold<double>(
+          0,
+          (sum, col) => sum + (col['minWidth'] as double),
+        );
+        final totalFlex = columnConfig.fold<int>(
+          0,
+          (sum, col) => sum + (col['flex'] as int),
+        );
+
+        final needsHorizontalScroll = availableWidth < totalMinWidth;
+
+        List<double> columnWidths;
+        double tableWidth;
+
+        if (needsHorizontalScroll) {
+          columnWidths = columnConfig
+              .map((col) => col['minWidth'] as double)
+              .toList();
+          tableWidth = totalMinWidth;
+        } else {
+          final extraWidth = availableWidth - totalMinWidth;
+          columnWidths = columnConfig.map((col) {
+            final minWidth = col['minWidth'] as double;
+            final flex = col['flex'] as int;
+            final extraForThisColumn = extraWidth * (flex / totalFlex);
+            return minWidth + extraForThisColumn;
+          }).toList();
+          tableWidth = availableWidth;
+        }
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            width: tableWidth,
+            child: Column(
+              children: [
+                Container(
+                  height: 50.0,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).dividerColor,
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: _CourseTableHeader(
+                    columnConfig: columnConfig,
+                    columnWidths: columnWidths,
                   ),
                 ),
-              ),
-            ],
+
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _courses.length,
+                    itemBuilder: (context, index) {
+                      final course = _courses[index];
+                      final isExpanded = _expandedCourseId == course.courseId;
+
+                      return _CourseTableRow(
+                        course: course,
+                        isExpanded: isExpanded,
+                        columnWidths: columnWidths,
+                        onToggle: () {
+                          setState(() {
+                            _expandedCourseId = isExpanded
+                                ? null
+                                : course.courseId;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class _CourseTableHeader extends StatelessWidget {
+  final List<Map<String, Object>> columnConfig;
+  final List<double> columnWidths;
+
+  const _CourseTableHeader({
+    required this.columnConfig,
+    required this.columnWidths,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: columnConfig.asMap().entries.map((entry) {
+          final index = entry.key;
+          final column = entry.value;
+          final columnName = column['name'] as String;
+          final width = columnWidths[index];
+          final isNumeric = column['isNumeric'] as bool;
+
+          return _buildHeaderCell(columnName, width, isNumeric: isNumeric);
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCell(String text, double width, {bool isNumeric = false}) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        textAlign: isNumeric ? TextAlign.center : TextAlign.left,
+      ),
+    );
+  }
+}
+
+class _CourseTableRow extends StatefulWidget {
+  final CourseInfo course;
+  final bool isExpanded;
+  final List<double> columnWidths;
+  final VoidCallback onToggle;
+
+  const _CourseTableRow({
+    required this.course,
+    required this.isExpanded,
+    required this.columnWidths,
+    required this.onToggle,
+  });
+
+  @override
+  State<_CourseTableRow> createState() => _CourseTableRowState();
+}
+
+class _CourseTableRowState extends State<_CourseTableRow>
+    with TickerProviderStateMixin {
+  late AnimationController _expansionController;
+  late AnimationController _titleController;
+  late Animation<double> _expansionAnimation;
+  late Animation<double> _iconRotationAnimation;
+  late Animation<double> _titleOpacityAnimation;
+  late Animation<Offset> _titleSlideAnimation;
+  final GlobalKey _detailsKey = GlobalKey(); // Locate details widget
+
+  @override
+  void initState() {
+    super.initState();
+
+    _expansionController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _titleController = AnimationController(
+      duration: const Duration(milliseconds: 4000),
+      vsync: this,
+    );
+
+    _expansionAnimation = CurvedAnimation(
+      parent: _expansionController,
+      curve: Curves.easeInOut,
+    );
+
+    _iconRotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _expansionController, curve: Curves.easeInOut),
+    );
+
+    _titleOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _titleController,
+        curve: Interval(0.0, 0.5, curve: Curves.easeOutQuint),
+      ),
+    );
+
+    _titleSlideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0.15, 0.05),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: _titleController, curve: Curves.easeOutQuint),
+        );
+  }
+
+  @override
+  void didUpdateWidget(_CourseTableRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isExpanded != oldWidget.isExpanded) {
+      if (widget.isExpanded) {
+        _expansionController.forward();
+        _titleController.forward();
+        _expansionController.addStatusListener(_onExpansionStatusChanged);
+      } else {
+        _expansionController.reverse();
+        _titleController.reset();
+      }
+    }
+  }
+
+  void _onExpansionStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed && widget.isExpanded) {
+      _expansionController.removeStatusListener(_onExpansionStatusChanged);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Scroll the list to the details widget
+        final context = _detailsKey.currentContext;
+        if (context != null) {
+          Scrollable.ensureVisible(
+            context,
+            alignment: 0.3,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _expansionController.dispose();
+    _titleController.dispose();
+    _expansionController.removeStatusListener(_onExpansionStatusChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: widget.onToggle,
+          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          highlightColor: Theme.of(
+            context,
+          ).colorScheme.primary.withOpacity(0.05),
+          borderRadius: widget.isExpanded
+              ? const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                )
+              : BorderRadius.circular(4),
+          child: AnimatedBuilder(
+            animation: _expansionController,
+            builder: (context, child) {
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: widget.isExpanded
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withOpacity(0.4)
+                      : null,
+                  borderRadius: widget.isExpanded
+                      ? const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        )
+                      : null,
+                  border: widget.isExpanded
+                      ? null
+                      : Border(
+                          bottom: BorderSide(
+                            color: Theme.of(
+                              context,
+                            ).dividerColor.withOpacity(0.4),
+                            width: 0.5,
+                          ),
+                        ),
+                ),
+                child: Row(
+                  children: [
+                    _buildDataCell(
+                      AnimatedBuilder(
+                        animation: _iconRotationAnimation,
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _iconRotationAnimation.value * 3.1415927,
+                            child: Icon(
+                              Icons.expand_more,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          );
+                        },
+                      ),
+                      widget.columnWidths[0],
+                      needCenter: true,
+                    ),
+                    _buildDataCell(
+                      Text(
+                        widget.course.courseId,
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      widget.columnWidths[1],
+                    ),
+                    _buildNameCell(
+                      widget.course.courseName,
+                      widget.course.courseNameAlt,
+                      widget.columnWidths[2],
+                    ),
+                    _buildDataCell(
+                      Text(
+                        widget.course.courseType,
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      widget.columnWidths[3],
+                    ),
+                    _buildDataCell(
+                      Text(
+                        widget.course.courseCategory,
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      widget.columnWidths[4],
+                    ),
+                    _buildDataCell(
+                      Text(
+                        widget.course.credits.toString(),
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      widget.columnWidths[5],
+                      needCenter: true,
+                    ),
+                    _buildDataCell(
+                      Text(
+                        widget.course.hours.toString(),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      widget.columnWidths[6],
+                      needCenter: true,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        // 展开/收起动画 - 带有透明度过渡
+        ClipRect(
+          child: AnimatedBuilder(
+            animation: _expansionAnimation,
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _expansionAnimation,
+                child: SizeTransition(
+                  sizeFactor: _expansionAnimation,
+                  child: _buildExpandedContent(context),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpandedContent(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(16),
+          bottomRight: Radius.circular(16),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SlideTransition(
+              position: _titleSlideAnimation,
+              child: FadeTransition(
+                opacity: _titleOpacityAnimation,
+                child: Row(
+                  key: _detailsKey,
+                  children: [
+                    Icon(
+                      Icons.school,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.course.courseName,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                          if (widget.course.courseNameAlt?.isNotEmpty ==
+                              true) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.course.courseNameAlt!,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.7),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Container(
+              child: _buildInfoGrid([
+                _InfoItem(
+                  '课程性质',
+                  widget.course.courseType,
+                  Icons.category,
+                  widget.course.courseTypeAlt,
+                ),
+                _InfoItem(
+                  '课程类别',
+                  widget.course.courseCategory,
+                  Icons.class_,
+                  widget.course.courseCategoryAlt,
+                ),
+                _InfoItem(
+                  '开课院系',
+                  widget.course.schoolName,
+                  Icons.domain,
+                  widget.course.schoolNameAlt,
+                ),
+                _InfoItem(
+                  '校区',
+                  widget.course.districtName,
+                  Icons.location_on,
+                  widget.course.districtNameAlt,
+                ),
+                _InfoItem(
+                  '语言',
+                  widget.course.teachingLanguage,
+                  Icons.language,
+                  widget.course.teachingLanguageAlt,
+                ),
+              ]),
+            ),
+
+            const SizedBox(height: 20),
+
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '选课功能开发中',
+                          style: TextStyle(
+                            color: Colors.blue.shade800,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '讲台选择和课程选择功能将在后续版本中实现，敬请期待！',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildInfoGrid(List<_InfoItem> items) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: items.map((item) => _buildInfoChip(item)).toList(),
+    );
+  }
+
+  Widget _buildInfoChip(_InfoItem item) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(item.icon, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 4),
+          Text(
+            '${item.label}: ',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                item.value,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (item.valueAlt?.isNotEmpty == true)
+                Text(
+                  item.valueAlt!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataCell(Widget child, double width, {bool needCenter = false}) {
+    return SizedBox(
+      width: width,
+      child: Align(
+        alignment: needCenter ? Alignment.center : Alignment.centerLeft,
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildNameCell(String name, String? nameAlt, double width) {
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (nameAlt?.isNotEmpty == true)
+            Text(
+              nameAlt!,
+              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoItem {
+  final String label;
+  final String value;
+  final IconData icon;
+  final String? valueAlt;
+
+  const _InfoItem(this.label, this.value, this.icon, [this.valueAlt]);
 }

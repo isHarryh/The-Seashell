@@ -622,7 +622,11 @@ class CourseInfo {
       teachingLanguage: json['skyymc'] as String? ?? '',
       teachingLanguageAlt: json['skyymc_en'] as String?,
       credits: double.tryParse(json['xf']?.toString() ?? '0') ?? 0.0,
-      hours: double.tryParse(json['xs']?.toString() ?? '0') ?? 0.0,
+      hours:
+          double.tryParse(
+            json['zxs']?.toString() ?? json['xs']?.toString() ?? '0',
+          ) ??
+          0.0,
       classDetail: classDetail,
     );
   }
