@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
 import '/utils/app_bar.dart';
+import 'detail.dart';
 
 class CourseListPage extends StatefulWidget {
   final TermInfo termInfo;
@@ -443,51 +444,21 @@ class _CourseTableRow extends StatefulWidget {
 
 class _CourseTableRowState extends State<_CourseTableRow>
     with TickerProviderStateMixin {
-  late AnimationController _expansionController;
-  late AnimationController _titleController;
-  late Animation<double> _expansionAnimation;
+  late AnimationController _iconRotationController;
   late Animation<double> _iconRotationAnimation;
-  late Animation<double> _titleOpacityAnimation;
-  late Animation<Offset> _titleSlideAnimation;
-  final GlobalKey _detailsKey = GlobalKey(); // Locate details widget
 
   @override
   void initState() {
     super.initState();
 
-    _expansionController = AnimationController(
+    _iconRotationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
-    _titleController = AnimationController(
-      duration: const Duration(milliseconds: 4000),
-      vsync: this,
-    );
-
-    _expansionAnimation = CurvedAnimation(
-      parent: _expansionController,
-      curve: Curves.easeInOut,
-    );
-
     _iconRotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _expansionController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _iconRotationController, curve: Curves.easeInOut),
     );
-
-    _titleOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _titleController,
-        curve: Interval(0.0, 0.5, curve: Curves.easeOutQuint),
-      ),
-    );
-
-    _titleSlideAnimation =
-        Tween<Offset>(
-          begin: const Offset(0.15, 0.05),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: _titleController, curve: Curves.easeOutQuint),
-        );
   }
 
   @override
@@ -495,39 +466,16 @@ class _CourseTableRowState extends State<_CourseTableRow>
     super.didUpdateWidget(oldWidget);
     if (widget.isExpanded != oldWidget.isExpanded) {
       if (widget.isExpanded) {
-        _expansionController.forward();
-        _titleController.forward();
-        _expansionController.addStatusListener(_onExpansionStatusChanged);
+        _iconRotationController.forward();
       } else {
-        _expansionController.reverse();
-        _titleController.reset();
+        _iconRotationController.reverse();
       }
-    }
-  }
-
-  void _onExpansionStatusChanged(AnimationStatus status) {
-    if (status == AnimationStatus.completed && widget.isExpanded) {
-      _expansionController.removeStatusListener(_onExpansionStatusChanged);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Scroll the list to the details widget
-        final context = _detailsKey.currentContext;
-        if (context != null) {
-          Scrollable.ensureVisible(
-            context,
-            alignment: 0.3,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeOut,
-          );
-        }
-      });
     }
   }
 
   @override
   void dispose() {
-    _expansionController.dispose();
-    _titleController.dispose();
-    _expansionController.removeStatusListener(_onExpansionStatusChanged);
+    _iconRotationController.dispose();
     super.dispose();
   }
 
@@ -547,337 +495,107 @@ class _CourseTableRowState extends State<_CourseTableRow>
                   topRight: Radius.circular(8),
                 )
               : BorderRadius.circular(4),
-          child: AnimatedBuilder(
-            animation: _expansionController,
-            builder: (context, child) {
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: widget.isExpanded
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withOpacity(0.4)
-                      : null,
-                  borderRadius: widget.isExpanded
-                      ? const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
-                        )
-                      : null,
-                  border: widget.isExpanded
-                      ? null
-                      : Border(
-                          bottom: BorderSide(
-                            color: Theme.of(
-                              context,
-                            ).dividerColor.withOpacity(0.4),
-                            width: 0.5,
-                          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: widget.isExpanded
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withOpacity(0.4)
+                  : null,
+              borderRadius: widget.isExpanded
+                  ? const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
+                    )
+                  : null,
+              border: widget.isExpanded
+                  ? null
+                  : Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).dividerColor.withOpacity(0.4),
+                        width: 0.5,
+                      ),
+                    ),
+            ),
+            child: Row(
+              children: [
+                _buildDataCell(
+                  AnimatedBuilder(
+                    animation: _iconRotationAnimation,
+                    builder: (context, child) {
+                      return Transform.rotate(
+                        angle: _iconRotationAnimation.value * 3.1415927,
+                        child: Icon(
+                          Icons.expand_more,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
+                      );
+                    },
+                  ),
+                  widget.columnWidths[0],
+                  needCenter: true,
                 ),
-                child: Row(
-                  children: [
-                    _buildDataCell(
-                      AnimatedBuilder(
-                        animation: _iconRotationAnimation,
-                        builder: (context, child) {
-                          return Transform.rotate(
-                            angle: _iconRotationAnimation.value * 3.1415927,
-                            child: Icon(
-                              Icons.expand_more,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          );
-                        },
-                      ),
-                      widget.columnWidths[0],
-                      needCenter: true,
-                    ),
-                    _buildDataCell(
-                      Text(
-                        widget.course.courseId,
-                        style: const TextStyle(fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      widget.columnWidths[1],
-                    ),
-                    _buildNameCell(
-                      widget.course.courseName,
-                      widget.course.courseNameAlt,
-                      widget.columnWidths[2],
-                    ),
-                    _buildDataCell(
-                      Text(
-                        widget.course.courseType,
-                        style: const TextStyle(fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      widget.columnWidths[3],
-                    ),
-                    _buildDataCell(
-                      Text(
-                        widget.course.courseCategory,
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      widget.columnWidths[4],
-                    ),
-                    _buildDataCell(
-                      Text(
-                        widget.course.credits.toString(),
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      widget.columnWidths[5],
-                      needCenter: true,
-                    ),
-                    _buildDataCell(
-                      Text(
-                        widget.course.hours.toString(),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      widget.columnWidths[6],
-                      needCenter: true,
-                    ),
-                  ],
+                _buildDataCell(
+                  Text(
+                    widget.course.courseId,
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  widget.columnWidths[1],
                 ),
-              );
-            },
+                _buildNameCell(
+                  widget.course.courseName,
+                  widget.course.courseNameAlt,
+                  widget.columnWidths[2],
+                ),
+                _buildDataCell(
+                  Text(
+                    widget.course.courseType,
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  widget.columnWidths[3],
+                ),
+                _buildDataCell(
+                  Text(
+                    widget.course.courseCategory,
+                    style: const TextStyle(fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  widget.columnWidths[4],
+                ),
+                _buildDataCell(
+                  Text(
+                    widget.course.credits.toString(),
+                    style: const TextStyle(fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  widget.columnWidths[5],
+                  needCenter: true,
+                ),
+                _buildDataCell(
+                  Text(
+                    widget.course.hours.toString(),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  widget.columnWidths[6],
+                  needCenter: true,
+                ),
+              ],
+            ),
           ),
         ),
-        // 展开/收起动画 - 带有透明度过渡
-        ClipRect(
-          child: AnimatedBuilder(
-            animation: _expansionAnimation,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _expansionAnimation,
-                child: SizeTransition(
-                  sizeFactor: _expansionAnimation,
-                  child: _buildExpandedContent(context),
-                ),
-              );
-            },
-          ),
+
+        CourseDetailCard(
+          course: widget.course,
+          isExpanded: widget.isExpanded,
+          onToggle: widget.onToggle,
         ),
       ],
-    );
-  }
-
-  Widget _buildExpandedContent(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SlideTransition(
-              position: _titleSlideAnimation,
-              child: FadeTransition(
-                opacity: _titleOpacityAnimation,
-                child: Row(
-                  key: _detailsKey,
-                  children: [
-                    Icon(
-                      Icons.school,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.course.courseName,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                          ),
-                          if (widget.course.courseNameAlt?.isNotEmpty ==
-                              true) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.course.courseNameAlt!,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.7),
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            Container(
-              child: _buildInfoGrid([
-                _InfoItem(
-                  '课程性质',
-                  widget.course.courseType,
-                  Icons.category,
-                  widget.course.courseTypeAlt,
-                ),
-                _InfoItem(
-                  '课程类别',
-                  widget.course.courseCategory,
-                  Icons.class_,
-                  widget.course.courseCategoryAlt,
-                ),
-                _InfoItem(
-                  '开课院系',
-                  widget.course.schoolName,
-                  Icons.domain,
-                  widget.course.schoolNameAlt,
-                ),
-                _InfoItem(
-                  '校区',
-                  widget.course.districtName,
-                  Icons.location_on,
-                  widget.course.districtNameAlt,
-                ),
-                _InfoItem(
-                  '语言',
-                  widget.course.teachingLanguage,
-                  Icons.language,
-                  widget.course.teachingLanguageAlt,
-                ),
-              ]),
-            ),
-
-            const SizedBox(height: 20),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200, width: 1),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.blue.shade700,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '选课功能开发中',
-                          style: TextStyle(
-                            color: Colors.blue.shade800,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '讲台选择和课程选择功能将在后续版本中实现，敬请期待！',
-                          style: TextStyle(
-                            color: Colors.blue.shade700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoGrid(List<_InfoItem> items) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: items.map((item) => _buildInfoChip(item)).toList(),
-    );
-  }
-
-  Widget _buildInfoChip(_InfoItem item) {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(item.icon, size: 16, color: Colors.grey.shade600),
-          const SizedBox(width: 4),
-          Text(
-            '${item.label}: ',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                item.value,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (item.valueAlt?.isNotEmpty == true)
-                Text(
-                  item.valueAlt!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -913,13 +631,4 @@ class _CourseTableRowState extends State<_CourseTableRow>
       ),
     );
   }
-}
-
-class _InfoItem {
-  final String label;
-  final String value;
-  final IconData icon;
-  final String? valueAlt;
-
-  const _InfoItem(this.label, this.value, this.icon, [this.valueAlt]);
 }
