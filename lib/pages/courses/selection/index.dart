@@ -11,14 +11,8 @@ class CourseSelectionPage extends StatefulWidget {
   State<CourseSelectionPage> createState() => _CourseSelectionPageState();
 }
 
-class _CourseSelectionPageState extends State<CourseSelectionPage>
-    with TickerProviderStateMixin {
+class _CourseSelectionPageState extends State<CourseSelectionPage> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
-
-  bool _showCourseList = false;
-
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimation;
 
   List<TermInfo> _terms = [];
   TermInfo? _selectedTerm;
@@ -28,26 +22,11 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
   @override
   void initState() {
     super.initState();
-
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeInOut,
-          ),
-        );
-
     _loadTerms();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -93,10 +72,14 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
 
       setState(() {
         _isLoading = false;
-        _showCourseList = true;
       });
 
-      _animationController.forward();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CourseListPage(termInfo: _selectedTerm!),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -107,66 +90,11 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
     }
   }
 
-  void _backToTermSelection() async {
-    await _animationController.reverse();
-
-    if (mounted) {
-      setState(() {
-        _showCourseList = false;
-        _errorMessage = null;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PageAppBar(
-        title: '选课',
-        leading: _showCourseList
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: _backToTermSelection,
-              )
-            : null,
-        actions: _showCourseList && _selectedTerm != null
-            ? [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  margin: const EdgeInsets.only(right: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${_selectedTerm!.year}-${_selectedTerm!.season}',
-                        style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.8),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ]
-            : null,
-      ),
-      body: _showCourseList
-          ? _buildCourseListView()
-          : _buildTermSelectionView(),
+      appBar: PageAppBar(title: '选课'),
+      body: _buildTermSelectionView(),
     );
   }
 
@@ -176,6 +104,9 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildStepIndicator(),
+          const SizedBox(height: 24),
+
           Text(
             '选择学期',
             style: Theme.of(
@@ -290,7 +221,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
 
                   Container(
                     width: double.infinity,
-                    height: 48,
+                    height: 52,
                     decoration: BoxDecoration(
                       gradient: _selectedTerm != null
                           ? LinearGradient(
@@ -300,7 +231,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
                               ],
                             )
                           : null,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(28),
                       boxShadow: _selectedTerm != null
                           ? [
                               BoxShadow(
@@ -365,16 +296,73 @@ class _CourseSelectionPageState extends State<CourseSelectionPage>
     );
   }
 
-  Widget _buildCourseListView() {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: _selectedTerm != null
-          ? CourseListPage(
-              termInfo: _selectedTerm!,
-              showAppBar: false,
-              onRetry: _loadCourseTabs,
-            )
-          : const Center(child: Text('未选择学期')),
+  Widget _buildStepIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildStepItem('选择学期', 1, true),
+          _buildStepConnector(),
+          _buildStepItem('选择课程', 2, false),
+          _buildStepConnector(),
+          _buildStepItem('提交选课', 3, false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepItem(String title, int stepNumber, bool isActive) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                stepNumber.toString(),
+                style: TextStyle(
+                  color: isActive ? Colors.white : Colors.grey.shade600,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepConnector() {
+    return Container(
+      height: 2,
+      width: 20,
+      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
     );
   }
 }

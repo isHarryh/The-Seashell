@@ -6,6 +6,7 @@ import '/services/courses/base.dart';
 
 class UstbByytMorkService extends BaseCoursesService {
   DateTime? _lastHeartbeatTime;
+  CourseSelectionState _selectionState = const CourseSelectionState();
 
   @override
   Future<UserInfo> getUserInfo() async {
@@ -308,5 +309,81 @@ class UstbByytMorkService extends BaseCoursesService {
       setNetworkError('Failed to load terms: $e');
       throw Exception('Failed to load terms: $e');
     }
+  }
+
+  @override
+  Future<List<CourseInfo>> getCourseDetail(
+    TermInfo termInfo,
+    CourseInfo courseInfo,
+  ) async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+
+      await Future.delayed(Duration(milliseconds: 600));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCourseListDetail.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      final Map<String, dynamic>? kxrwList =
+          jsonData['kxrwList'] as Map<String, dynamic>?;
+      final List<dynamic> courseList =
+          kxrwList?['list'] as List<dynamic>? ?? [];
+
+      // Filter
+      List<CourseInfo> results = [];
+      for (var courseJson in courseList) {
+        try {
+          final courseDetail = CourseInfo.fromJson(
+            courseJson as Map<String, dynamic>,
+          );
+
+          if (courseDetail.courseId == courseInfo.courseId &&
+              courseDetail.classDetail != null) {
+            results.add(courseDetail);
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      return results;
+    } catch (e) {
+      setNetworkError('Failed to load course detail: $e');
+      throw Exception('Failed to load course detail: $e');
+    }
+  }
+
+  @override
+  CourseSelectionState getCourseSelectionState() {
+    return _selectionState;
+  }
+
+  @override
+  void updateCourseSelectionState(CourseSelectionState state) {
+    _selectionState = state;
+  }
+
+  @override
+  void addCourseToSelection(CourseInfo course) {
+    _selectionState = _selectionState.addCourse(course);
+  }
+
+  @override
+  void removeCourseFromSelection(String courseId, [String? classId]) {
+    _selectionState = _selectionState.removeCourse(courseId, classId);
+  }
+
+  @override
+  void setSelectionTermInfo(TermInfo termInfo) {
+    _selectionState = _selectionState.setTermInfo(termInfo);
+  }
+
+  @override
+  void clearCourseSelection() {
+    _selectionState = _selectionState.clear();
   }
 }

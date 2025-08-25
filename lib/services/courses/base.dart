@@ -23,4 +23,21 @@ abstract class BaseCoursesService extends BaseService {
   Future<List<CourseTab>> getCourseTabs(TermInfo termInfo);
 
   Future<List<TermInfo>> getTerms();
+
+  Future<List<CourseInfo>> getCourseDetail(
+    TermInfo termInfo,
+    CourseInfo courseInfo,
+  );
+
+  CourseSelectionState getCourseSelectionState();
+
+  void updateCourseSelectionState(CourseSelectionState state);
+
+  void addCourseToSelection(CourseInfo course);
+
+  void removeCourseFromSelection(String courseId, [String? classId]);
+
+  void setSelectionTermInfo(TermInfo termInfo);
+
+  void clearCourseSelection();
 }

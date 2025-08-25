@@ -3,20 +3,14 @@ import '/services/provider.dart';
 import '/types/courses.dart';
 import '/utils/app_bar.dart';
 import 'detail.dart';
+import 'submit.dart';
+import 'dialogs.dart';
 
 class CourseListPage extends StatefulWidget {
   final TermInfo termInfo;
-  final bool showAppBar;
-  final bool showTermInfo;
   final VoidCallback? onRetry;
 
-  const CourseListPage({
-    super.key,
-    required this.termInfo,
-    this.showAppBar = true,
-    this.showTermInfo = false,
-    this.onRetry,
-  });
+  const CourseListPage({super.key, required this.termInfo, this.onRetry});
 
   @override
   State<CourseListPage> createState() => _CourseListPageState();
@@ -37,6 +31,17 @@ class _CourseListPageState extends State<CourseListPage> {
   void initState() {
     super.initState();
     _loadCourseTabs();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ensure refreshed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   Future<void> _loadCourseTabs() async {
@@ -102,17 +107,57 @@ class _CourseListPageState extends State<CourseListPage> {
   @override
   Widget build(BuildContext context) {
     final content = _buildContent();
+    final selectionState = _serviceProvider.coursesService
+        .getCourseSelectionState();
 
-    if (widget.showAppBar) {
-      return Scaffold(
-        appBar: PageAppBar(
-          title: '课程选择 - ${widget.termInfo.year} 第${widget.termInfo.season}学期',
+    return Scaffold(
+      appBar: PageAppBar(
+        title: '选择课程',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
-        body: content,
-      );
-    } else {
-      return content;
-    }
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  size: 14,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.7),
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  '${widget.termInfo.year}-${widget.termInfo.season}',
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: content,
+      floatingActionButton: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return ScaleTransition(scale: animation, child: child);
+        },
+        child: selectionState.wantedCourses.isNotEmpty
+            ? _buildFloatingActionButtons(selectionState)
+            : const SizedBox.shrink(),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
   }
 
   Widget _buildContent() {
@@ -176,20 +221,6 @@ class _CourseListPageState extends State<CourseListPage> {
   Widget _buildCourseContent() {
     return Column(
       children: [
-        if (widget.showTermInfo)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Text(
-              '${widget.termInfo.year} 第${widget.termInfo.season}学期',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-          ),
-
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -290,7 +321,7 @@ class _CourseListPageState extends State<CourseListPage> {
         final availableWidth = constraints.maxWidth;
 
         final columnConfig = [
-          {'name': '', 'minWidth': 40.0, 'flex': 0, 'isNumeric': false},
+          {'name': '', 'minWidth': 70.0, 'flex': 0, 'isNumeric': false},
           {'name': '课程代码', 'minWidth': 80.0, 'flex': 2, 'isNumeric': false},
           {'name': '课程名称', 'minWidth': 120.0, 'flex': 4, 'isNumeric': false},
           {'name': '性质', 'minWidth': 60.0, 'flex': 1, 'isNumeric': false},
@@ -364,6 +395,7 @@ class _CourseListPageState extends State<CourseListPage> {
 
                       return _CourseTableRow(
                         course: course,
+                        termInfo: widget.termInfo,
                         isExpanded: isExpanded,
                         columnWidths: columnWidths,
                         onToggle: () {
@@ -372,6 +404,10 @@ class _CourseListPageState extends State<CourseListPage> {
                                 ? null
                                 : course.courseId;
                           });
+                        },
+                        onSelectionChanged: () {
+                          // Ensure refreshed
+                          setState(() {});
                         },
                       );
                     },
@@ -382,6 +418,133 @@ class _CourseListPageState extends State<CourseListPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFloatingActionButtons(CourseSelectionState selectionState) {
+    return Row(
+      children: [
+        // Clear button
+        Container(
+          height: 28,
+          width: 28,
+          margin: const EdgeInsets.only(left: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(28),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(28),
+              onTap: () async {
+                // Pop dialog to confirm to clear
+                if (await alertClearSelectedWarning(context) == true) {
+                  setState(() {
+                    for (final course
+                        in selectionState.wantedCourses.toList()) {
+                      _serviceProvider.coursesService.removeCourseFromSelection(
+                        course.courseId,
+                        course.classDetail?.classId,
+                      );
+                    }
+                  });
+                }
+              },
+              child: const Icon(Icons.clear, color: Colors.red, size: 16),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Submit button
+        Expanded(
+          child: Container(
+            height: 52,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(28),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(28),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          CourseSubmitPage(termInfo: widget.termInfo),
+                    ),
+                  );
+
+                  if (mounted) {
+                    // Ensure refreshed
+                    setState(() {});
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${selectionState.wantedCourses.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '准备提交',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -427,15 +590,19 @@ class _CourseTableHeader extends StatelessWidget {
 
 class _CourseTableRow extends StatefulWidget {
   final CourseInfo course;
+  final TermInfo termInfo;
   final bool isExpanded;
   final List<double> columnWidths;
   final VoidCallback onToggle;
+  final VoidCallback? onSelectionChanged;
 
   const _CourseTableRow({
     required this.course,
+    required this.termInfo,
     required this.isExpanded,
     required this.columnWidths,
     required this.onToggle,
+    this.onSelectionChanged,
   });
 
   @override
@@ -446,6 +613,48 @@ class _CourseTableRowState extends State<_CourseTableRow>
     with TickerProviderStateMixin {
   late AnimationController _iconRotationController;
   late Animation<double> _iconRotationAnimation;
+
+  int _getSelectedCountForCourse() {
+    final serviceProvider = ServiceProvider.instance;
+    final selectionState = serviceProvider.coursesService
+        .getCourseSelectionState();
+    return selectionState.wantedCourses
+        .where((course) => course.courseId == widget.course.courseId)
+        .length;
+  }
+
+  Widget _buildSelectionStatusIndicator() {
+    final selectedCount = _getSelectedCountForCourse();
+    if (selectedCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.add,
+            size: 12,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
+          Text(
+            '$selectedCount',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -521,18 +730,24 @@ class _CourseTableRowState extends State<_CourseTableRow>
             child: Row(
               children: [
                 _buildDataCell(
-                  AnimatedBuilder(
-                    animation: _iconRotationAnimation,
-                    builder: (context, child) {
-                      return Transform.rotate(
-                        angle: _iconRotationAnimation.value * 3.1415927,
-                        child: Icon(
-                          Icons.expand_more,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      );
-                    },
+                  Row(
+                    children: [
+                      const SizedBox(width: 8),
+                      AnimatedBuilder(
+                        animation: _iconRotationAnimation,
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _iconRotationAnimation.value * 3.1415927,
+                            child: Icon(
+                              Icons.expand_more,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSelectionStatusIndicator(),
+                    ],
                   ),
                   widget.columnWidths[0],
                   needCenter: true,
@@ -592,8 +807,10 @@ class _CourseTableRowState extends State<_CourseTableRow>
 
         CourseDetailCard(
           course: widget.course,
+          termInfo: widget.termInfo,
           isExpanded: widget.isExpanded,
           onToggle: widget.onToggle,
+          onSelectionChanged: widget.onSelectionChanged,
         ),
       ],
     );

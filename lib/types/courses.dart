@@ -455,10 +455,8 @@ class TermInfo {
 
 class CourseDetail {
   final String classId; // 讲台代码
-  final String detail; // 详情描述
-  final String? detailAlt; // 详情描述英文
-  final String teacher; // 教师
-  final String classes; // 班级
+  final String? extraName; // 额外名称
+  final String? extraNameAlt; // 额外名称英文
   final String selectionStatus; // 选课状态
   final String selectionStartTime; // 讲台选课开始时间
   final String selectionEndTime; // 讲台选课结束时间
@@ -471,12 +469,37 @@ class CourseDetail {
   final int? femaleTotal; // 女生容量
   final int? femaleReserved; // 女生已选
 
+  final String? detailHtml; // 详情描述HTML
+  final String? detailHtmlAlt; // 详情描述HTML英文
+  final String? detailTeacherId; // 教师内部ID
+  final String? detailTeacherName; // 教师名称
+  final String? detailTeacherNameAlt; // 教师名称英文
+  final List<String>? detailSchedule; // 上课时间列表
+  final List<String>? detailScheduleAlt; // 上课时间列表英文
+  final String? detailClasses; // 生效班级
+  final String? detailClassesAlt; // 生效班级英文
+  final List<String>? detailTarget; // 面向对象列表
+  final List<String>? detailTargetAlt; // 面向对象列表英文
+  final String? detailExtra; // 额外信息
+  final String? detailExtraAlt; // 额外信息英文
+
   const CourseDetail({
     required this.classId,
-    required this.detail,
-    this.detailAlt,
-    required this.teacher,
-    required this.classes,
+    this.extraName,
+    this.extraNameAlt,
+    this.detailHtml,
+    this.detailHtmlAlt,
+    this.detailTeacherId,
+    this.detailTeacherName,
+    this.detailTeacherNameAlt,
+    this.detailSchedule,
+    this.detailScheduleAlt,
+    this.detailClasses,
+    this.detailClassesAlt,
+    this.detailTarget,
+    this.detailTargetAlt,
+    this.detailExtra,
+    this.detailExtraAlt,
     required this.selectionStatus,
     required this.selectionStartTime,
     required this.selectionEndTime,
@@ -491,12 +514,29 @@ class CourseDetail {
   });
 
   factory CourseDetail.fromJson(Map<String, dynamic> json) {
+    final detailHtml = json['kcxx'] as String?;
+    final detailHtmlAlt = json['kcxx_en'] as String?;
+
+    final parsedDetail = _parseDetailHtml(detailHtml);
+    final parsedDetailAlt = _parseDetailHtml(detailHtmlAlt);
+
     return CourseDetail(
       classId: json['id'] as String? ?? '',
-      detail: json['kcxx'] as String? ?? '',
-      detailAlt: json['kcxx_en'] as String?,
-      teacher: json['dgjsmc'] as String? ?? '',
-      classes: json['dgbjmc'] as String? ?? '',
+      extraName: json['tyxmmc'] as String?,
+      extraNameAlt: json['tyxmmc_en'] as String?,
+      detailHtml: detailHtml,
+      detailHtmlAlt: detailHtmlAlt,
+      detailTeacherId: parsedDetail['teacherId'],
+      detailTeacherName: parsedDetail['teacherName'],
+      detailTeacherNameAlt: parsedDetailAlt['teacherName'],
+      detailSchedule: parsedDetail['schedule'] as List<String>?,
+      detailScheduleAlt: parsedDetailAlt['schedule'] as List<String>?,
+      detailClasses: parsedDetail['classes'],
+      detailClassesAlt: parsedDetailAlt['classes'],
+      detailTarget: parsedDetail['target'] as List<String>?,
+      detailTargetAlt: parsedDetailAlt['target'] as List<String>?,
+      detailExtra: parsedDetail['extra'],
+      detailExtraAlt: parsedDetailAlt['extra'],
       selectionStatus: json['xkzt'] as String? ?? '',
       selectionStartTime: json['ktxkkssj'] as String? ?? '',
       selectionEndTime: json['ktxkjssj'] as String? ?? '',
@@ -519,13 +559,178 @@ class CourseDetail {
     );
   }
 
+  static Map<String, dynamic> _parseDetailHtml(String? html) {
+    if (html == null || html.isEmpty) {
+      return {
+        'teacherId': null,
+        'teacherName': null,
+        'schedule': null,
+        'classes': null,
+        'target': null,
+        'extra': null,
+      };
+    }
+
+    String? teacherId;
+    String? teacherName;
+    List<String>? schedule;
+    String? classes;
+    List<String>? target;
+    String? extra;
+
+    try {
+      // teacherId and teacherName
+      if (html.contains('queryJsxx')) {
+        final start = html.indexOf("queryJsxx('") + 12;
+        if (start > 11) {
+          final end = html.indexOf("')", start);
+          if (end > start) {
+            teacherId = html.substring(start, end);
+          }
+        }
+
+        final nameStart = html.indexOf('>', html.indexOf('queryJsxx')) + 1;
+        if (nameStart > 0) {
+          final nameEnd = html.indexOf('</a>', nameStart);
+          if (nameEnd > nameStart) {
+            final rawName = html.substring(nameStart, nameEnd).trim();
+            teacherName = _cleanHtmlContent(rawName);
+          }
+        }
+      }
+
+      // schedule: .ivu-tag-cyan p
+      if (html.contains('ivu-tag-cyan')) {
+        final cyanStart = html.indexOf('ivu-tag-cyan');
+        final spanStart = html.indexOf('<span', cyanStart);
+        if (spanStart > 0) {
+          final spanContentStart = html.indexOf('>', spanStart) + 1;
+          final spanEnd = html.indexOf('</span>', spanContentStart);
+          if (spanEnd > spanContentStart) {
+            final spanContent = html.substring(spanContentStart, spanEnd);
+            final scheduleList = <String>[];
+
+            int searchStart = 0;
+            while (true) {
+              final pStart = spanContent.indexOf('<p>', searchStart);
+              if (pStart == -1) break;
+
+              final pEnd = spanContent.indexOf('</p>', pStart);
+              if (pEnd == -1) break;
+
+              final pContent = spanContent.substring(pStart + 3, pEnd).trim();
+              final cleanedContent = _cleanHtmlContent(pContent);
+              if (cleanedContent != null && cleanedContent.isNotEmpty) {
+                scheduleList.add(cleanedContent);
+              }
+
+              searchStart = pEnd + 4;
+            }
+
+            if (scheduleList.isNotEmpty) {
+              schedule = scheduleList;
+            }
+          }
+        }
+      }
+
+      // classes: .ivu-tag-green p
+      if (html.contains('ivu-tag-green')) {
+        final greenStart = html.indexOf('ivu-tag-green');
+        final pStart = html.indexOf('<p', greenStart);
+        if (pStart > 0) {
+          final contentStart = html.indexOf('>', pStart) + 1;
+          final contentEnd = html.indexOf('</p>', contentStart);
+          if (contentEnd > contentStart) {
+            final rawClasses = html.substring(contentStart, contentEnd).trim();
+            classes = _cleanHtmlContent(rawClasses);
+          }
+        }
+      }
+
+      // target: .ivu-tag-orange
+      final targetList = <String>[];
+      int searchStart = 0;
+      while (true) {
+        final orangeStart = html.indexOf('ivu-tag-orange', searchStart);
+        if (orangeStart == -1) break;
+
+        final tagStart = html.lastIndexOf('<div', orangeStart);
+        if (tagStart != -1) {
+          final tagEnd = html.indexOf('</div>', orangeStart);
+          if (tagEnd != -1) {
+            final tagContent = html.substring(tagStart, tagEnd);
+            final contentStart = tagContent.lastIndexOf('>') + 1;
+            if (contentStart > 0) {
+              final rawTarget = tagContent.substring(contentStart).trim();
+              final cleanedTarget = _cleanHtmlContent(rawTarget);
+              if (cleanedTarget != null && cleanedTarget.isNotEmpty) {
+                targetList.add(cleanedTarget);
+              }
+            }
+          }
+        }
+
+        searchStart = orangeStart + 14; // len of "ivu-tag-orange"
+      }
+
+      if (targetList.isNotEmpty) {
+        target = targetList;
+      }
+
+      // extra: last <p> content if valid
+      final lastPStart = html.lastIndexOf('<p>');
+      if (lastPStart > 0) {
+        final lastPEnd = html.indexOf('</p>', lastPStart);
+        if (lastPEnd > lastPStart) {
+          final rawText = html.substring(lastPStart + 3, lastPEnd).trim();
+          if (rawText.isNotEmpty &&
+              !rawText.contains('queryJsxx') &&
+              !rawText.contains('上课信息') &&
+              !rawText.contains('Class Information') &&
+              !rawText.contains('面向对象')) {
+            extra = _cleanHtmlContent(rawText);
+          }
+        }
+      }
+    } catch (e) {
+      // ignored
+    }
+
+    return {
+      'teacherId': teacherId,
+      'teacherName': teacherName,
+      'schedule': schedule,
+      'classes': classes,
+      'target': target,
+      'extra': extra,
+    };
+  }
+
+  static String? _cleanHtmlContent(String? content) {
+    if (content == null || content.isEmpty) {
+      return null;
+    }
+    String cleaned = content
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (cleaned.isEmpty ||
+        cleaned == '&nbsp;' ||
+        cleaned == ' ' ||
+        RegExp(r'^[\s\u00A0]*$').hasMatch(cleaned)) {
+      return null;
+    }
+    return cleaned;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': classId,
-      'kcxx': detail,
-      'kcxx_en': detailAlt,
-      'dgjsmc': teacher,
-      'dgbjmc': classes,
+      'tyxmmc': extraName,
+      'tyxmmc_en': extraNameAlt,
+      'kcxx': detailHtml,
+      'kcxx_en': detailHtmlAlt,
       'xkzt': selectionStatus,
       'ktxkkssj': selectionStartTime,
       'ktxkjssj': selectionEndTime,
@@ -542,7 +747,7 @@ class CourseDetail {
 
   @override
   String toString() {
-    return 'ClassDetail(classId: $classId, teacher: $teacher, classes: $classes, status: $selectionStatus)';
+    return 'CourseDetail(classId: $classId, teacherName: $detailTeacherName, status: $selectionStatus)';
   }
 
   @override
@@ -554,6 +759,49 @@ class CourseDetail {
   @override
   int get hashCode {
     return classId.hashCode;
+  }
+
+  bool get hasUg => ugTotal > 0;
+
+  bool get hasPg => pgTotal > 0;
+
+  bool get hasMale => (maleTotal ?? 0) > 0;
+
+  bool get hasFemale => (femaleTotal ?? 0) > 0;
+
+  bool get isAllFull {
+    bool hasSomeCapacity = false;
+    bool allCapacitiesFull = true;
+
+    if (hasUg) {
+      hasSomeCapacity = true;
+      if (ugReserved < ugTotal) {
+        allCapacitiesFull = false;
+      }
+    }
+
+    if (hasPg) {
+      hasSomeCapacity = true;
+      if (pgReserved < pgTotal) {
+        allCapacitiesFull = false;
+      }
+    }
+
+    if (hasMale) {
+      hasSomeCapacity = true;
+      if ((maleReserved ?? 0) < (maleTotal ?? 0)) {
+        allCapacitiesFull = false;
+      }
+    }
+
+    if (hasFemale) {
+      hasSomeCapacity = true;
+      if ((femaleReserved ?? 0) < (femaleTotal ?? 0)) {
+        allCapacitiesFull = false;
+      }
+    }
+
+    return hasSomeCapacity && allCapacitiesFull;
   }
 }
 
@@ -727,5 +975,65 @@ class CourseTab {
   @override
   int get hashCode {
     return tabId.hashCode;
+  }
+}
+
+class CourseSelectionState {
+  final TermInfo? termInfo;
+
+  final List<CourseInfo> wantedCourses;
+
+  const CourseSelectionState({this.termInfo, this.wantedCourses = const []});
+
+  CourseSelectionState addCourse(CourseInfo course) {
+    if (wantedCourses.any(
+      (c) =>
+          c.courseId == course.courseId &&
+          c.classDetail?.classId == course.classDetail?.classId,
+    )) {
+      // Do nothing
+      return this;
+    }
+    return CourseSelectionState(
+      termInfo: termInfo,
+      wantedCourses: [...wantedCourses, course],
+    );
+  }
+
+  CourseSelectionState removeCourse(String courseId, [String? classId]) {
+    return CourseSelectionState(
+      termInfo: termInfo,
+      wantedCourses: wantedCourses
+          .where(
+            (c) =>
+                !(c.courseId == courseId &&
+                    (classId == null || c.classDetail?.classId == classId)),
+          )
+          .toList(),
+    );
+  }
+
+  CourseSelectionState setTermInfo(TermInfo termInfo) {
+    return CourseSelectionState(
+      termInfo: termInfo,
+      wantedCourses: wantedCourses,
+    );
+  }
+
+  CourseSelectionState clear() {
+    return const CourseSelectionState();
+  }
+
+  bool containsCourse(String courseId, [String? classId]) {
+    return wantedCourses.any(
+      (c) =>
+          c.courseId == courseId &&
+          (classId == null || c.classDetail?.classId == classId),
+    );
+  }
+
+  @override
+  String toString() {
+    return 'CourseSelectionState(termInfo: $termInfo, wantedCourses: ${wantedCourses.length} courses)';
   }
 }

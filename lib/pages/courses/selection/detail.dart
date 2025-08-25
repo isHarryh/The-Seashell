@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import '/types/courses.dart';
+import '/services/provider.dart';
+import 'dialogs.dart';
 
 class CourseDetailCard extends StatefulWidget {
   final CourseInfo course;
+  final TermInfo termInfo;
   final bool isExpanded;
   final VoidCallback onToggle;
+  final VoidCallback? onSelectionChanged;
 
   const CourseDetailCard({
     super.key,
     required this.course,
+    required this.termInfo,
     required this.isExpanded,
     required this.onToggle,
+    this.onSelectionChanged,
   });
 
   @override
@@ -19,11 +25,17 @@ class CourseDetailCard extends StatefulWidget {
 
 class _CourseDetailCardState extends State<CourseDetailCard>
     with TickerProviderStateMixin {
+  final ServiceProvider _serviceProvider = ServiceProvider.instance;
+
   late AnimationController _expansionController;
   late AnimationController _titleController;
   late Animation<double> _expansionAnimation;
   late Animation<double> _titleOpacityAnimation;
   late Animation<Offset> _titleSlideAnimation;
+
+  List<CourseInfo> _courseDetails = [];
+  bool _isLoadingDetails = false;
+  String? _detailsErrorMessage;
 
   // To locate the details widget in the list context
   final GlobalKey _detailsKey = GlobalKey();
@@ -71,10 +83,84 @@ class _CourseDetailCardState extends State<CourseDetailCard>
         _expansionController.forward();
         _titleController.forward();
         _expansionController.addStatusListener(_onExpansionStatusChanged);
+        _loadCourseDetails();
       } else {
         _expansionController.reverse();
         _titleController.reset();
       }
+    }
+  }
+
+  int _getSelectedCountForCourseId(String courseId) {
+    final selectionState = _serviceProvider.coursesService
+        .getCourseSelectionState();
+    return selectionState.wantedCourses
+        .where((course) => course.courseId == courseId)
+        .length;
+  }
+
+  Future<void> _handleCourseSelection(
+    CourseInfo courseDetail,
+    CourseDetail detail,
+    bool isSelected,
+  ) async {
+    if (isSelected) {
+      // Cancel selection
+      setState(() {
+        _serviceProvider.coursesService.removeCourseFromSelection(
+          courseDetail.courseId,
+          detail.classId,
+        );
+      });
+      widget.onSelectionChanged?.call();
+      return;
+    }
+
+    // Check if selecting multiple classes under the same course
+    final currentCount = _getSelectedCountForCourseId(courseDetail.courseId);
+    if (currentCount > 0) {
+      if (await alertClassDuplicatedWarning(context) != true) {
+        return;
+      }
+    }
+
+    // Check if the class is full
+    if (detail.isAllFull) {
+      if (await alertClassFullWarning(context) != true) {
+        return;
+      }
+    }
+
+    setState(() {
+      _serviceProvider.coursesService.addCourseToSelection(courseDetail);
+    });
+    widget.onSelectionChanged?.call();
+  }
+
+  Future<void> _loadCourseDetails() async {
+    setState(() {
+      _isLoadingDetails = true;
+      _detailsErrorMessage = null;
+    });
+
+    try {
+      final details = await _serviceProvider.coursesService.getCourseDetail(
+        widget.termInfo,
+        widget.course,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _courseDetails = details;
+        _isLoadingDetails = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _detailsErrorMessage = e.toString();
+        _isLoadingDetails = false;
+      });
     }
   }
 
@@ -150,7 +236,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
             const SizedBox(height: 20),
             _buildInfoGrid(),
             const SizedBox(height: 20),
-            _buildNoticeCard(),
+            _buildCourseDetailsList(),
           ],
         ),
       ),
@@ -243,40 +329,565 @@ class _CourseDetailCardState extends State<CourseDetailCard>
     );
   }
 
-  Widget _buildNoticeCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade200, width: 1),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '选课功能开发中',
-                  style: TextStyle(
-                    color: Colors.blue.shade800,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '讲台选择和课程选择功能将在后续版本中实现，敬请期待！',
-                  style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
-                ),
-              ],
+  Widget _buildCourseDetailsList() {
+    if (_isLoadingDetails) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
+            const SizedBox(width: 12),
+            Text(
+              '正在加载课程详情...',
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_detailsErrorMessage != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.shade200, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '加载失败',
+                    style: TextStyle(
+                      color: Colors.red.shade800,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _detailsErrorMessage!,
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_courseDetails.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.orange.shade200, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              '暂无课程详情',
+              style: TextStyle(color: Colors.orange.shade700, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.list_alt,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '可选讲台列表 (共 ${_courseDetails.length} 个)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ..._courseDetails.map(
+          (courseDetail) => _buildCourseDetailItem(courseDetail),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCourseDetailItem(CourseInfo courseDetail) {
+    final detail = courseDetail.classDetail!;
+    final ServiceProvider serviceProvider = ServiceProvider.instance;
+    final selectionState = serviceProvider.coursesService
+        .getCourseSelectionState();
+    final isSelected = selectionState.containsCourse(
+      courseDetail.courseId,
+      detail.classId,
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Left: Selection Button (Fixed Width)
+            SizedBox(
+              width: 60,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    await _handleCourseSelection(
+                      courseDetail,
+                      detail,
+                      isSelected,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isSelected ? Icons.check : Icons.add,
+                          size: 22,
+                          color: isSelected
+                              ? Colors.white
+                              : Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isSelected ? '已添加' : '添加',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // Middle: Basic Info (Flexible)
+            Expanded(
+              flex: 3,
+              child: _buildBasicInfoSection(courseDetail, detail),
+            ),
+
+            const SizedBox(width: 12),
+
+            // Right: Capacity Info (Flexible)
+            Expanded(flex: 2, child: _buildCapacitySection(detail)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBasicInfoSection(CourseInfo courseDetail, CourseDetail detail) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (detail.extraName?.isNotEmpty == true) ...[
+          Row(
+            children: [
+              Icon(
+                Icons.book,
+                color: Theme.of(context).colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                detail.extraName!,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+        ],
+
+        if (detail.detailTeacherName?.isNotEmpty == true)
+          Row(
+            children: [
+              Icon(Icons.person, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text(
+                '教师：',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  detail.detailTeacherName!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+
+        if (detail.detailTeacherName?.isNotEmpty == true)
+          const SizedBox(height: 8),
+
+        if (detail.detailSchedule?.isNotEmpty == true) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text(
+                '排课：',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: detail.detailSchedule!
+                    .map(
+                      (schedule) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.cyan.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.cyan.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          schedule,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.cyan.shade700,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+        ],
+
+        if (detail.detailSchedule?.isNotEmpty == true)
+          const SizedBox(height: 8),
+
+        if (detail.detailClasses?.isNotEmpty == true)
+          Row(
+            children: [
+              Icon(Icons.class_, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text(
+                '班级：',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  detail.detailClasses!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+
+        if (detail.detailClasses?.isNotEmpty == true) const SizedBox(height: 8),
+
+        if (detail.detailTarget?.isNotEmpty == true) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(Icons.group, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text(
+                '面向对象：',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: detail.detailTarget!
+                    .map(
+                      (target) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.orange.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          target,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+        ],
+
+        if (detail.detailExtra?.isNotEmpty == true)
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text(
+                '说明：',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  detail.detailExtra!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCapacitySection(CourseDetail detail) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '容量信息',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildCapacityBars(detail),
+      ],
+    );
+  }
+
+  Widget _buildCapacityBars(CourseDetail detail) {
+    List<Widget> bars = [];
+
+    if (detail.hasUg) {
+      bars.add(
+        _buildCapacityBar(
+          label: '本科生',
+          current: detail.ugReserved,
+          total: detail.ugTotal,
+        ),
+      );
+    }
+
+    if (detail.hasPg) {
+      bars.add(
+        _buildCapacityBar(
+          label: '研究生',
+          current: detail.pgReserved,
+          total: detail.pgTotal,
+        ),
+      );
+    }
+
+    if (detail.hasMale) {
+      bars.add(
+        _buildCapacityBar(
+          label: '男生',
+          current: detail.maleReserved ?? 0,
+          total: detail.maleTotal ?? 0,
+        ),
+      );
+    }
+
+    if (detail.hasFemale) {
+      bars.add(
+        _buildCapacityBar(
+          label: '女生',
+          current: detail.femaleReserved ?? 0,
+          total: detail.femaleTotal ?? 0,
+        ),
+      );
+    }
+
+    if (bars.isEmpty) {
+      return Text(
+        '暂无容量信息',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey.shade600,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+
+    return Column(
+      children: bars
+          .map(
+            (bar) =>
+                Padding(padding: const EdgeInsets.only(bottom: 12), child: bar),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildCapacityBar({
+    required String label,
+    required int current,
+    required int total,
+  }) {
+    final double progress = total > 0 ? current / total : 0.0;
+    final bool isFull = current >= total;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Text
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+            ),
+            Text(
+              '$current/$total',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+
+        // Bar
+        Container(
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.transparent,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isFull ? Colors.red : Colors.blue,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
