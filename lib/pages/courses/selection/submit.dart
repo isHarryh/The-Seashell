@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/types/courses.dart';
 import '/utils/app_bar.dart';
 import '/services/provider.dart';
+import 'common.dart';
 
 class CourseSubmitPage extends StatefulWidget {
   final TermInfo termInfo;
@@ -25,34 +26,7 @@ class _CourseSubmitPageState extends State<CourseSubmitPage> {
           onPressed: () => Navigator.pop(context),
         ),
 
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 14,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '${widget.termInfo.year}-${widget.termInfo.season}',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        actions: [buildTermInfoDisplay(context, widget.termInfo)],
       ),
       body: _buildContent(),
     );
@@ -64,83 +38,13 @@ class _CourseSubmitPageState extends State<CourseSubmitPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStepIndicator(),
+          buildStepIndicator(context, 3),
           const SizedBox(height: 24),
           _buildSelectedCoursesList(),
           const Spacer(),
           _buildSubmitButton(),
         ],
       ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildStepItem('选择学期', 1, false),
-          _buildStepConnector(),
-          _buildStepItem('选择课程', 2, false),
-          _buildStepConnector(),
-          _buildStepItem('提交选课', 3, true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepItem(String title, int stepNumber, bool isActive) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Text(
-                stepNumber.toString(),
-                style: TextStyle(
-                  color: isActive ? Colors.white : Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepConnector() {
-    return Container(
-      height: 2,
-      width: 20,
-      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
     );
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '/types/courses.dart';
 import '/services/provider.dart';
-import 'dialogs.dart';
+import 'common.dart';
 
 class CourseDetailCard extends StatefulWidget {
   final CourseInfo course;

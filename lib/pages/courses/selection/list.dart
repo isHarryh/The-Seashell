@@ -4,7 +4,7 @@ import '/types/courses.dart';
 import '/utils/app_bar.dart';
 import 'detail.dart';
 import 'submit.dart';
-import 'dialogs.dart';
+import 'common.dart';
 
 class CourseListPage extends StatefulWidget {
   final TermInfo termInfo;
@@ -117,34 +117,7 @@ class _CourseListPageState extends State<CourseListPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 14,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '${widget.termInfo.year}-${widget.termInfo.season}',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        actions: [buildTermInfoDisplay(context, widget.termInfo)],
       ),
       body: content,
       floatingActionButton: AnimatedSwitcher(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
 import '/utils/app_bar.dart';
+import 'common.dart';
 import 'list.dart';
 
 class CourseSelectionPage extends StatefulWidget {
@@ -104,7 +105,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStepIndicator(),
+          buildStepIndicator(context, 1),
           const SizedBox(height: 24),
 
           Text(
@@ -293,76 +294,6 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildStepItem('选择学期', 1, true),
-          _buildStepConnector(),
-          _buildStepItem('选择课程', 2, false),
-          _buildStepConnector(),
-          _buildStepItem('提交选课', 3, false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepItem(String title, int stepNumber, bool isActive) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Text(
-                stepNumber.toString(),
-                style: TextStyle(
-                  color: isActive ? Colors.white : Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepConnector() {
-    return Container(
-      height: 2,
-      width: 20,
-      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
     );
   }
 }
