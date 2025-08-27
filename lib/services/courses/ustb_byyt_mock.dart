@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/services.dart';
 import '/types/courses.dart';
 import '/services/base.dart';
@@ -385,5 +386,37 @@ class UstbByytMorkService extends BaseCoursesService {
   @override
   void clearCourseSelection() {
     _selectionState = _selectionState.clear();
+  }
+
+  @override
+  Future<bool> sendCourseSelection(
+    TermInfo termInfo,
+    CourseInfo courseInfo,
+  ) async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw Exception('Not logged in');
+      }
+
+      await Future.delayed(
+        Duration(milliseconds: 500 + Random().nextInt(3000)),
+      );
+
+      final random = Random().nextInt(100);
+      if (random < 60) {
+        return true;
+      } else if (random < 70) {
+        throw Exception('课程容量已满');
+      } else if (random < 80) {
+        throw Exception('未到选课时间');
+      } else if (random < 90) {
+        throw Exception('选课时间冲突');
+      } else {
+        await Future.delayed(Duration(seconds: 15)); // Timeout simulation
+        throw Exception('超时');
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 }
