@@ -3,6 +3,8 @@ import '/services/provider.dart';
 import '/services/base.dart';
 import '/types/courses.dart';
 import '/utils/app_bar.dart';
+import 'ustb_byyt_mock.dart';
+import 'ustb_byyt_cookie.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -26,7 +28,9 @@ class _AccountPageState extends State<AccountPage> {
     final service = _serviceProvider.coursesService;
     _showLoginButton = !service.isOnline;
 
-    _loadUserInfoIfOnline();
+    if (service.isOnline && _userInfo == null) {
+      _loadUserInfoSilently();
+    }
   }
 
   @override
@@ -37,30 +41,60 @@ class _AccountPageState extends State<AccountPage> {
 
   void _onServiceStatusChanged() {
     if (mounted) {
-      final service = _serviceProvider.coursesService;
-      setState(() {
-        if (service.isOnline) {
-          _showLoginButton = false;
-        } else if (service.isOffline || service.hasError) {
-          _showLoginButton = true;
-        }
-        // else: pending
+      // Use post-frame callback to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final service = _serviceProvider.coursesService;
+          setState(() {
+            if (service.isOnline) {
+              _showLoginButton = false;
+            } else if (service.isOffline || service.hasError) {
+              _showLoginButton = true;
+            }
+            // else: pending
+          });
 
-        _loadUserInfoIfOnline();
+          // Load user info asynchronously after state update
+          _loadUserInfoIfOnlineSilently();
+        }
       });
     }
   }
 
-  Future<void> _loadUserInfoIfOnline() async {
+  Future<void> _loadUserInfoIfOnlineSilently() async {
     final service = _serviceProvider.coursesService;
 
     if (service.isOnline) {
-      await _loadUserInfo();
+      await _loadUserInfoSilently();
     } else {
       if (mounted) {
+        // Use post-frame callback to avoid setState during build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _userInfo = null;
+              _errorMessage = null;
+            });
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _loadUserInfoSilently() async {
+    try {
+      final userInfo = await _serviceProvider.coursesService.getUserInfo();
+
+      if (mounted) {
         setState(() {
-          _userInfo = null;
+          _userInfo = userInfo;
           _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
         });
       }
     }
@@ -80,32 +114,6 @@ class _AccountPageState extends State<AccountPage> {
       if (mounted) {
         setState(() {
           _userInfo = userInfo;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleLogin() async {
-    try {
-      if (mounted) {
-        setState(() {
-          _isLoading = true;
-          _errorMessage = null;
-        });
-      }
-
-      await _serviceProvider.loginToService();
-
-      if (mounted) {
-        setState(() {
           _isLoading = false;
         });
       }
@@ -239,33 +247,8 @@ class _AccountPageState extends State<AccountPage> {
                           ],
                         ),
                       ),
-                      // Login/logout button
-                      if (_showLoginButton)
-                        OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _handleLogin,
-                          icon: _isLoading
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ),
-                                )
-                              : const Icon(Icons.login),
-                          label: Text(_isLoading ? '登录中' : '登录'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            side: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        )
-                      else
+                      // Logout button (only show when logged in)
+                      if (!_showLoginButton)
                         OutlinedButton.icon(
                           onPressed: _isLoading ? null : _handleLogout,
                           icon: _isLoading
@@ -292,6 +275,61 @@ class _AccountPageState extends State<AccountPage> {
               ),
 
               const SizedBox(height: 24),
+
+              // Login methods section (only show when not logged in)
+              if (_showLoginButton) ...[
+                Text('登录方式', style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 16),
+
+                // Login methods list
+                Card(
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.build_circle_outlined,
+                          color: Theme.of(context).colorScheme.secondary,
+                          size: 32,
+                        ),
+                        title: const Text('使用Mock进行测试'),
+                        subtitle: const Text('适用于开发者，将使用离线的模拟数据进行测试'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const UstbByytMockLoginPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(
+                          Icons.cookie_outlined,
+                          color: Theme.of(context).colorScheme.secondary,
+                          size: 32,
+                        ),
+                        title: const Text('使用Cookie登录账户'),
+                        subtitle: const Text('适用于高级用户，需要手动提供Cookie'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const UstbByytCookieLoginPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+              ],
 
               // User information section
               if (service.isOnline && _userInfo != null) ...[

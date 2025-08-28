@@ -5,7 +5,7 @@ import '/types/courses.dart';
 import '/services/base.dart';
 import '/services/courses/base.dart';
 
-class UstbByytMorkService extends BaseCoursesService {
+class UstbByytMockService extends BaseCoursesService {
   DateTime? _lastHeartbeatTime;
   CourseSelectionState _selectionState = const CourseSelectionState();
 
@@ -192,7 +192,7 @@ class UstbByytMorkService extends BaseCoursesService {
   }
 
   @override
-  Future<List<CourseInfo>> getSelectedCourses() async {
+  Future<List<CourseInfo>> getSelectedCourses(TermInfo termInfo) async {
     try {
       if (status == ServiceStatus.offline) {
         throw Exception('Not logged in');
@@ -246,7 +246,10 @@ class UstbByytMorkService extends BaseCoursesService {
           kxrwList?['list'] as List<dynamic>? ?? [];
 
       return courseList.map((courseJson) {
-        return CourseInfo.fromJson(courseJson as Map<String, dynamic>);
+        return CourseInfo.fromJson(
+          courseJson as Map<String, dynamic>,
+          fromTabId: tab,
+        );
       }).toList();
     } catch (e) {
       setNetworkError('Failed to load selectable courses: $e');
@@ -340,6 +343,7 @@ class UstbByytMorkService extends BaseCoursesService {
         try {
           final courseDetail = CourseInfo.fromJson(
             courseJson as Map<String, dynamic>,
+            fromTabId: courseInfo.fromTabId,
           );
 
           if (courseDetail.courseId == courseInfo.courseId &&

@@ -73,9 +73,9 @@ class CourseGradeItem {
   final String? makeupStatus;
   final String? makeupStatusAlt;
   final String? examType;
-  final int hours;
-  final int credit;
-  final int score;
+  final double hours;
+  final double credit;
+  final double score;
 
   const CourseGradeItem({
     required this.courseId,
@@ -111,9 +111,9 @@ class CourseGradeItem {
       makeupStatus: json['bkcx'] as String?,
       makeupStatusAlt: json['bkcx_en'] as String?,
       examType: json['khfs'] as String?,
-      hours: int.tryParse(json['xs']?.toString() ?? '0') ?? 0,
-      credit: json['xf'] as int? ?? 0,
-      score: int.tryParse(json['zpcj']?.toString() ?? '0') ?? 0,
+      hours: double.parse(json['xs']?.toString() ?? '0'),
+      credit: double.parse(json['xf']?.toString() ?? '0'),
+      score: double.parse(json['zpcj']?.toString() ?? '0'),
     );
   }
 
@@ -824,6 +824,7 @@ class CourseInfo {
   final double credits; // 学分
   final double hours; // 学时
   final CourseDetail? classDetail; // 讲台详情
+  final String? fromTabId; // 来源标签页ID
 
   const CourseInfo({
     required this.courseId,
@@ -844,9 +845,13 @@ class CourseInfo {
     required this.credits,
     required this.hours,
     this.classDetail,
+    this.fromTabId,
   });
 
-  factory CourseInfo.fromJson(Map<String, dynamic> json) {
+  factory CourseInfo.fromJson(
+    Map<String, dynamic> json, {
+    String? fromTabId,
+  }) {
     // Check if id is present and valid
     CourseDetail? classDetail;
     if (json['id'] != null && json['id'].toString().isNotEmpty) {
@@ -876,6 +881,7 @@ class CourseInfo {
           ) ??
           0.0,
       classDetail: classDetail,
+      fromTabId: fromTabId,
     );
   }
 

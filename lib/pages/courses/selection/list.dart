@@ -462,8 +462,9 @@ class _CourseListPageState extends State<CourseListPage> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          CourseSubmitPage(termInfo: widget.termInfo),
+                      builder: (context) => CourseSubmitPage(
+                        termInfo: widget.termInfo,
+                      ),
                     ),
                   );
 

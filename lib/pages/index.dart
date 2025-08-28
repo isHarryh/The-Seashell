@@ -22,8 +22,12 @@ class _HomePageState extends State<HomePage>
 
   @override
   void onServiceStatusChanged() {
-    setState(() {
-      _loadUserInfo();
+    // Schedule the state update for the next frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {});
+        _loadUserInfo();
+      }
     });
   }
 

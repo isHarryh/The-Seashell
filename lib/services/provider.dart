@@ -2,12 +2,16 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '/services/courses/base.dart';
 import '/services/courses/ustb_byyt_mock.dart';
+import '/services/courses/ustb_byyt_prod.dart';
+
+enum ServiceType { mock, production }
 
 class ServiceProvider extends ChangeNotifier {
   static final ServiceProvider _instance = ServiceProvider._internal();
 
   BaseCoursesService? _coursesService;
   Timer? _heartbeatTimer;
+  ServiceType _currentServiceType = ServiceType.mock;
 
   ServiceProvider._internal();
 
@@ -16,8 +20,37 @@ class ServiceProvider extends ChangeNotifier {
   static ServiceProvider get instance => _instance;
 
   BaseCoursesService get coursesService {
-    _coursesService ??= UstbByytMorkService();
+    _coursesService ??= _createService();
     return _coursesService!;
+  }
+
+  ServiceType get currentServiceType => _currentServiceType;
+
+  BaseCoursesService _createService() {
+    switch (_currentServiceType) {
+      case ServiceType.mock:
+        return UstbByytMockService();
+      case ServiceType.production:
+        return UstbByytProdService();
+    }
+  }
+
+  void switchToMockService() {
+    if (_currentServiceType != ServiceType.mock) {
+      _stopHeartbeat();
+      _coursesService = null;
+      _currentServiceType = ServiceType.mock;
+      notifyListeners();
+    }
+  }
+
+  void switchToProductionService() {
+    if (_currentServiceType != ServiceType.production) {
+      _stopHeartbeat();
+      _coursesService = null;
+      _currentServiceType = ServiceType.production;
+      notifyListeners();
+    }
   }
 
   void clearCache() {
@@ -34,6 +67,21 @@ class ServiceProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<void> loginWithCookie(String cookie) async {
+    if (_currentServiceType == ServiceType.production) {
+      final prodService = coursesService as UstbByytProdService;
+      await prodService.loginWithCookie(cookie);
+
+      if (coursesService.isOnline) {
+        _startHeartbeat();
+      }
+
+      notifyListeners();
+    } else {
+      throw Exception('Cookie login is only available for production service');
+    }
   }
 
   Future<void> logoutFromService() async {

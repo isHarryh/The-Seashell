@@ -568,7 +568,7 @@ class _CourseSubmitPageState extends State<CourseSubmitPage>
                 children: [
                   if (task.errorMessage != null)
                     Container(
-                      constraints: const BoxConstraints(maxWidth: 150),
+                      constraints: const BoxConstraints(maxWidth: 200),
                       child: Text(
                         task.errorMessage!,
                         style: TextStyle(
@@ -745,7 +745,7 @@ class _CourseSubmitPageState extends State<CourseSubmitPage>
   }
 
   Future<void> _executeTask(CourseSelectionTask task) async {
-    int maxRetries = _autoRetry ? 5 : 1;
+    int maxRetries = _autoRetry ? 33550336 : 1;
 
     for (int retry = 0; retry < maxRetries; retry++) {
       final courseKey = _getCourseKey(task.course);
