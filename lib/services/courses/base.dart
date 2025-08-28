@@ -29,6 +29,8 @@ abstract class BaseCoursesService extends BaseService {
     CourseInfo courseInfo,
   );
 
+  Future<bool> sendCourseSelection(TermInfo termInfo, CourseInfo courseInfo);
+
   CourseSelectionState getCourseSelectionState();
 
   void updateCourseSelectionState(CourseSelectionState state);
@@ -40,9 +42,4 @@ abstract class BaseCoursesService extends BaseService {
   void setSelectionTermInfo(TermInfo termInfo);
 
   void clearCourseSelection();
-
-  Future<bool> sendCourseSelection(
-    TermInfo termInfo,
-    CourseInfo courseInfo,
-  );
 }

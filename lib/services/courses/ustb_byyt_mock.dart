@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '/types/courses.dart';
 import '/services/base.dart';
 import '/services/courses/base.dart';
+import '/services/courses/exceptions.dart';
 
 class UstbByytMockService extends BaseCoursesService {
   DateTime? _lastHeartbeatTime;
@@ -13,7 +14,7 @@ class UstbByytMockService extends BaseCoursesService {
   Future<UserInfo> getUserInfo() async {
     try {
       if (status == ServiceStatus.offline) {
-        throw Exception('Not logged in');
+        throw const CourseServiceOffline();
       }
 
       final String jsonString = await rootBundle.loadString(
@@ -28,9 +29,10 @@ class UstbByytMockService extends BaseCoursesService {
         userSchoolAlt: jsonData['bmmc_en'] as String? ?? '',
         userId: jsonData['yhdm'] as String? ?? '',
       );
+    } on CourseServiceException {
+      rethrow;
     } catch (e) {
-      setNetworkError('Failed to load user info: $e');
-      throw Exception('Failed to load user info: $e');
+      throw CourseServiceNetworkError('Failed to load user info from mock', e);
     }
   }
 
@@ -38,7 +40,7 @@ class UstbByytMockService extends BaseCoursesService {
   Future<List<CourseGradeItem>> getGrades() async {
     try {
       if (status == ServiceStatus.offline) {
-        throw Exception('Not logged in');
+        throw const CourseServiceOffline();
       }
       await Future.delayed(Duration(seconds: 1));
 
@@ -48,20 +50,21 @@ class UstbByytMockService extends BaseCoursesService {
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       if (jsonData['code'] != 200) {
-        throw Exception(
-          'API returned error: ${jsonData['msg'] ?? 'Unknown error'}',
+        throw CourseServiceBadRequest(
+          'Mock API returned error: ${jsonData['msg'] ?? 'Unknown error'}',
+          jsonData['code'] as int?,
         );
       }
 
-      final List<dynamic> gradeList =
-          jsonData['content']['list'] as List<dynamic>? ?? [];
+      final gradeList = jsonData['content']['list'] as List<dynamic>? ?? [];
 
       return gradeList
           .map((item) => CourseGradeItem.fromJson(item as Map<String, dynamic>))
           .toList();
+    } on CourseServiceException {
+      rethrow;
     } catch (e) {
-      setNetworkError('Failed to load grades: $e');
-      throw Exception('Failed to load grades: $e');
+      throw CourseServiceNetworkError('Failed to load grades from mock', e);
     }
   }
 
@@ -88,7 +91,6 @@ class UstbByytMockService extends BaseCoursesService {
 
       return classList;
     } catch (e) {
-      setNetworkError('Failed to load curriculum: $e');
       throw Exception('Failed to load curriculum: $e');
     }
   }
@@ -112,14 +114,12 @@ class UstbByytMockService extends BaseCoursesService {
         );
       }
 
-      final List<dynamic> periodsList =
-          jsonData['content'] as List<dynamic>? ?? [];
+      final periodsList = jsonData['content'] as List<dynamic>? ?? [];
 
       return periodsList
           .map((item) => ClassPeriod.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      setNetworkError('Failed to load course periods: $e');
       throw Exception('Failed to load course periods: $e');
     }
   }
@@ -150,15 +150,10 @@ class UstbByytMockService extends BaseCoursesService {
 
   @override
   Future<void> logout() async {
-    try {
-      setPending();
-      await Future.delayed(Duration(seconds: 1));
-      setOffline();
-      _lastHeartbeatTime = null;
-    } catch (e) {
-      setNetworkError('Failed to logout: $e');
-      rethrow;
-    }
+    setPending();
+    await Future.delayed(Duration(milliseconds: 500));
+    setOffline();
+    _lastHeartbeatTime = null;
   }
 
   @override
@@ -211,14 +206,12 @@ class UstbByytMockService extends BaseCoursesService {
         );
       }
 
-      final List<dynamic> courseList =
-          jsonData['yxkcList'] as List<dynamic>? ?? [];
+      final courseList = jsonData['yxkcList'] as List<dynamic>? ?? [];
 
       return courseList.map((courseJson) {
         return CourseInfo.fromJson(courseJson as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      setNetworkError('Failed to load selected courses: $e');
       throw Exception('Failed to load selected courses: $e');
     }
   }
@@ -240,10 +233,8 @@ class UstbByytMockService extends BaseCoursesService {
       );
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
-      final Map<String, dynamic>? kxrwList =
-          jsonData['kxrwList'] as Map<String, dynamic>?;
-      final List<dynamic> courseList =
-          kxrwList?['list'] as List<dynamic>? ?? [];
+      final kxrwList = jsonData['kxrwList'] as Map<String, dynamic>?;
+      final courseList = kxrwList?['list'] as List<dynamic>? ?? [];
 
       return courseList.map((courseJson) {
         return CourseInfo.fromJson(
@@ -252,7 +243,6 @@ class UstbByytMockService extends BaseCoursesService {
         );
       }).toList();
     } catch (e) {
-      setNetworkError('Failed to load selectable courses: $e');
       throw Exception('Failed to load selectable courses: $e');
     }
   }
@@ -271,14 +261,12 @@ class UstbByytMockService extends BaseCoursesService {
       );
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
-      final List<dynamic> tabList =
-          jsonData['xkgzszList'] as List<dynamic>? ?? [];
+      final tabList = jsonData['xkgzszList'] as List<dynamic>? ?? [];
 
       return tabList.map((tabJson) {
         return CourseTab.fromJson(tabJson as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      setNetworkError('Failed to load course tabs: $e');
       throw Exception('Failed to load course tabs: $e');
     }
   }
@@ -303,14 +291,12 @@ class UstbByytMockService extends BaseCoursesService {
         );
       }
 
-      final List<dynamic> termList =
-          jsonData['content'] as List<dynamic>? ?? [];
+      final termList = jsonData['content'] as List<dynamic>? ?? [];
 
       return termList.map((termJson) {
         return TermInfo.fromJson(termJson as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      setNetworkError('Failed to load terms: $e');
       throw Exception('Failed to load terms: $e');
     }
   }
@@ -332,10 +318,8 @@ class UstbByytMockService extends BaseCoursesService {
       );
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
-      final Map<String, dynamic>? kxrwList =
-          jsonData['kxrwList'] as Map<String, dynamic>?;
-      final List<dynamic> courseList =
-          kxrwList?['list'] as List<dynamic>? ?? [];
+      final kxrwList = jsonData['kxrwList'] as Map<String, dynamic>?;
+      final courseList = kxrwList?['list'] as List<dynamic>? ?? [];
 
       // Filter
       List<CourseInfo> results = [];
@@ -357,7 +341,6 @@ class UstbByytMockService extends BaseCoursesService {
 
       return results;
     } catch (e) {
-      setNetworkError('Failed to load course detail: $e');
       throw Exception('Failed to load course detail: $e');
     }
   }
@@ -365,31 +348,6 @@ class UstbByytMockService extends BaseCoursesService {
   @override
   CourseSelectionState getCourseSelectionState() {
     return _selectionState;
-  }
-
-  @override
-  void updateCourseSelectionState(CourseSelectionState state) {
-    _selectionState = state;
-  }
-
-  @override
-  void addCourseToSelection(CourseInfo course) {
-    _selectionState = _selectionState.addCourse(course);
-  }
-
-  @override
-  void removeCourseFromSelection(String courseId, [String? classId]) {
-    _selectionState = _selectionState.removeCourse(courseId, classId);
-  }
-
-  @override
-  void setSelectionTermInfo(TermInfo termInfo) {
-    _selectionState = _selectionState.setTermInfo(termInfo);
-  }
-
-  @override
-  void clearCourseSelection() {
-    _selectionState = _selectionState.clear();
   }
 
   @override
@@ -422,5 +380,30 @@ class UstbByytMockService extends BaseCoursesService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  @override
+  void updateCourseSelectionState(CourseSelectionState state) {
+    _selectionState = state;
+  }
+
+  @override
+  void addCourseToSelection(CourseInfo course) {
+    _selectionState = _selectionState.addCourse(course);
+  }
+
+  @override
+  void removeCourseFromSelection(String courseId, [String? classId]) {
+    _selectionState = _selectionState.removeCourse(courseId, classId);
+  }
+
+  @override
+  void setSelectionTermInfo(TermInfo termInfo) {
+    _selectionState = _selectionState.setTermInfo(termInfo);
+  }
+
+  @override
+  void clearCourseSelection() {
+    _selectionState = _selectionState.clear();
   }
 }

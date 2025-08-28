@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '/types/courses.dart';
 import '/services/base.dart';
 import '/services/courses/base.dart';
+import '/services/courses/exceptions.dart';
 
 class _CourseSelectionSharedParams {
   final TermInfo? termInfo;
@@ -114,8 +115,16 @@ class UstbByytProdService extends BaseCoursesService {
       setOnline();
     } catch (e) {
       _cookie = null;
-      setNetworkError('Failed to login with cookie: $e');
-      rethrow;
+      if (e is CourseServiceNetworkError) {
+        setNetworkError('Failed to login with cookie (network error): $e');
+      }
+      if (e is CourseServiceException) {
+        rethrow;
+      }
+      throw CourseServiceException(
+        'Failed to login with cookie (unexpected exception)',
+        e,
+      );
     }
   }
 
@@ -144,52 +153,46 @@ class UstbByytProdService extends BaseCoursesService {
   @override
   Future<UserInfo> getUserInfo() async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/user/me'),
         headers: _getHeaders(),
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Check if the response contains user data
-        if (data is Map<String, dynamic> && data.containsKey('xm')) {
-          return UserInfo(
-            userName: data['xm'] as String? ?? '',
-            userNameAlt: data['xm_en'] as String? ?? '',
-            userSchool: data['bmmc'] as String? ?? '',
-            userSchoolAlt: data['bmmc_en'] as String? ?? '',
-            userId: data['yhdm'] as String? ?? '',
-          );
-        } else {
-          throw Exception('Invalid user data format');
-        }
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        setNetworkError('Failed to get user info: HTTP ${response.statusCode}');
-        throw Exception('Failed to get user info: HTTP ${response.statusCode}');
-      }
     } catch (e) {
-      if (e.toString().contains('Authentication failed')) {
-        rethrow;
-      }
-      setNetworkError('Failed to get user info: $e');
-      throw Exception('Failed to get user info: $e');
+      throw CourseServiceNetworkError('Failed to to get user info', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, () {
+      setAuthError();
+    });
+
+    try {
+      final data = json.decode(response.body);
+      return UserInfo(
+        userName: data['xm'] as String,
+        userNameAlt: data['xm_en'] as String? ?? '',
+        userSchool: data['bmmc'] as String? ?? '',
+        userSchoolAlt: data['bmmc_en'] as String? ?? '',
+        userId: data['yhdm'] as String? ?? '',
+      );
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse('Failed to parse user info response', e);
     }
   }
 
   @override
   Future<List<CourseGradeItem>> getGrades() async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
       final requestBody = json.encode({
         'xn': null,
@@ -202,7 +205,7 @@ class UstbByytProdService extends BaseCoursesService {
         'sffx': null,
       });
 
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/cjgl/grcjcx/grcjcx'),
         headers: {
           ..._getHeaders(),
@@ -210,66 +213,60 @@ class UstbByytProdService extends BaseCoursesService {
         },
         body: requestBody,
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['code'] == 200 && data['content'] != null) {
-          final List<dynamic> gradesList =
-              data['content']['list'] as List<dynamic>? ?? [];
-
-          return gradesList
-              .map(
-                (item) =>
-                    CourseGradeItem.fromJson(item as Map<String, dynamic>),
-              )
-              .toList();
-        } else {
-          throw Exception(
-            'Failed to get grades: ${data['msg'] ?? 'Unknown error'}',
-          );
-        }
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        setNetworkError('Failed to get grades: HTTP ${response.statusCode}');
-        throw Exception('Failed to get grades: HTTP ${response.statusCode}');
-      }
     } catch (e) {
-      if (e.toString().contains('Authentication failed')) {
-        rethrow;
+      throw CourseServiceNetworkError('Failed to get grades', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+
+    try {
+      final data = json.decode(response.body);
+
+      if (data['code'] != 200) {
+        throw CourseServiceBadRequest(
+          'API returned error: ${data['msg'] ?? 'No msg'}',
+          data['code'] as int?,
+        );
       }
-      setNetworkError('Failed to get grades: $e');
-      throw Exception('Failed to get grades: $e');
+      if (data['content'] == null) {
+        throw CourseServiceBadResponse('Response content is null');
+      }
+      if (data['content']['list'] == null) {
+        return [];
+      }
+
+      final gradeList = data['content']['list'] as List<dynamic>;
+
+      return gradeList
+          .map((item) => CourseGradeItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse('Failed to parse grades response', e);
     }
   }
 
   @override
   Future<List<ClassItem>> getCurriculum(TermInfo termInfo) async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
+
+    http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse('$_baseUrl/Xskbcx/queryXskbcxList'),
+        headers: _getHeaders(),
+        body: 'bs=2&xn=${termInfo.year}&xq=${termInfo.season}',
+      );
+    } catch (e) {
+      throw CourseServiceNetworkError('Failed to get curriculum', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
 
     try {
-      return await _getCurriculumForTerm(termInfo);
-    } catch (e) {
-      if (e.toString().contains('Authentication failed')) {
-        rethrow;
-      }
-      setNetworkError('Failed to get curriculum: $e');
-      throw Exception('Failed to get curriculum: $e');
-    }
-  }
-
-  Future<List<ClassItem>> _getCurriculumForTerm(TermInfo term) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/Xskbcx/queryXskbcxList'),
-      headers: _getHeaders(),
-      body: 'bs=2&xn=${term.year}&xq=${term.season}',
-    );
-
-    if (response.statusCode == 200) {
       final data = json.decode(response.body);
 
       // Handle different response formats
@@ -279,15 +276,21 @@ class UstbByytProdService extends BaseCoursesService {
         // Direct array response
         curriculumList = data;
       } else if (data is Map<String, dynamic>) {
-        if (data['code'] == 200 && data['content'] != null) {
-          curriculumList = data['content'] as List<dynamic>? ?? [];
-        } else {
-          throw Exception(
-            'Failed to get curriculum: ${data['msg'] ?? 'Unknown error'}',
+        if (data['code'] != 200) {
+          throw CourseServiceBadRequest(
+            'API returned error: ${data['msg'] ?? 'No msg'}',
+            data['code'] as int?,
           );
         }
+        if (data['content'] == null) {
+          throw CourseServiceBadResponse('Response content is null');
+        }
+
+        curriculumList = data['content'] as List<dynamic>? ?? [];
       } else {
-        throw Exception('Unexpected response format');
+        throw CourseServiceBadResponse(
+          'Unexpected response format (neither List nor Map)',
+        );
       }
 
       // Parse curriculum items
@@ -300,22 +303,22 @@ class UstbByytProdService extends BaseCoursesService {
       }
 
       return classList;
-    } else if (response.statusCode == 401) {
-      setAuthError('Authentication failed - invalid cookie');
-      throw Exception('Authentication failed - invalid cookie');
-    } else {
-      throw Exception('Failed to get curriculum: HTTP ${response.statusCode}');
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse('Failed to parse curriculum response', e);
     }
   }
 
   @override
   Future<List<ClassPeriod>> getCoursePeriods(TermInfo termInfo) async {
     if (status == ServiceStatus.offline) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/component/queryKbjg'),
         headers: _getHeaders(),
         body: {
@@ -324,37 +327,37 @@ class UstbByytProdService extends BaseCoursesService {
           'nodataqx': '1',
         },
       );
+    } catch (e) {
+      throw CourseServiceNetworkError('Failed to get course periods', e);
+    }
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
 
-        List<dynamic> periodsList;
-        if (data is Map<String, dynamic>) {
-          if (data['code'] == 200 && data['content'] != null) {
-            periodsList = data['content'] as List<dynamic>? ?? [];
-          } else {
-            throw Exception(
-              'Failed to get course periods: ${data['msg'] ?? 'Unknown error'}',
-            );
-          }
-        } else {
-          throw Exception('Unexpected response format');
-        }
+    try {
+      final data = json.decode(response.body);
 
-        return periodsList
-            .map((item) => ClassPeriod.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        throw Exception(
-          'Failed to get course periods: HTTP ${response.statusCode}',
+      if (data['code'] != 200) {
+        throw CourseServiceBadRequest(
+          'API returned error: ${data['msg'] ?? 'No msg'}',
+          data['code'] as int?,
         );
       }
+      if (data['content'] == null) {
+        throw CourseServiceBadResponse('Response content is null');
+      }
+
+      final periodsList = data['content'] as List<dynamic>? ?? [];
+
+      return periodsList
+          .map((item) => ClassPeriod.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } on CourseServiceException {
+      rethrow;
     } catch (e) {
-      setNetworkError('Failed to get course periods: $e');
-      throw Exception('Failed to get course periods: $e');
+      throw CourseServiceBadResponse(
+        'Failed to parse course periods response',
+        e,
+      );
     }
   }
 
@@ -373,25 +376,19 @@ class UstbByytProdService extends BaseCoursesService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Check if heartbeat was successful based on response code
         final success = data['code'] == 0;
 
         if (success) {
           _lastHeartbeatTime = DateTime.now();
         } else {
-          // Heartbeat failed, might need to re-authenticate
-          setAuthError('Heartbeat failed: ${data['msg'] ?? 'Unknown error'}');
+          setAuthError('Heartbeat failed: ${data['msg'] ?? 'No msg'}');
         }
 
         return success;
       } else {
-        setNetworkError(
-          'Heartbeat request failed with status: ${response.statusCode}',
-        );
         return false;
       }
     } catch (e) {
-      setNetworkError('Heartbeat failed: $e');
       return false;
     }
   }
@@ -404,9 +401,10 @@ class UstbByytProdService extends BaseCoursesService {
   @override
   Future<List<CourseInfo>> getSelectedCourses(TermInfo termInfo) async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
       final params = _CourseSelectionSharedParams(
         termInfo: termInfo,
@@ -414,42 +412,47 @@ class UstbByytProdService extends BaseCoursesService {
       );
       final formData = params.toFormData();
 
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/Xsxk/queryYxkc'),
         headers: _getHeaders(),
         body: formData,
       );
+    } catch (e) {
+      throw CourseServiceNetworkError('Failed to get selected courses', e);
+    }
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
 
-        List<dynamic> coursesList;
-        if (data is Map<String, dynamic>) {
-          if (data['code'] == 200 && data['content'] != null) {
-            coursesList = data['content'] as List<dynamic>? ?? [];
-          } else {
-            throw Exception(
-              'Failed to get selected courses: ${data['msg'] ?? 'Unknown error'}',
-            );
-          }
-        } else {
-          throw Exception('Unexpected response format');
-        }
+    try {
+      final data = json.decode(response.body);
 
-        return coursesList
-            .map((item) => CourseInfo.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        throw Exception(
-          'Failed to get selected courses: HTTP ${response.statusCode}',
+      if (data['code'] != 200) {
+        throw CourseServiceBadRequest(
+          'API returned error: ${data['msg'] ?? 'No msg'}',
+          data['code'] as int?,
         );
       }
+      if (data['content'] == null) {
+        throw CourseServiceBadResponse('Response content is null');
+      }
+
+      final coursesList = data['content'] as List<dynamic>? ?? [];
+
+      return coursesList
+          .map(
+            (item) => CourseInfo.fromJson(
+              item as Map<String, dynamic>,
+              fromTabId: 'yixuan',
+            ),
+          )
+          .toList();
+    } on CourseServiceException {
+      rethrow;
     } catch (e) {
-      setNetworkError('Failed to get selected courses: $e');
-      throw Exception('Failed to get selected courses: $e');
+      throw CourseServiceBadResponse(
+        'Failed to parse selected courses response',
+        e,
+      );
     }
   }
 
@@ -459,9 +462,10 @@ class UstbByytProdService extends BaseCoursesService {
     String tab,
   ) async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
       final params = _CourseSelectionSharedParams(
         termInfo: termInfo,
@@ -472,48 +476,53 @@ class UstbByytProdService extends BaseCoursesService {
       formData['pageNum'] = '1';
       formData['pageSize'] = '100';
 
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/Xsxk/queryKxrw'),
         headers: _getHeaders(),
         body: formData,
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        final Map<String, dynamic>? kxrwList =
-            data['kxrwList'] as Map<String, dynamic>?;
-        final List<dynamic> coursesList =
-            kxrwList?['list'] as List<dynamic>? ?? [];
-
-        return coursesList
-            .map(
-              (item) => CourseInfo.fromJson(
-                item as Map<String, dynamic>,
-                fromTabId: tab,
-              ),
-            )
-            .toList();
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        throw Exception(
-          'Failed to get selectable courses: HTTP ${response.statusCode}',
-        );
-      }
     } catch (e) {
-      setNetworkError('Failed to get selectable courses: $e');
-      throw Exception('Failed to get selectable courses: $e');
+      throw CourseServiceNetworkError('Failed to get selectable courses', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+
+    try {
+      final data = json.decode(response.body);
+
+      final kxrwList = data['kxrwList'] as Map<String, dynamic>?;
+
+      if (kxrwList == null) {
+        throw CourseServiceBadResponse('Response kxrwList is null');
+      }
+
+      final coursesList = kxrwList['list'] as List<dynamic>? ?? [];
+
+      return coursesList
+          .map(
+            (item) => CourseInfo.fromJson(
+              item as Map<String, dynamic>,
+              fromTabId: tab,
+            ),
+          )
+          .toList();
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse(
+        'Failed to parse selectable courses response',
+        e,
+      );
     }
   }
 
   @override
   Future<List<CourseTab>> getCourseTabs(TermInfo termInfo) async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
       final params = _CourseSelectionSharedParams(
         termInfo: termInfo,
@@ -521,74 +530,73 @@ class UstbByytProdService extends BaseCoursesService {
       );
       final formData = params.toFormData();
 
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/Xsxk/queryYxkc'),
         headers: _getHeaders(),
         body: formData,
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        List<dynamic> tabsList = data['xkgzszList'] as List<dynamic>? ?? [];
-
-        return tabsList
-            .map((item) => CourseTab.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        throw Exception(
-          'Failed to get course tabs: HTTP ${response.statusCode}',
-        );
-      }
     } catch (e) {
-      setNetworkError('Failed to get course tabs: $e');
-      throw Exception('Failed to get course tabs: $e');
+      throw CourseServiceNetworkError('Failed to get course tabs', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+
+    try {
+      final data = json.decode(response.body);
+
+      final tabsList = data['xkgzszList'] as List<dynamic>? ?? [];
+
+      return tabsList
+          .map((item) => CourseTab.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse('Failed to parse course tabs response', e);
     }
   }
 
   @override
   Future<List<TermInfo>> getTerms() async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/component/queryXnxq'),
         headers: _getHeaders(),
         body: {'data': 'cTnrJ54+H2bKCT5c1Gq1+w=='},
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['code'] == 200 && data['content'] != null) {
-          final List<dynamic> termsList = data['content'] as List<dynamic>;
-
-          return termsList
-              .map((item) => TermInfo.fromJson(item as Map<String, dynamic>))
-              .toList();
-        } else {
-          throw Exception(
-            'Failed to get terms: ${data['msg'] ?? 'Unknown error'}',
-          );
-        }
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        setNetworkError('Failed to get terms: HTTP ${response.statusCode}');
-        throw Exception('Failed to get terms: HTTP ${response.statusCode}');
-      }
     } catch (e) {
-      if (e.toString().contains('Authentication failed')) {
-        rethrow;
+      throw CourseServiceNetworkError('Failed to get terms', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+
+    try {
+      final data = json.decode(response.body);
+
+      if (data['code'] != 200) {
+        throw CourseServiceBadRequest(
+          'API returned error: ${data['msg'] ?? 'No msg'}',
+          data['code'] as int?,
+        );
       }
-      setNetworkError('Failed to get terms: $e');
-      throw Exception('Failed to get terms: $e');
+      if (data['content'] == null) {
+        throw CourseServiceBadResponse('Response content is null');
+      }
+
+      final termsList = data['content'] as List<dynamic>;
+
+      return termsList
+          .map((item) => TermInfo.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse('Failed to parse terms response', e);
     }
   }
 
@@ -598,9 +606,10 @@ class UstbByytProdService extends BaseCoursesService {
     CourseInfo courseInfo,
   ) async {
     if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
+      throw const CourseServiceOffline();
     }
 
+    http.Response response;
     try {
       final params = _CourseSelectionSharedParams(
         termInfo: termInfo,
@@ -612,50 +621,109 @@ class UstbByytProdService extends BaseCoursesService {
       formData['pageNum'] = '1';
       formData['pageSize'] = '100';
 
-      final response = await http.post(
+      response = await http.post(
         Uri.parse('$_baseUrl/Xsxk/queryKxrw'),
         headers: _getHeaders(),
         body: formData,
       );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        final Map<String, dynamic>? kxrwList =
-            data['kxrwList'] as Map<String, dynamic>?;
-        final List<dynamic> coursesList =
-            kxrwList?['list'] as List<dynamic>? ?? [];
-
-        // Filter
-        List<CourseInfo> results = [];
-        for (var courseJson in coursesList) {
-          try {
-            final courseDetail = CourseInfo.fromJson(
-              courseJson as Map<String, dynamic>,
-              fromTabId: courseInfo.fromTabId,
-            );
-
-            if (courseDetail.courseId == courseInfo.courseId &&
-                courseDetail.classDetail != null) {
-              results.add(courseDetail);
-            }
-          } catch (e) {
-            continue;
-          }
-        }
-
-        return results;
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        throw Exception(
-          'Failed to get course detail: HTTP ${response.statusCode}',
-        );
-      }
     } catch (e) {
-      setNetworkError('Failed to get course detail: $e');
-      throw Exception('Failed to get course detail: $e');
+      throw CourseServiceNetworkError('Failed to get course detail', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+
+    try {
+      final data = json.decode(response.body);
+
+      final kxrwList = data['kxrwList'] as Map<String, dynamic>?;
+
+      if (kxrwList == null) {
+        throw CourseServiceBadResponse('Response kxrwList is null');
+      }
+
+      final coursesList = kxrwList['list'] as List<dynamic>? ?? [];
+
+      // Filter
+      List<CourseInfo> results = [];
+      for (var courseJson in coursesList) {
+        try {
+          final courseDetail = CourseInfo.fromJson(
+            courseJson as Map<String, dynamic>,
+            fromTabId: courseInfo.fromTabId,
+          );
+
+          if (courseDetail.courseId == courseInfo.courseId &&
+              courseDetail.classDetail != null) {
+            results.add(courseDetail);
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      return results;
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse(
+        'Failed to parse course detail response',
+        e,
+      );
+    }
+  }
+
+  @override
+  Future<bool> sendCourseSelection(
+    TermInfo termInfo,
+    CourseInfo courseInfo,
+  ) async {
+    if (status == ServiceStatus.offline || _cookie == null) {
+      throw const CourseServiceOffline();
+    }
+
+    http.Response response;
+    try {
+      final params = _CourseSelectionSharedParams(
+        termInfo: termInfo,
+        isForSubmission: true,
+        tabId: courseInfo.fromTabId,
+        classId: courseInfo.classDetail?.classId ?? '',
+        courseId: courseInfo.courseId,
+      );
+
+      final formData = params.toFormData();
+
+      formData['pageNum'] = '1';
+      formData['pageSize'] = '100';
+
+      response = await http.post(
+        Uri.parse('$_baseUrl/Xsxk/addGouwuche'),
+        headers: _getHeaders(),
+        body: formData,
+      );
+    } catch (e) {
+      throw CourseServiceNetworkError(
+        'Failed to send course selection request',
+        e,
+      );
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+
+    try {
+      final data = json.decode(response.body);
+
+      if (data['jg'] != 1) {
+        throw CourseServiceBadRequest('${data['message'] ?? 'No msg'}');
+      }
+      return true;
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse(
+        'Failed to parse course selection response',
+        e,
+      );
     }
   }
 
@@ -687,58 +755,5 @@ class UstbByytProdService extends BaseCoursesService {
   @override
   void clearCourseSelection() {
     _selectionState = _selectionState.clear();
-  }
-
-  @override
-  Future<bool> sendCourseSelection(
-    TermInfo termInfo,
-    CourseInfo courseInfo,
-  ) async {
-    if (status == ServiceStatus.offline || _cookie == null) {
-      throw Exception('Not logged in');
-    }
-
-    try {
-      final params = _CourseSelectionSharedParams(
-        termInfo: termInfo,
-        isForSubmission: true,
-        tabId: courseInfo.fromTabId,
-        classId: courseInfo.classDetail?.classId ?? '',
-        courseId: courseInfo.courseId,
-      );
-
-      final formData = params.toFormData();
-
-      // 添加分页参数
-      formData['pageNum'] = '1';
-      formData['pageSize'] = '100';
-
-      final response = await http.post(
-        Uri.parse('$_baseUrl/Xsxk/addGouwuche'),
-        headers: _getHeaders(),
-        body: formData,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data is Map<String, dynamic>) {
-          if (data['jg'] != 1) {
-            throw Exception('${data['message'] ?? 'Unknown error'}');
-          }
-          return true;
-        } else {
-          throw Exception('Unexpected response format');
-        }
-      } else if (response.statusCode == 401) {
-        setAuthError('Authentication failed - invalid cookie');
-        throw Exception('Authentication failed - invalid cookie');
-      } else {
-        throw Exception('HTTP ${response.statusCode}');
-      }
-    } catch (e) {
-      setNetworkError('$e');
-      throw Exception('$e');
-    }
   }
 }
