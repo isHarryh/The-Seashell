@@ -66,7 +66,7 @@ class UstbByytMorkService extends BaseCoursesService {
   }
 
   @override
-  Future<List<ClassItem>> getCurriculum() async {
+  Future<List<ClassItem>> getCurriculum(TermInfo termInfo) async {
     try {
       if (status == ServiceStatus.offline) {
         throw Exception('Not logged in');
@@ -94,7 +94,7 @@ class UstbByytMorkService extends BaseCoursesService {
   }
 
   @override
-  Future<List<ClassPeriod>> getCoursePeriods() async {
+  Future<List<ClassPeriod>> getCoursePeriods(TermInfo termInfo) async {
     try {
       if (status == ServiceStatus.offline) {
         throw Exception('Not logged in');

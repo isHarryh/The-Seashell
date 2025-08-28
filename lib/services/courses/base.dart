@@ -8,9 +8,9 @@ abstract class BaseCoursesService extends BaseService {
 
   Future<List<CourseGradeItem>> getGrades();
 
-  Future<List<ClassItem>> getCurriculum();
+  Future<List<ClassItem>> getCurriculum(TermInfo termInfo);
 
-  Future<List<ClassPeriod>> getCoursePeriods();
+  Future<List<ClassPeriod>> getCoursePeriods(TermInfo termInfo);
 
   Future<bool> sendHeartbeat();
 

@@ -25,6 +25,8 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
   List<ClassItem>? _allClasses;
   List<ClassPeriod>? _allPeriods;
+  List<TermInfo>? _availableTerms;
+  TermInfo? _currentTerm;
   bool _isLoading = false;
   String? _errorMessage;
   int _currentWeek = 1;
@@ -62,6 +64,9 @@ class _CurriculumPageState extends State<CurriculumPage> {
       if (mounted) {
         setState(() {
           _allClasses = null;
+          _allPeriods = null;
+          _availableTerms = null;
+          _currentTerm = null;
           _errorMessage = null;
           _isLoading = false;
         });
@@ -77,19 +82,51 @@ class _CurriculumPageState extends State<CurriculumPage> {
     }
 
     try {
-      // 并行加载课程表和课时数据
-      final futures = await Future.wait([
-        service.getCurriculum(),
-        service.getCoursePeriods(),
-      ]);
+      final terms = await service.getTerms();
 
-      final classes = futures[0] as List<ClassItem>;
-      final periods = futures[1] as List<ClassPeriod>;
+      if (terms.isEmpty) {
+        throw Exception('No terms available');
+      }
+
+      TermInfo? selectedTerm;
+      List<ClassItem>? classes;
+      List<ClassPeriod>? periods;
+
+      // Find first non-empty term
+      for (final term in terms) {
+        try {
+          final futures = await Future.wait([
+            service.getCurriculum(term),
+            service.getCoursePeriods(term),
+          ]);
+
+          final termClasses = futures[0] as List<ClassItem>;
+          final termPeriods = futures[1] as List<ClassPeriod>;
+
+          if (termClasses.isNotEmpty) {
+            selectedTerm = term;
+            classes = termClasses;
+            periods = termPeriods;
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      // Fallback
+      if (selectedTerm == null) {
+        selectedTerm = terms.first;
+        classes = [];
+        periods = [];
+      }
 
       if (mounted) {
         setState(() {
           _allClasses = classes;
           _allPeriods = periods;
+          _availableTerms = terms;
+          _currentTerm = selectedTerm;
           _isLoading = false;
         });
       }
@@ -105,6 +142,47 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
   Future<void> _refreshCurriculum() async {
     await _loadCurriculum();
+  }
+
+  Future<void> _loadCurriculumForTerm(TermInfo termInfo) async {
+    final service = _serviceProvider.coursesService;
+
+    if (!service.isOnline) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
+    try {
+      final futures = await Future.wait([
+        service.getCurriculum(termInfo),
+        service.getCoursePeriods(termInfo),
+      ]);
+
+      final classes = futures[0] as List<ClassItem>;
+      final periods = futures[1] as List<ClassPeriod>;
+
+      if (mounted) {
+        setState(() {
+          _allClasses = classes;
+          _allPeriods = periods;
+          _currentTerm = termInfo;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -198,6 +276,59 @@ class _CurriculumPageState extends State<CurriculumPage> {
           const SizedBox(height: 16),
           Expanded(child: _buildCurriculumTable()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTermSelectorInDrawer() {
+    if (_availableTerms == null || _availableTerms!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  '学年学期',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<TermInfo>(
+              value: _currentTerm,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                isDense: true,
+              ),
+              isExpanded: true,
+              items: _availableTerms!.map((term) {
+                return DropdownMenuItem<TermInfo>(
+                  value: term,
+                  child: Text('${term.year}学年 第${term.season}学期'),
+                );
+              }).toList(),
+              onChanged: (TermInfo? newTerm) {
+                if (newTerm != null && newTerm != _currentTerm) {
+                  _loadCurriculumForTerm(newTerm);
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -627,6 +758,8 @@ class _CurriculumPageState extends State<CurriculumPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                _buildTermSelectorInDrawer(),
+                const SizedBox(height: 16),
                 _buildWeekendDisplaySetting(),
                 const SizedBox(height: 16),
                 _buildTableSizeSetting(),
