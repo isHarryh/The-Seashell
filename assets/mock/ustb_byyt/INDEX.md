@@ -7,6 +7,9 @@
 - me.json:
   - POST https://byyt.ustb.edu.cn/user/me
   - data: no data
+- queryCalendar.json
+  - POST https://byyt.ustb.edu.cn/Xiaoli/queryMonthList
+  - data: `xn=2025-2026&xq=1`
 - queryCourseAdded.json
   - POST https://byyt.ustb.edu.cn/Xsxk/queryYxkc
   - data: `cxsfmt=1&p_pylx=1&mxpylx=1&p_sfgldjr=0&p_sfredis=0&p_sfsyxkgwc=0&p_xktjz=&p_chaxunxh=&p_gjz=&p_skjs=&p_xn=2025-2026&p_xq=1&p_xnxq=2025-20261&p_dqxn=2025-2026&p_dqxq=1&p_dqxnxq=2025-20261&p_xkfsdm=yixuan&p_xiaoqu=&p_kkyx=&p_kclb=&p_xkxs=&p_dyc=&p_kkxnxq=&p_id=&p_sfhlctkc=0&p_sfhllrlkc=0&p_kxsj_xqj=&p_kxsj_ksjc=&p_kxsj_jsjc=&p_kcdm_js=&p_kcdm_cxrw=&p_kcdm_cxrw_zckc=&p_kc_gjz=&p_xzcxtjz_nj=&p_xzcxtjz_yx=&p_xzcxtjz_zy=&p_xzcxtjz_zyfx=&p_xzcxtjz_bj=&p_sfxsgwckb=1&p_skyy=&p_sfmxzj=&p_chaxunxkfsdm=`
