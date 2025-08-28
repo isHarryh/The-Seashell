@@ -125,6 +125,36 @@ class UstbByytMockService extends BaseCoursesService {
   }
 
   @override
+  Future<List<CalendarDay>> getCalendarDays(TermInfo termInfo) async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw const CourseServiceOffline();
+      }
+
+      await Future.delayed(Duration(milliseconds: 300));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryCalendar.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      final List<dynamic> xlListJson = jsonData['xlList'] as List<dynamic>;
+      final List<CalendarDay> calendarDays = xlListJson
+          .map((item) => CalendarDay.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      return calendarDays;
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceNetworkError(
+        'Failed to load calendar days from mock',
+        e,
+      );
+    }
+  }
+
+  @override
   Future<void> login() async {
     try {
       setPending();

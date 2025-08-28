@@ -362,6 +362,48 @@ class UstbByytProdService extends BaseCoursesService {
   }
 
   @override
+  Future<List<CalendarDay>> getCalendarDays(TermInfo termInfo) async {
+    http.Response response;
+
+    final formData = {'xn': termInfo.year, 'xq': termInfo.season.toString()};
+
+    try {
+      final headers = _getHeaders();
+      headers['Rolecode'] = '01';
+
+      response = await http.post(
+        Uri.parse('$_baseUrl/Xiaoli/queryMonthList'),
+        headers: headers,
+        body: formData,
+      );
+    } catch (e) {
+      throw CourseServiceNetworkError(
+        'Failed to send calendar days request',
+        e,
+      );
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+
+    try {
+      final data = json.decode(response.body);
+      final List<dynamic> xlListJson = data['xlList'] as List<dynamic>;
+      final List<CalendarDay> calendarDays = xlListJson
+          .map((item) => CalendarDay.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      return calendarDays;
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse(
+        'Failed to parse calendar days response',
+        e,
+      );
+    }
+  }
+
+  @override
   Future<bool> sendHeartbeat() async {
     if (status == ServiceStatus.offline || _cookie == null) {
       return false;

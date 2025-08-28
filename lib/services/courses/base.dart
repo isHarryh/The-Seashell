@@ -12,6 +12,8 @@ abstract class BaseCoursesService extends BaseService {
 
   Future<List<ClassPeriod>> getCoursePeriods(TermInfo termInfo);
 
+  Future<List<CalendarDay>> getCalendarDays(TermInfo termInfo);
+
   Future<bool> sendHeartbeat();
 
   DateTime? getLastHeartbeatTime();

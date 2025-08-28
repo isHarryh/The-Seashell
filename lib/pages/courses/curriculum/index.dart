@@ -25,6 +25,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
   List<ClassItem>? _allClasses;
   List<ClassPeriod>? _allPeriods;
+  List<CalendarDay>? _calendarDays;
   List<TermInfo>? _availableTerms;
   TermInfo? _currentTerm;
   bool _isLoading = false;
@@ -32,8 +33,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
   int _currentWeek = 1;
   CurriculumSettings _settings = CurriculumSettings.defaultSettings;
 
-  // 课表配置
-  static const int maxWeeks = 20;
+  static const int maxWeeks = 50;
   static const List<String> dayNames = ['一', '二', '三', '四', '五', '六', '日'];
 
   @override
@@ -65,6 +65,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
         setState(() {
           _allClasses = null;
           _allPeriods = null;
+          _calendarDays = null;
           _availableTerms = null;
           _currentTerm = null;
           _errorMessage = null;
@@ -98,15 +99,18 @@ class _CurriculumPageState extends State<CurriculumPage> {
           final futures = await Future.wait([
             service.getCurriculum(term),
             service.getCoursePeriods(term),
+            service.getCalendarDays(term).catchError((e) => <CalendarDay>[]),
           ]);
 
           final termClasses = futures[0] as List<ClassItem>;
           final termPeriods = futures[1] as List<ClassPeriod>;
+          final termCalendarDays = futures[2] as List<CalendarDay>;
 
           if (termClasses.isNotEmpty) {
             selectedTerm = term;
             classes = termClasses;
             periods = termPeriods;
+            _calendarDays = termCalendarDays;
             break;
           }
         } catch (e) {
@@ -128,6 +132,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
           _availableTerms = terms;
           _currentTerm = selectedTerm;
           _isLoading = false;
+          _adjustCurrentWeek();
         });
       }
     } catch (e) {
@@ -162,17 +167,21 @@ class _CurriculumPageState extends State<CurriculumPage> {
       final futures = await Future.wait([
         service.getCurriculum(termInfo),
         service.getCoursePeriods(termInfo),
+        service.getCalendarDays(termInfo).catchError((e) => <CalendarDay>[]),
       ]);
 
       final classes = futures[0] as List<ClassItem>;
       final periods = futures[1] as List<ClassPeriod>;
+      final calendarDays = futures[2] as List<CalendarDay>;
 
       if (mounted) {
         setState(() {
           _allClasses = classes;
           _allPeriods = periods;
+          _calendarDays = calendarDays;
           _currentTerm = termInfo;
           _isLoading = false;
+          _adjustCurrentWeek();
         });
       }
     } catch (e) {
@@ -258,10 +267,18 @@ class _CurriculumPageState extends State<CurriculumPage> {
               '暂无课程数据',
               style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
+            const SizedBox(height: 8),
+            if (_currentTerm != null)
+              Text(
+                '当前查看：${_currentTerm!.year}学年 第${_currentTerm!.season}学期',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _refreshCurriculum,
-              child: const Text('刷新'),
+            Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => Scaffold.of(context).openEndDrawer(),
+                child: const Text('更改学期'),
+              ),
             ),
           ],
         ),
@@ -357,9 +374,14 @@ class _CurriculumPageState extends State<CurriculumPage> {
             ),
           ),
         ),
-        IconButton(
-          onPressed: _currentWeek < maxWeeks ? () => _changeWeek(1) : null,
-          icon: const Icon(Icons.chevron_right),
+        Tooltip(
+          message: _currentWeek >= _getMaxValidWeek() ? '已经到最大周次了~' : '',
+          child: IconButton(
+            onPressed: _currentWeek < _getMaxValidWeek()
+                ? () => _changeWeek(1)
+                : null,
+            icon: const Icon(Icons.chevron_right),
+          ),
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
@@ -381,13 +403,96 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   void _changeWeek(int delta) {
+    final maxValidWeek = _getMaxValidWeek();
     setState(() {
-      _currentWeek = (_currentWeek + delta).clamp(1, maxWeeks);
+      _currentWeek = (_currentWeek + delta).clamp(1, maxValidWeek);
     });
   }
 
+  void _adjustCurrentWeek() {
+    final maxValidWeek = _getMaxValidWeek();
+    if (_currentWeek > maxValidWeek) {
+      _currentWeek = maxValidWeek;
+    }
+  }
+
+  int _getMaxValidWeek() {
+    int maxWeekWithClasses = 0;
+
+    if (_allClasses != null && _allClasses!.isNotEmpty) {
+      for (final classItem in _allClasses!) {
+        if (classItem.weeks.isNotEmpty) {
+          final maxWeekInClass = classItem.weeks.reduce(
+            (a, b) => a > b ? a : b,
+          );
+          if (maxWeekInClass > maxWeekWithClasses) {
+            maxWeekWithClasses = maxWeekInClass;
+          }
+        }
+      }
+    }
+
+    int maxWeekFromCalendar = 0;
+    if (_calendarDays != null && _calendarDays!.isNotEmpty) {
+      for (final calendarDay in _calendarDays!) {
+        if (calendarDay.weekIndex > 0 && calendarDay.weekIndex < 99) {
+          if (calendarDay.weekIndex > maxWeekFromCalendar) {
+            maxWeekFromCalendar = calendarDay.weekIndex;
+          }
+        }
+      }
+    }
+
+    final combinedMax = maxWeekWithClasses > maxWeekFromCalendar
+        ? maxWeekWithClasses
+        : maxWeekFromCalendar;
+
+    final validMax = combinedMax > 0 ? combinedMax : 1;
+    return validMax > maxWeeks ? maxWeeks : validMax;
+  }
+
+  Map<int, int> _getWeekDates() {
+    if (_calendarDays == null || _calendarDays!.isEmpty) {
+      return {};
+    }
+
+    final weekDays = <int, int>{};
+    for (final calendarDay in _calendarDays!) {
+      if (calendarDay.weekIndex == _currentWeek) {
+        weekDays[calendarDay.weekday] = calendarDay.day;
+      }
+    }
+    return weekDays;
+  }
+
+  String? _getCurrentYear() {
+    if (_calendarDays == null || _calendarDays!.isEmpty) {
+      return null;
+    }
+
+    for (final calendarDay in _calendarDays!) {
+      if (calendarDay.weekIndex == _currentWeek) {
+        return '${calendarDay.year}年';
+      }
+    }
+
+    return null;
+  }
+
+  String? _getCurrentMonth() {
+    if (_calendarDays == null || _calendarDays!.isEmpty) {
+      return null;
+    }
+
+    for (final calendarDay in _calendarDays!) {
+      if (calendarDay.weekIndex == _currentWeek) {
+        return '${calendarDay.month}月';
+      }
+    }
+    return null;
+  }
+
   Widget _buildCurriculumTable() {
-    // 检查课时数据是否可用
     if (_allPeriods == null || _allPeriods!.isEmpty) {
       return Center(
         child: Column(
@@ -452,15 +557,15 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Widget _buildTable(List<ClassItem> weekClasses, double availableWidth) {
-    // 获取可用的课时数据并按大节分组
     final periods = _allPeriods ?? [];
     final majorPeriods = _getMajorPeriods(periods);
 
-    // 根据设置和课程数据计算实际显示的天数
     final courseDays = weekClasses.map((c) => c.day).toSet().toList();
     final displayDays = _settings.calculateDisplayDays(courseDays);
 
     final dayColumnWidth = (availableWidth - 2) / (displayDays + 1);
+
+    final weekDates = _getWeekDates();
 
     return Container(
       width: availableWidth,
@@ -476,9 +581,15 @@ class _CurriculumPageState extends State<CurriculumPage> {
           // 表头
           TableRow(
             children: [
-              _buildHeaderCell('时间'),
+              _buildHeaderCell(
+                _getCurrentMonth() ?? '时间',
+                subtitle: _getCurrentYear(),
+              ),
               for (int day = 1; day <= displayDays; day++)
-                _buildHeaderCell('周${dayNames[day - 1]}'),
+                _buildHeaderCell(
+                  '周${dayNames[day - 1]}',
+                  subtitle: weekDates[day]?.toString(),
+                ),
             ],
           ),
           // 数据行
@@ -564,7 +675,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
     return majorPeriodsList;
   }
 
-  Widget _buildHeaderCell(String text) {
+  Widget _buildHeaderCell(String text, {String? subtitle}) {
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -572,13 +683,30 @@ class _CurriculumPageState extends State<CurriculumPage> {
         color: Theme.of(context).colorScheme.primaryContainer,
       ),
       child: Center(
-        child: Text(
-          text,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-          textAlign: TextAlign.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              text,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontSize: subtitle == null ? 16 : 14,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (subtitle != null)
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer.withOpacity(0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+          ],
         ),
       ),
     );

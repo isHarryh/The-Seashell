@@ -303,6 +303,68 @@ class ClassPeriod extends BaseDataClass {
   String get timeRange => '$minorStartTime-$minorEndTime';
 }
 
+class CalendarDay extends BaseDataClass {
+  final int year;
+  final int month;
+  final int day;
+  final int weekday;
+  final int weekIndex;
+
+  const CalendarDay({
+    required this.year,
+    required this.month,
+    required this.day,
+    required this.weekday,
+    required this.weekIndex,
+  });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'year': year,
+      'month': month,
+      'day': day,
+      'weekday': weekday,
+      'weekIndex': weekIndex,
+    };
+  }
+
+  factory CalendarDay.fromJson(Map<String, dynamic> json) {
+    final dateParts = (json['RQ'] as String).split('-');
+    final year = int.parse(dateParts[0]);
+    final month = int.parse(dateParts[1]);
+    final day = int.parse(dateParts[2]);
+
+    int weekday = 7;
+    if (json['MON'] != null) {
+      weekday = 1;
+    } else if (json['TUE'] != null || json['TUES'] != null) {
+      weekday = 2;
+    } else if (json['WED'] != null) {
+      weekday = 3;
+    } else if (json['THU'] != null || json['THUR'] != null) {
+      weekday = 4;
+    } else if (json['FRI'] != null) {
+      weekday = 5;
+    } else if (json['SAT'] != null) {
+      weekday = 6;
+    }
+
+    final rawWeekIndex = json['ZC'] as int? ?? -1;
+    final weekIndex = (rawWeekIndex >= 99 || rawWeekIndex <= 0)
+        ? -1
+        : rawWeekIndex;
+
+    return CalendarDay(
+      year: year,
+      month: month,
+      day: day,
+      weekday: weekday,
+      weekIndex: weekIndex,
+    );
+  }
+}
+
 class TermInfo extends BaseDataClass {
   final String year; // eg. "2024-2025"
   final int season;
