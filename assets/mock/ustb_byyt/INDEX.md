@@ -35,3 +35,9 @@
 - queryGrade.json:
   - POST https://byyt.ustb.edu.cn/cjgl/grcjcx/grcjcx
   - data: `{"xn":null,"xq":null,"kcmc":null,"cxbj":"-1","pylx":"1","current":1,"pageSize":100,"sffx":null}`
+- sendCourseSelectionFailure.json
+  - POST https://byyt.ustb.edu.cn/Xsxk/addGouwuche
+  - data: `cxsfmt=1&p_pylx=1&mxpylx=1&p_sfgldjr=0&p_sfredis=0&p_sfsyxkgwc=0&p_xktjz=rwtjzyx&p_chaxunxh=&p_gjz=&p_skjs=&p_xn=2025-2026&p_xq=1&p_xnxq=2025-20261&p_dqxn=2025-2026&p_dqxq=1&p_dqxnxq=2025-20261&p_xkfsdm=bx-b-b&p_xiaoqu=&p_kkyx=&p_kclb=&p_xkxs=&p_dyc=&p_kkxnxq=&p_id=*yourClassId*&p_sfhlctkc=0&p_sfhllrlkc=0&p_kxsj_xqj=&p_kxsj_ksjc=&p_kxsj_jsjc=&p_kcdm_js=&p_kcdm_cxrw=*yourCourseId*&p_kcdm_cxrw_zckc=*yourCourseId*&p_kc_gjz=&p_xzcxtjz_nj=&p_xzcxtjz_yx=&p_xzcxtjz_zy=&p_xzcxtjz_zyfx=&p_xzcxtjz_bj=&p_sfxsgwckb=1&p_skyy=&p_sfmxzj=&p_chaxunxkfsdm=&pageNum=1&pageSize=17`
+- sendCourseSelectionSuccess.json
+  - POST https://byyt.ustb.edu.cn/Xsxk/addGouwuche
+  - data: same as above
