@@ -1,4 +1,6 @@
-class UserInfo {
+import 'base.dart';
+
+class UserInfo extends BaseDataClass {
   final String userName;
   final String userNameAlt;
   final String userSchool;
@@ -13,17 +15,8 @@ class UserInfo {
     required this.userId,
   });
 
-  factory UserInfo.fromJson(Map<String, dynamic> json) {
-    return UserInfo(
-      userName: json['userName'] as String? ?? '',
-      userNameAlt: json['userNameAlt'] as String? ?? '',
-      userSchool: json['userSchool'] as String? ?? '',
-      userSchoolAlt: json['userSchoolAlt'] as String? ?? '',
-      userId: json['userId'] as String? ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() {
+  @override
+  Map<String, dynamic> getEssentials() {
     return {
       'userName': userName,
       'userNameAlt': userNameAlt,
@@ -33,33 +26,18 @@ class UserInfo {
     };
   }
 
-  @override
-  String toString() {
-    return 'UserInfo(userName: $userName, userNameAlt: $userNameAlt, userSchool: $userSchool, userSchoolAlt: $userSchoolAlt, userId: $userId)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is UserInfo &&
-        other.userName == userName &&
-        other.userNameAlt == userNameAlt &&
-        other.userSchool == userSchool &&
-        other.userSchoolAlt == userSchoolAlt &&
-        other.userId == userId;
-  }
-
-  @override
-  int get hashCode {
-    return userName.hashCode ^
-        userNameAlt.hashCode ^
-        userSchool.hashCode ^
-        userSchoolAlt.hashCode ^
-        userId.hashCode;
+  factory UserInfo.fromJson(Map<String, dynamic> json) {
+    return UserInfo(
+      userName: json['userName'] as String? ?? '',
+      userNameAlt: json['userNameAlt'] as String? ?? '',
+      userSchool: json['userSchool'] as String? ?? '',
+      userSchoolAlt: json['userSchoolAlt'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+    );
   }
 }
 
-class CourseGradeItem {
+class CourseGradeItem extends BaseDataClass {
   final String courseId;
   final String courseName;
   final String? courseNameAlt;
@@ -96,6 +74,11 @@ class CourseGradeItem {
     required this.score,
   });
 
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'courseId': courseId, 'termId': termId};
+  }
+
   factory CourseGradeItem.fromJson(Map<String, dynamic> json) {
     return CourseGradeItem(
       courseId: json['kcdm'] as String? ?? '',
@@ -116,48 +99,9 @@ class CourseGradeItem {
       score: double.parse(json['zpcj']?.toString() ?? '0'),
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'courseId': courseId,
-      'courseName': courseName,
-      'courseNameAlt': courseNameAlt,
-      'termId': termId,
-      'termName': termName,
-      'termNameAlt': termNameAlt,
-      'type': type,
-      'category': category,
-      'schoolName': schoolName,
-      'schoolNameAlt': schoolNameAlt,
-      'makeupStatus': makeupStatus,
-      'makeupStatusAlt': makeupStatusAlt,
-      'examType': examType,
-      'hours': hours,
-      'credit': credit,
-      'score': score,
-    };
-  }
-
-  @override
-  String toString() {
-    return 'CourseGradeItem(courseId: $courseId, courseName: $courseName, termName: $termName, score: $score)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is CourseGradeItem &&
-        other.courseId == courseId &&
-        other.termId == termId;
-  }
-
-  @override
-  int get hashCode {
-    return courseId.hashCode ^ termId.hashCode;
-  }
 }
 
-class ClassItem {
+class ClassItem extends BaseDataClass {
   final int day; // 星期几 (1-7)
   final int period; // 大节节次
   final List<int> weeks; // 周次
@@ -187,6 +131,16 @@ class ClassItem {
     this.periodNameAlt,
     this.colorId,
   });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'day': day,
+      'period': period,
+      'className': className,
+      'teacherName': teacherName,
+    };
+  }
 
   // 从 JSON 数据解析课程信息
   static ClassItem? fromJson(Map<String, dynamic> json) {
@@ -299,49 +253,9 @@ class ClassItem {
     // 去重并排序
     return weeks.toSet().toList()..sort();
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'day': day,
-      'period': period,
-      'weeks': weeks,
-      'className': className,
-      'classNameAlt': classNameAlt,
-      'teacherName': teacherName,
-      'teacherNameAlt': teacherNameAlt,
-      'locationName': locationName,
-      'locationNameAlt': locationNameAlt,
-      'periodName': periodName,
-      'periodNameAlt': periodNameAlt,
-      'colorId': colorId,
-    };
-  }
-
-  @override
-  String toString() {
-    return 'ClassItem(day: $day, period: $period, weeks: $weeks, className: $className, teacherName: $teacherName)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ClassItem &&
-        other.day == day &&
-        other.period == period &&
-        other.className == className &&
-        other.teacherName == teacherName;
-  }
-
-  @override
-  int get hashCode {
-    return day.hashCode ^
-        period.hashCode ^
-        className.hashCode ^
-        teacherName.hashCode;
-  }
 }
 
-class ClassPeriod {
+class ClassPeriod extends BaseDataClass {
   final String termYear; // 学年
   final int termSeason; // 学期
   final int majorId; // 大节编号
@@ -366,6 +280,11 @@ class ClassPeriod {
     required this.minorEndTime,
   });
 
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'termYear': termYear, 'termSeason': termSeason, 'minorId': minorId};
+  }
+
   factory ClassPeriod.fromJson(Map<String, dynamic> json) {
     return ClassPeriod(
       termYear: json['xn'] as String? ?? '',
@@ -381,49 +300,19 @@ class ClassPeriod {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'termYear': termYear,
-      'termSeason': termSeason,
-      'majorId': majorId,
-      'minorId': minorId,
-      'majorName': majorName,
-      'minorName': minorName,
-      'majorStartTime': majorStartTime,
-      'majorEndTime': majorEndTime,
-      'minorStartTime': minorStartTime,
-      'minorEndTime': minorEndTime,
-    };
-  }
-
-  // 生成时间段显示文本
   String get timeRange => '$minorStartTime-$minorEndTime';
-
-  @override
-  String toString() {
-    return 'ClassPeriod(minorId: $minorId, minorName: $minorName, timeRange: $timeRange)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ClassPeriod &&
-        other.termYear == termYear &&
-        other.termSeason == termSeason &&
-        other.minorId == minorId;
-  }
-
-  @override
-  int get hashCode {
-    return termYear.hashCode ^ termSeason.hashCode ^ minorId.hashCode;
-  }
 }
 
-class TermInfo {
+class TermInfo extends BaseDataClass {
   final String year; // eg. "2024-2025"
   final int season;
 
   const TermInfo({required this.year, required this.season});
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'year': year, 'season': season};
+  }
 
   factory TermInfo.fromJson(Map<String, dynamic> json) {
     return TermInfo(
@@ -431,29 +320,9 @@ class TermInfo {
       season: int.parse(json['xq'].toString()),
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {'year': year, 'season': season};
-  }
-
-  @override
-  String toString() {
-    return 'TermInfo(year: $year, season: $season)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is TermInfo && other.year == year && other.season == season;
-  }
-
-  @override
-  int get hashCode {
-    return year.hashCode ^ season.hashCode;
-  }
 }
 
-class CourseDetail {
+class CourseDetail extends BaseDataClass {
   final String classId; // 讲台代码
   final String? extraName; // 额外名称
   final String? extraNameAlt; // 额外名称英文
@@ -512,6 +381,11 @@ class CourseDetail {
     this.femaleTotal,
     this.femaleReserved,
   });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'classId': classId};
+  }
 
   factory CourseDetail.fromJson(Map<String, dynamic> json) {
     final detailHtml = json['kcxx'] as String?;
@@ -724,43 +598,6 @@ class CourseDetail {
     return cleaned;
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': classId,
-      'tyxmmc': extraName,
-      'tyxmmc_en': extraNameAlt,
-      'kcxx': detailHtml,
-      'kcxx_en': detailHtmlAlt,
-      'xkzt': selectionStatus,
-      'ktxkkssj': selectionStartTime,
-      'ktxkjssj': selectionEndTime,
-      'bksrl': ugTotal,
-      'bksyxrlrs': ugReserved,
-      'yjsrl': pgTotal,
-      'yjsyxrlrs': pgReserved,
-      'nansrl': maleTotal,
-      'nansyxrlrs': maleReserved,
-      'nvsrl': femaleTotal,
-      'nvsyxrlrs': femaleReserved,
-    };
-  }
-
-  @override
-  String toString() {
-    return 'CourseDetail(classId: $classId, teacherName: $detailTeacherName, status: $selectionStatus)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is CourseDetail && other.classId == classId;
-  }
-
-  @override
-  int get hashCode {
-    return classId.hashCode;
-  }
-
   bool get hasUg => ugTotal > 0;
 
   bool get hasPg => pgTotal > 0;
@@ -805,7 +642,7 @@ class CourseDetail {
   }
 }
 
-class CourseInfo {
+class CourseInfo extends BaseDataClass {
   final String courseId; // 课程代码
   final String courseName; // 课程名称
   final String? courseNameAlt; // 课程名称英文
@@ -848,10 +685,12 @@ class CourseInfo {
     this.fromTabId,
   });
 
-  factory CourseInfo.fromJson(
-    Map<String, dynamic> json, {
-    String? fromTabId,
-  }) {
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'courseId': courseId, 'classDetail': classDetail?.classId};
+  }
+
+  factory CourseInfo.fromJson(Map<String, dynamic> json, {String? fromTabId}) {
     // Check if id is present and valid
     CourseDetail? classDetail;
     if (json['id'] != null && json['id'].toString().isNotEmpty) {
@@ -884,55 +723,9 @@ class CourseInfo {
       fromTabId: fromTabId,
     );
   }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> result = {
-      'kcdm': courseId,
-      'kcmc': courseName,
-      'kcmc_en': courseNameAlt,
-      'kcxzmc': courseType,
-      'kcxzmc_en': courseTypeAlt,
-      'kclbmc': courseCategory,
-      'kclbmc_en': courseCategoryAlt,
-      'xiaoqumc': districtName,
-      'xiaoqumc_en': districtNameAlt,
-      'kkyxmc': schoolName,
-      'kkyxmc_en': schoolNameAlt,
-      'xnxqmc': termName,
-      'xnxqmc_en': termNameAlt,
-      'skyymc': teachingLanguage,
-      'skyymc_en': teachingLanguageAlt,
-      'xf': credits,
-      'xs': hours,
-    };
-
-    if (classDetail != null) {
-      result.addAll(classDetail!.toJson());
-    }
-
-    return result;
-  }
-
-  @override
-  String toString() {
-    return 'CourseInfo(courseId: $courseId, courseName: $courseName, credits: $credits, classDetail: $classDetail)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is CourseInfo &&
-        other.courseId == courseId &&
-        other.classDetail?.classId == classDetail?.classId;
-  }
-
-  @override
-  int get hashCode {
-    return courseId.hashCode ^ (classDetail?.classId.hashCode ?? 0);
-  }
 }
 
-class CourseTab {
+class CourseTab extends BaseDataClass {
   final String tabId; // 选课标签页代码
   final String tabName; // 标签页名称
   final String? tabNameAlt; // 标签页名称英文
@@ -947,6 +740,11 @@ class CourseTab {
     this.selectionEndTime,
   });
 
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'tabId': tabId};
+  }
+
   factory CourseTab.fromJson(Map<String, dynamic> json) {
     return CourseTab(
       tabId: json['xkfsdm'] as String? ?? '',
@@ -956,40 +754,21 @@ class CourseTab {
       selectionEndTime: json['ktxkjssj'] as String?,
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'xkfsdm': tabId,
-      'xkfsmc': tabName,
-      'xkfsmc_en': tabNameAlt,
-      'ktxkkssj': selectionStartTime,
-      'ktxkjssj': selectionEndTime,
-    };
-  }
-
-  @override
-  String toString() {
-    return 'CourseTab(tabId: $tabId, tabName: $tabName)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is CourseTab && other.tabId == tabId;
-  }
-
-  @override
-  int get hashCode {
-    return tabId.hashCode;
-  }
 }
 
-class CourseSelectionState {
+class CourseSelectionState extends BaseDataClass {
   final TermInfo? termInfo;
-
   final List<CourseInfo> wantedCourses;
 
   const CourseSelectionState({this.termInfo, this.wantedCourses = const []});
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'termInfo': termInfo?.toString(),
+      'wantedCoursesCount': wantedCourses.length,
+    };
+  }
 
   CourseSelectionState addCourse(CourseInfo course) {
     if (wantedCourses.any(
@@ -1036,10 +815,5 @@ class CourseSelectionState {
           c.courseId == courseId &&
           (classId == null || c.classDetail?.classId == classId),
     );
-  }
-
-  @override
-  String toString() {
-    return 'CourseSelectionState(termInfo: $termInfo, wantedCourses: ${wantedCourses.length} courses)';
   }
 }
