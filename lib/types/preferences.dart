@@ -1,4 +1,7 @@
+import 'package:json_annotation/json_annotation.dart';
 import 'base.dart';
+
+part 'preferences.g.dart';
 
 enum WeekendDisplayMode {
   always, // 始终显示 (min=7, max=7)
@@ -60,7 +63,8 @@ extension TableSizeExtension on TableSize {
   }
 }
 
-class CurriculumSettings extends BaseSerializableClass {
+@JsonSerializable()
+class CurriculumSettings extends Serializable {
   WeekendDisplayMode weekendMode;
   TableSize tableSize;
 
@@ -70,24 +74,6 @@ class CurriculumSettings extends BaseSerializableClass {
     weekendMode: WeekendDisplayMode.auto,
     tableSize: TableSize.small,
   );
-
-  @override
-  Map<String, dynamic> dump() {
-    return {'weekendMode': weekendMode.name, 'tableSize': tableSize.name};
-  }
-
-  factory CurriculumSettings.load(Map<String, dynamic> data) {
-    return CurriculumSettings(
-      weekendMode: WeekendDisplayMode.values.firstWhere(
-        (mode) => mode.name == data['weekendMode'],
-        orElse: () => defaultSettings.weekendMode,
-      ),
-      tableSize: TableSize.values.firstWhere(
-        (size) => size.name == data['tableSize'],
-        orElse: () => defaultSettings.tableSize,
-      ),
-    );
-  }
 
   int get minWeekdays {
     switch (weekendMode) {
@@ -119,4 +105,8 @@ class CurriculumSettings extends BaseSerializableClass {
     final requiredDays = maxCourseDay.clamp(minWeekdays, maxWeekdays);
     return requiredDays;
   }
+
+  Map<String, dynamic> toJson() => _$CurriculumSettingsToJson(this);
+  factory CurriculumSettings.fromJson(Map<String, dynamic> json) =>
+      _$CurriculumSettingsFromJson(json);
 }
