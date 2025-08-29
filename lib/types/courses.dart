@@ -1,5 +1,9 @@
+import 'package:json_annotation/json_annotation.dart';
 import 'base.dart';
 
+part 'courses.g.dart';
+
+@JsonSerializable()
 class UserInfo extends BaseDataClass {
   final String userName;
   final String userNameAlt;
@@ -25,8 +29,13 @@ class UserInfo extends BaseDataClass {
       'userId': userId,
     };
   }
+
+  factory UserInfo.fromJson(Map<String, dynamic> json) =>
+      _$UserInfoFromJson(json);
+  Map<String, dynamic> toJson() => _$UserInfoToJson(this);
 }
 
+@JsonSerializable()
 class CourseGradeItem extends BaseDataClass {
   final String courseId;
   final String courseName;
@@ -68,8 +77,13 @@ class CourseGradeItem extends BaseDataClass {
   Map<String, dynamic> getEssentials() {
     return {'courseId': courseId, 'termId': termId};
   }
+
+  factory CourseGradeItem.fromJson(Map<String, dynamic> json) =>
+      _$CourseGradeItemFromJson(json);
+  Map<String, dynamic> toJson() => _$CourseGradeItemToJson(this);
 }
 
+@JsonSerializable()
 class ClassItem extends BaseDataClass {
   final int day; // 星期几 (1-7)
   final int period; // 大节节次
@@ -110,8 +124,13 @@ class ClassItem extends BaseDataClass {
       'teacherName': teacherName,
     };
   }
+
+  factory ClassItem.fromJson(Map<String, dynamic> json) =>
+      _$ClassItemFromJson(json);
+  Map<String, dynamic> toJson() => _$ClassItemToJson(this);
 }
 
+@JsonSerializable()
 class ClassPeriod extends BaseDataClass {
   final String termYear; // 学年
   final int termSeason; // 学期
@@ -143,8 +162,13 @@ class ClassPeriod extends BaseDataClass {
   }
 
   String get timeRange => '$minorStartTime-$minorEndTime';
+
+  factory ClassPeriod.fromJson(Map<String, dynamic> json) =>
+      _$ClassPeriodFromJson(json);
+  Map<String, dynamic> toJson() => _$ClassPeriodToJson(this);
 }
 
+@JsonSerializable()
 class CalendarDay extends BaseDataClass {
   final int year;
   final int month;
@@ -170,8 +194,13 @@ class CalendarDay extends BaseDataClass {
       'weekIndex': weekIndex,
     };
   }
+
+  factory CalendarDay.fromJson(Map<String, dynamic> json) =>
+      _$CalendarDayFromJson(json);
+  Map<String, dynamic> toJson() => _$CalendarDayToJson(this);
 }
 
+@JsonSerializable()
 class TermInfo extends BaseDataClass {
   final String year; // eg. "2024-2025"
   final int season;
@@ -182,8 +211,13 @@ class TermInfo extends BaseDataClass {
   Map<String, dynamic> getEssentials() {
     return {'year': year, 'season': season};
   }
+
+  factory TermInfo.fromJson(Map<String, dynamic> json) =>
+      _$TermInfoFromJson(json);
+  Map<String, dynamic> toJson() => _$TermInfoToJson(this);
 }
 
+@JsonSerializable()
 class CourseDetail extends BaseDataClass {
   final String classId; // 讲台代码
   final String? extraName; // 额外名称
@@ -291,8 +325,13 @@ class CourseDetail extends BaseDataClass {
 
     return hasSomeCapacity && allCapacitiesFull;
   }
+
+  factory CourseDetail.fromJson(Map<String, dynamic> json) =>
+      _$CourseDetailFromJson(json);
+  Map<String, dynamic> toJson() => _$CourseDetailToJson(this);
 }
 
+@JsonSerializable()
 class CourseInfo extends BaseDataClass {
   final String courseId; // 课程代码
   final String courseName; // 课程名称
@@ -340,8 +379,13 @@ class CourseInfo extends BaseDataClass {
   Map<String, dynamic> getEssentials() {
     return {'courseId': courseId, 'classDetail': classDetail?.classId};
   }
+
+  factory CourseInfo.fromJson(Map<String, dynamic> json) =>
+      _$CourseInfoFromJson(json);
+  Map<String, dynamic> toJson() => _$CourseInfoToJson(this);
 }
 
+@JsonSerializable()
 class CourseTab extends BaseDataClass {
   final String tabId; // 选课标签页代码
   final String tabName; // 标签页名称
@@ -361,8 +405,13 @@ class CourseTab extends BaseDataClass {
   Map<String, dynamic> getEssentials() {
     return {'tabId': tabId};
   }
+
+  factory CourseTab.fromJson(Map<String, dynamic> json) =>
+      _$CourseTabFromJson(json);
+  Map<String, dynamic> toJson() => _$CourseTabToJson(this);
 }
 
+@JsonSerializable()
 class CourseSelectionState extends BaseDataClass {
   final TermInfo? termInfo;
   final List<CourseInfo> wantedCourses;
@@ -423,4 +472,8 @@ class CourseSelectionState extends BaseDataClass {
           (classId == null || c.classDetail?.classId == classId),
     );
   }
+
+  factory CourseSelectionState.fromJson(Map<String, dynamic> json) =>
+      _$CourseSelectionStateFromJson(json);
+  Map<String, dynamic> toJson() => _$CourseSelectionStateToJson(this);
 }
