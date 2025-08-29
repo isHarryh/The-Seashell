@@ -1,3 +1,5 @@
+import 'base.dart';
+
 enum WeekendDisplayMode {
   always, // 始终显示 (min=7, max=7)
   auto, // 自动显示 (min=5, max=7)
@@ -5,9 +7,9 @@ enum WeekendDisplayMode {
 }
 
 enum TableSize {
-  medium, // 中等尺寸 (h=80)
-  large, // 大尺寸 (h=100)
-  extraLarge, // 超大尺寸 (h=120)
+  small, // 中等尺寸 (h=80)
+  medium, // 大尺寸 (h=100)
+  large, // 超大尺寸 (h=120)
 }
 
 extension WeekendDisplayModeExtension on WeekendDisplayMode {
@@ -37,40 +39,55 @@ extension WeekendDisplayModeExtension on WeekendDisplayMode {
 extension TableSizeExtension on TableSize {
   String get displayName {
     switch (this) {
-      case TableSize.medium:
+      case TableSize.small:
         return '中';
-      case TableSize.large:
+      case TableSize.medium:
         return '大';
-      case TableSize.extraLarge:
+      case TableSize.large:
         return '超大';
     }
   }
 
   double get height {
     switch (this) {
-      case TableSize.medium:
+      case TableSize.small:
         return 80.0;
-      case TableSize.large:
+      case TableSize.medium:
         return 100.0;
-      case TableSize.extraLarge:
+      case TableSize.large:
         return 120.0;
     }
   }
 }
 
-class CurriculumSettings {
-  final WeekendDisplayMode weekendMode;
-  final TableSize tableSize;
+class CurriculumSettings extends BaseSerializableClass {
+  WeekendDisplayMode weekendMode;
+  TableSize tableSize;
 
-  const CurriculumSettings({
-    required this.weekendMode,
-    required this.tableSize,
-  });
+  CurriculumSettings({required this.weekendMode, required this.tableSize});
 
-  static const CurriculumSettings defaultSettings = CurriculumSettings(
+  static final CurriculumSettings defaultSettings = CurriculumSettings(
     weekendMode: WeekendDisplayMode.auto,
-    tableSize: TableSize.medium,
+    tableSize: TableSize.small,
   );
+
+  @override
+  Map<String, dynamic> dump() {
+    return {'weekendMode': weekendMode.name, 'tableSize': tableSize.name};
+  }
+
+  factory CurriculumSettings.load(Map<String, dynamic> data) {
+    return CurriculumSettings(
+      weekendMode: WeekendDisplayMode.values.firstWhere(
+        (mode) => mode.name == data['weekendMode'],
+        orElse: () => defaultSettings.weekendMode,
+      ),
+      tableSize: TableSize.values.firstWhere(
+        (size) => size.name == data['tableSize'],
+        orElse: () => defaultSettings.tableSize,
+      ),
+    );
+  }
 
   int get minWeekdays {
     switch (weekendMode) {
@@ -101,33 +118,5 @@ class CurriculumSettings {
     final maxCourseDay = courseDays.reduce((a, b) => a > b ? a : b);
     final requiredDays = maxCourseDay.clamp(minWeekdays, maxWeekdays);
     return requiredDays;
-  }
-
-  CurriculumSettings copyWith({
-    WeekendDisplayMode? weekendMode,
-    TableSize? tableSize,
-  }) {
-    return CurriculumSettings(
-      weekendMode: weekendMode ?? this.weekendMode,
-      tableSize: tableSize ?? this.tableSize,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is CurriculumSettings &&
-        other.weekendMode == weekendMode &&
-        other.tableSize == tableSize;
-  }
-
-  @override
-  int get hashCode {
-    return weekendMode.hashCode ^ tableSize.hashCode;
-  }
-
-  @override
-  String toString() {
-    return 'CurriculumSettings(mode: $weekendMode, size: $tableSize)';
   }
 }

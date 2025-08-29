@@ -928,7 +928,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 onChanged: (WeekendDisplayMode? newMode) {
                   if (newMode != null) {
                     setState(() {
-                      _settings = _settings.copyWith(weekendMode: newMode);
+                      _settings.weekendMode = newMode;
                     });
                   }
                 },
@@ -969,7 +969,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 onChanged: (TableSize? newSize) {
                   if (newSize != null) {
                     setState(() {
-                      _settings = _settings.copyWith(tableSize: newSize);
+                      _settings.tableSize = newSize;
                     });
                   }
                 },
