@@ -136,7 +136,7 @@ class _AccountPageState extends State<AccountPage> {
         });
       }
 
-      await _serviceProvider.logoutFromService();
+      await _serviceProvider.logoutFromCoursesService();
 
       if (mounted) {
         setState(() {

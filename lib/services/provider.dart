@@ -3,42 +3,42 @@ import 'package:flutter/foundation.dart';
 import '/services/courses/base.dart';
 import '/services/courses/ustb_byyt_mock.dart';
 import '/services/courses/ustb_byyt_prod.dart';
+import '/services/store/base.dart';
+import '/services/store/general.dart';
 
 enum ServiceType { mock, production }
 
 class ServiceProvider extends ChangeNotifier {
-  static final ServiceProvider _instance = ServiceProvider._internal();
-
-  BaseCoursesService? _coursesService;
+  // Course Service
+  late BaseCoursesService _coursesService;
   Timer? _heartbeatTimer;
   ServiceType _currentServiceType = ServiceType.mock;
 
-  ServiceProvider._internal();
+  // Store Service
+  late BaseStoreService _storeService;
 
-  factory ServiceProvider() => _instance;
-
+  // Singleton
+  static final ServiceProvider _instance = ServiceProvider();
   static ServiceProvider get instance => _instance;
 
-  BaseCoursesService get coursesService {
-    _coursesService ??= _createService();
-    return _coursesService!;
+  ServiceProvider() {
+    _coursesService = _currentServiceType == ServiceType.mock
+        ? UstbByytMockService()
+        : UstbByytProdService();
+    _storeService = GeneralStoreService();
+    _storeService.initialize();
   }
+
+  BaseCoursesService get coursesService => _coursesService;
+
+  BaseStoreService get storeService => _storeService;
 
   ServiceType get currentServiceType => _currentServiceType;
-
-  BaseCoursesService _createService() {
-    switch (_currentServiceType) {
-      case ServiceType.mock:
-        return UstbByytMockService();
-      case ServiceType.production:
-        return UstbByytProdService();
-    }
-  }
 
   void switchToMockService() {
     if (_currentServiceType != ServiceType.mock) {
       _stopHeartbeat();
-      _coursesService = null;
+      _coursesService = UstbByytMockService();
       _currentServiceType = ServiceType.mock;
       notifyListeners();
     }
@@ -47,19 +47,15 @@ class ServiceProvider extends ChangeNotifier {
   void switchToProductionService() {
     if (_currentServiceType != ServiceType.production) {
       _stopHeartbeat();
-      _coursesService = null;
+      _coursesService = UstbByytProdService();
       _currentServiceType = ServiceType.production;
       notifyListeners();
     }
   }
 
-  void clearCache() {
-    _stopHeartbeat();
-    _coursesService = null;
-    notifyListeners();
-  }
+  //
 
-  Future<void> loginToService() async {
+  Future<void> loginToCoursesService() async {
     await coursesService.login();
 
     if (coursesService.isOnline) {
@@ -69,7 +65,7 @@ class ServiceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loginWithCookie(String cookie) async {
+  Future<void> loginToCoursesServiceWithCookie(String cookie) async {
     if (_currentServiceType == ServiceType.production) {
       final prodService = coursesService as UstbByytProdService;
       await prodService.loginWithCookie(cookie);
@@ -84,11 +80,13 @@ class ServiceProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> logoutFromService() async {
+  Future<void> logoutFromCoursesService() async {
     _stopHeartbeat();
     await coursesService.logout();
     notifyListeners();
   }
+
+  //
 
   void _startHeartbeat() {
     _stopHeartbeat();

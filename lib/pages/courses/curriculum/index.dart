@@ -31,7 +31,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
   bool _isLoading = false;
   String? _errorMessage;
   int _currentWeek = 1;
-  CurriculumSettings _settings = CurriculumSettings.defaultSettings;
 
   static const int maxWeeks = 50;
   static const List<String> dayNames = ['一', '二', '三', '四', '五', '六', '日'];
@@ -47,6 +46,20 @@ class _CurriculumPageState extends State<CurriculumPage> {
   void dispose() {
     _serviceProvider.removeListener(_onServiceStatusChanged);
     super.dispose();
+  }
+
+  CurriculumSettings getSettings() =>
+      _serviceProvider.storeService.getPref<CurriculumSettings>(
+        "curriculum",
+        CurriculumSettings.fromJson,
+      ) ??
+      CurriculumSettings.defaultSettings;
+
+  void saveSettings(CurriculumSettings settings) {
+    _serviceProvider.storeService.putPref<CurriculumSettings>(
+      "curriculum",
+      settings,
+    );
   }
 
   void _onServiceStatusChanged() {
@@ -561,7 +574,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
     final majorPeriods = _getMajorPeriods(periods);
 
     final courseDays = weekClasses.map((c) => c.day).toSet().toList();
-    final displayDays = _settings.calculateDisplayDays(courseDays);
+    final displayDays = getSettings().calculateDisplayDays(courseDays);
 
     final dayColumnWidth = (availableWidth - 2) / (displayDays + 1);
 
@@ -713,7 +726,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Widget _buildMajorTimeCell(MajorPeriodInfo majorPeriod) {
-    final cellHeight = _settings.tableSize.height;
+    final cellHeight = getSettings().tableSize.height;
     return Container(
       height: cellHeight,
       decoration: BoxDecoration(
@@ -755,7 +768,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
       return classItem.day == day && classItem.period == majorPeriod.id;
     }).toList();
 
-    final cellHeight = _settings.tableSize.height;
+    final cellHeight = getSettings().tableSize.height;
     return Container(
       height: cellHeight,
       decoration: BoxDecoration(
@@ -918,7 +931,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             SizedBox(
               width: 100,
               child: DropdownButtonFormField<WeekendDisplayMode>(
-                initialValue: _settings.weekendMode,
+                initialValue: getSettings().weekendMode,
                 items: WeekendDisplayMode.values.map((mode) {
                   return DropdownMenuItem(
                     value: mode,
@@ -928,7 +941,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 onChanged: (WeekendDisplayMode? newMode) {
                   if (newMode != null) {
                     setState(() {
-                      _settings.weekendMode = newMode;
+                      saveSettings(getSettings()..weekendMode = newMode);
                     });
                   }
                 },
@@ -959,7 +972,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             SizedBox(
               width: 100,
               child: DropdownButtonFormField<TableSize>(
-                initialValue: _settings.tableSize,
+                initialValue: getSettings().tableSize,
                 items: TableSize.values.map((size) {
                   return DropdownMenuItem(
                     value: size,
@@ -969,7 +982,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 onChanged: (TableSize? newSize) {
                   if (newSize != null) {
                     setState(() {
-                      _settings.tableSize = newSize;
+                      saveSettings(getSettings()..tableSize = newSize);
                     });
                   }
                 },

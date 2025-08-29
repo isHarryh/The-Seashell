@@ -57,7 +57,7 @@ class _UstbByytCookieLoginPageState extends State<UstbByytCookieLoginPage> {
         _errorMessage = null;
       });
 
-      await _serviceProvider.loginWithCookie(cookie);
+      await _serviceProvider.loginToCoursesServiceWithCookie(cookie);
 
       if (mounted) {
         setState(() {

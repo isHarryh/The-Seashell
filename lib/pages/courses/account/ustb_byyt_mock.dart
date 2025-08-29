@@ -46,7 +46,7 @@ class _UstbByytMockLoginPageState extends State<UstbByytMockLoginPage> {
         _errorMessage = null;
       });
 
-      await _serviceProvider.loginToService();
+      await _serviceProvider.loginToCoursesService();
 
       if (mounted) {
         setState(() {
