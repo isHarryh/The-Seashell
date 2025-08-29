@@ -4,6 +4,7 @@ import '/types/courses.dart';
 import '/services/base.dart';
 import '/services/courses/base.dart';
 import '/services/courses/exceptions.dart';
+import '/services/courses/ustb_byyt.dart';
 
 class _CourseSelectionSharedParams {
   final TermInfo? termInfo;
@@ -171,14 +172,7 @@ class UstbByytProdService extends BaseCoursesService {
     });
 
     try {
-      final data = json.decode(response.body);
-      return UserInfo(
-        userName: data['xm'] as String,
-        userNameAlt: data['xm_en'] as String? ?? '',
-        userSchool: data['bmmc'] as String? ?? '',
-        userSchoolAlt: data['bmmc_en'] as String? ?? '',
-        userId: data['yhdm'] as String? ?? '',
-      );
+      return UserInfoUstbByytExtension.parse(json.decode(response.body));
     } on CourseServiceException {
       rethrow;
     } catch (e) {
@@ -238,7 +232,11 @@ class UstbByytProdService extends BaseCoursesService {
       final gradeList = data['content']['list'] as List<dynamic>;
 
       return gradeList
-          .map((item) => CourseGradeItem.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => CourseGradeItemUstbByytExtension.parse(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } on CourseServiceException {
       rethrow;
@@ -296,7 +294,9 @@ class UstbByytProdService extends BaseCoursesService {
       // Parse curriculum items
       final classList = <ClassItem>[];
       for (final item in curriculumList) {
-        final classItem = ClassItem.fromJson(item as Map<String, dynamic>);
+        final classItem = ClassItemUstbByytExtension.parse(
+          item as Map<String, dynamic>,
+        );
         if (classItem != null) {
           classList.add(classItem);
         }
@@ -349,7 +349,11 @@ class UstbByytProdService extends BaseCoursesService {
       final periodsList = data['content'] as List<dynamic>? ?? [];
 
       return periodsList
-          .map((item) => ClassPeriod.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ClassPeriodUstbByytExtension.parse(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } on CourseServiceException {
       rethrow;
@@ -389,7 +393,11 @@ class UstbByytProdService extends BaseCoursesService {
       final data = json.decode(response.body);
       final List<dynamic> xlListJson = data['xlList'] as List<dynamic>;
       final List<CalendarDay> calendarDays = xlListJson
-          .map((item) => CalendarDay.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => CalendarDayUstbByytExtension.parse(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList();
 
       return calendarDays;
@@ -482,7 +490,7 @@ class UstbByytProdService extends BaseCoursesService {
 
       return coursesList
           .map(
-            (item) => CourseInfo.fromJson(
+            (item) => CourseInfoUstbByytExtension.parse(
               item as Map<String, dynamic>,
               fromTabId: 'yixuan',
             ),
@@ -542,7 +550,7 @@ class UstbByytProdService extends BaseCoursesService {
 
       return coursesList
           .map(
-            (item) => CourseInfo.fromJson(
+            (item) => CourseInfoUstbByytExtension.parse(
               item as Map<String, dynamic>,
               fromTabId: tab,
             ),
@@ -589,7 +597,10 @@ class UstbByytProdService extends BaseCoursesService {
       final tabsList = data['xkgzszList'] as List<dynamic>? ?? [];
 
       return tabsList
-          .map((item) => CourseTab.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) =>
+                CourseTabUstbByytExtension.parse(item as Map<String, dynamic>),
+          )
           .toList();
     } on CourseServiceException {
       rethrow;
@@ -633,7 +644,10 @@ class UstbByytProdService extends BaseCoursesService {
       final termsList = data['content'] as List<dynamic>;
 
       return termsList
-          .map((item) => TermInfo.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) =>
+                TermInfoUstbByytExtension.parse(item as Map<String, dynamic>),
+          )
           .toList();
     } on CourseServiceException {
       rethrow;
@@ -689,7 +703,7 @@ class UstbByytProdService extends BaseCoursesService {
       List<CourseInfo> results = [];
       for (var courseJson in coursesList) {
         try {
-          final courseDetail = CourseInfo.fromJson(
+          final courseDetail = CourseInfoUstbByytExtension.parse(
             courseJson as Map<String, dynamic>,
             fromTabId: courseInfo.fromTabId,
           );

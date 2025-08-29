@@ -5,6 +5,7 @@ import '/types/courses.dart';
 import '/services/base.dart';
 import '/services/courses/base.dart';
 import '/services/courses/exceptions.dart';
+import '/services/courses/ustb_byyt.dart';
 
 class UstbByytMockService extends BaseCoursesService {
   DateTime? _lastHeartbeatTime;
@@ -20,15 +21,8 @@ class UstbByytMockService extends BaseCoursesService {
       final String jsonString = await rootBundle.loadString(
         'assets/mock/ustb_byyt/me.json',
       );
-      final Map<String, dynamic> jsonData = json.decode(jsonString);
 
-      return UserInfo(
-        userName: jsonData['xm'] as String? ?? '',
-        userNameAlt: jsonData['xm_en'] as String? ?? '',
-        userSchool: jsonData['bmmc'] as String? ?? '',
-        userSchoolAlt: jsonData['bmmc_en'] as String? ?? '',
-        userId: jsonData['yhdm'] as String? ?? '',
-      );
+      return UserInfoUstbByytExtension.parse(json.decode(jsonString));
     } on CourseServiceException {
       rethrow;
     } catch (e) {
@@ -59,7 +53,11 @@ class UstbByytMockService extends BaseCoursesService {
       final gradeList = jsonData['content']['list'] as List<dynamic>? ?? [];
 
       return gradeList
-          .map((item) => CourseGradeItem.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => CourseGradeItemUstbByytExtension.parse(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } on CourseServiceException {
       rethrow;
@@ -83,7 +81,9 @@ class UstbByytMockService extends BaseCoursesService {
 
       final classList = <ClassItem>[];
       for (final item in jsonData) {
-        final classItem = ClassItem.fromJson(item as Map<String, dynamic>);
+        final classItem = ClassItemUstbByytExtension.parse(
+          item as Map<String, dynamic>,
+        );
         if (classItem != null) {
           classList.add(classItem);
         }
@@ -117,7 +117,11 @@ class UstbByytMockService extends BaseCoursesService {
       final periodsList = jsonData['content'] as List<dynamic>? ?? [];
 
       return periodsList
-          .map((item) => ClassPeriod.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ClassPeriodUstbByytExtension.parse(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('Failed to load course periods: $e');
@@ -140,7 +144,11 @@ class UstbByytMockService extends BaseCoursesService {
 
       final List<dynamic> xlListJson = jsonData['xlList'] as List<dynamic>;
       final List<CalendarDay> calendarDays = xlListJson
-          .map((item) => CalendarDay.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => CalendarDayUstbByytExtension.parse(
+              item as Map<String, dynamic>,
+            ),
+          )
           .toList();
 
       return calendarDays;
@@ -239,7 +247,9 @@ class UstbByytMockService extends BaseCoursesService {
       final courseList = jsonData['yxkcList'] as List<dynamic>? ?? [];
 
       return courseList.map((courseJson) {
-        return CourseInfo.fromJson(courseJson as Map<String, dynamic>);
+        return CourseInfoUstbByytExtension.parse(
+          courseJson as Map<String, dynamic>,
+        );
       }).toList();
     } catch (e) {
       throw Exception('Failed to load selected courses: $e');
@@ -267,7 +277,7 @@ class UstbByytMockService extends BaseCoursesService {
       final courseList = kxrwList?['list'] as List<dynamic>? ?? [];
 
       return courseList.map((courseJson) {
-        return CourseInfo.fromJson(
+        return CourseInfoUstbByytExtension.parse(
           courseJson as Map<String, dynamic>,
           fromTabId: tab,
         );
@@ -294,7 +304,9 @@ class UstbByytMockService extends BaseCoursesService {
       final tabList = jsonData['xkgzszList'] as List<dynamic>? ?? [];
 
       return tabList.map((tabJson) {
-        return CourseTab.fromJson(tabJson as Map<String, dynamic>);
+        return CourseTabUstbByytExtension.parse(
+          tabJson as Map<String, dynamic>,
+        );
       }).toList();
     } catch (e) {
       throw Exception('Failed to load course tabs: $e');
@@ -324,7 +336,9 @@ class UstbByytMockService extends BaseCoursesService {
       final termList = jsonData['content'] as List<dynamic>? ?? [];
 
       return termList.map((termJson) {
-        return TermInfo.fromJson(termJson as Map<String, dynamic>);
+        return TermInfoUstbByytExtension.parse(
+          termJson as Map<String, dynamic>,
+        );
       }).toList();
     } catch (e) {
       throw Exception('Failed to load terms: $e');
@@ -355,7 +369,7 @@ class UstbByytMockService extends BaseCoursesService {
       List<CourseInfo> results = [];
       for (var courseJson in courseList) {
         try {
-          final courseDetail = CourseInfo.fromJson(
+          final courseDetail = CourseInfoUstbByytExtension.parse(
             courseJson as Map<String, dynamic>,
             fromTabId: courseInfo.fromTabId,
           );
