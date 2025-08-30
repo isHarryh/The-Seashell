@@ -23,12 +23,10 @@ class CurriculumPage extends StatefulWidget {
 class _CurriculumPageState extends State<CurriculumPage> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
 
-  List<ClassItem>? _allClasses;
-  List<ClassPeriod>? _allPeriods;
-  List<CalendarDay>? _calendarDays;
+  CurriculumIntegratedData? _curriculumData;
   List<TermInfo>? _availableTerms;
-  TermInfo? _currentTerm;
   bool _isLoading = false;
+  bool _isSelectingTerm = false;
   String? _errorMessage;
   int _currentWeek = 1;
 
@@ -39,7 +37,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
   void initState() {
     super.initState();
     _serviceProvider.addListener(_onServiceStatusChanged);
-    _loadCurriculum();
+    _loadCurriculumFromCacheOrService();
   }
 
   @override
@@ -48,15 +46,14 @@ class _CurriculumPageState extends State<CurriculumPage> {
     super.dispose();
   }
 
-  CurriculumSettings getSettings() =>
-      _serviceProvider.storeService.getPref<CurriculumSettings>(
-        "curriculum",
-        CurriculumSettings.fromJson,
-      ) ??
-      CurriculumSettings.defaultSettings;
+  Future<CurriculumSettings> getSettings() async {
+    final cached = await _serviceProvider.storeService
+        .getPref<CurriculumSettings>("curriculum", CurriculumSettings.fromJson);
+    return cached ?? CurriculumSettings.defaultSettings;
+  }
 
-  void saveSettings(CurriculumSettings settings) {
-    _serviceProvider.storeService.putPref<CurriculumSettings>(
+  Future<void> saveSettings(CurriculumSettings settings) async {
+    await _serviceProvider.storeService.putPref<CurriculumSettings>(
       "curriculum",
       settings,
     );
@@ -65,22 +62,37 @@ class _CurriculumPageState extends State<CurriculumPage> {
   void _onServiceStatusChanged() {
     if (mounted) {
       setState(() {
-        _loadCurriculum();
+        _loadCurriculumFromCacheOrService();
       });
     }
   }
 
-  Future<void> _loadCurriculum() async {
-    final service = _serviceProvider.coursesService;
+  Future<void> _loadCurriculumFromCacheOrService() async {
+    final cachedData = await _serviceProvider.storeService
+        .getCache<CurriculumIntegratedData>(
+          "curriculum_data",
+          CurriculumIntegratedData.fromJson,
+        );
 
+    if (cachedData.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _curriculumData = cachedData.value;
+          _isSelectingTerm = false;
+          _errorMessage = null;
+          _adjustCurrentWeek();
+        });
+      }
+      return;
+    }
+
+    final service = _serviceProvider.coursesService;
     if (!service.isOnline) {
       if (mounted) {
         setState(() {
-          _allClasses = null;
-          _allPeriods = null;
-          _calendarDays = null;
+          _curriculumData = null;
           _availableTerms = null;
-          _currentTerm = null;
+          _isSelectingTerm = false;
           _errorMessage = null;
           _isLoading = false;
         });
@@ -88,9 +100,16 @@ class _CurriculumPageState extends State<CurriculumPage> {
       return;
     }
 
+    await _loadTermsForSelection();
+  }
+
+  Future<void> _loadTermsForSelection() async {
+    final service = _serviceProvider.coursesService;
+
     if (mounted) {
       setState(() {
         _isLoading = true;
+        _isSelectingTerm = true;
         _errorMessage = null;
       });
     }
@@ -98,54 +117,10 @@ class _CurriculumPageState extends State<CurriculumPage> {
     try {
       final terms = await service.getTerms();
 
-      if (terms.isEmpty) {
-        throw Exception('No terms available');
-      }
-
-      TermInfo? selectedTerm;
-      List<ClassItem>? classes;
-      List<ClassPeriod>? periods;
-
-      // Find first non-empty term
-      for (final term in terms) {
-        try {
-          final futures = await Future.wait([
-            service.getCurriculum(term),
-            service.getCoursePeriods(term),
-            service.getCalendarDays(term).catchError((e) => <CalendarDay>[]),
-          ]);
-
-          final termClasses = futures[0] as List<ClassItem>;
-          final termPeriods = futures[1] as List<ClassPeriod>;
-          final termCalendarDays = futures[2] as List<CalendarDay>;
-
-          if (termClasses.isNotEmpty) {
-            selectedTerm = term;
-            classes = termClasses;
-            periods = termPeriods;
-            _calendarDays = termCalendarDays;
-            break;
-          }
-        } catch (e) {
-          continue;
-        }
-      }
-
-      // Fallback
-      if (selectedTerm == null) {
-        selectedTerm = terms.first;
-        classes = [];
-        periods = [];
-      }
-
       if (mounted) {
         setState(() {
-          _allClasses = classes;
-          _allPeriods = periods;
           _availableTerms = terms;
-          _currentTerm = selectedTerm;
           _isLoading = false;
-          _adjustCurrentWeek();
         });
       }
     } catch (e) {
@@ -156,10 +131,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
         });
       }
     }
-  }
-
-  Future<void> _refreshCurriculum() async {
-    await _loadCurriculum();
   }
 
   Future<void> _loadCurriculumForTerm(TermInfo termInfo) async {
@@ -187,12 +158,22 @@ class _CurriculumPageState extends State<CurriculumPage> {
       final periods = futures[1] as List<ClassPeriod>;
       final calendarDays = futures[2] as List<CalendarDay>;
 
+      final integratedData = CurriculumIntegratedData(
+        currentTerm: termInfo,
+        allClasses: classes,
+        allPeriods: periods,
+        calendarDays: calendarDays.isEmpty ? null : calendarDays,
+      );
+
+      await _serviceProvider.storeService.putCache<CurriculumIntegratedData>(
+        "curriculum_data",
+        integratedData,
+      );
+
       if (mounted) {
         setState(() {
-          _allClasses = classes;
-          _allPeriods = periods;
-          _calendarDays = calendarDays;
-          _currentTerm = termInfo;
+          _curriculumData = integratedData;
+          _isSelectingTerm = false;
           _isLoading = false;
           _adjustCurrentWeek();
         });
@@ -230,7 +211,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
   Widget _buildBody() {
     final service = _serviceProvider.coursesService;
 
-    if (!service.isOnline) {
+    if (_curriculumData == null && !service.isOnline) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -261,7 +242,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _refreshCurriculum,
+              onPressed: _refreshCurriculumData,
               child: const Text('重试'),
             ),
           ],
@@ -269,7 +250,11 @@ class _CurriculumPageState extends State<CurriculumPage> {
       );
     }
 
-    if (_allClasses == null || _allClasses!.isEmpty) {
+    if (_isSelectingTerm) {
+      return _buildTermSelectionView();
+    }
+
+    if (_curriculumData == null || _curriculumData!.allClasses.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -281,17 +266,25 @@ class _CurriculumPageState extends State<CurriculumPage> {
               style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
             const SizedBox(height: 8),
-            if (_currentTerm != null)
+            if (_curriculumData != null)
               Text(
-                '当前查看：${_currentTerm!.year}学年 第${_currentTerm!.season}学期',
+                '当前查看：${_curriculumData!.currentTerm.year}学年 第${_curriculumData!.currentTerm.season}学期',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             const SizedBox(height: 16),
-            Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => Scaffold.of(context).openEndDrawer(),
-                child: const Text('更改学期'),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _refreshCurriculumData,
+                  child: const Text('刷新数据'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _clearCacheAndSelectTerm,
+                  child: const Text('重新选择学期'),
+                ),
+              ],
             ),
           ],
         ),
@@ -310,57 +303,68 @@ class _CurriculumPageState extends State<CurriculumPage> {
     );
   }
 
-  Widget _buildTermSelectorInDrawer() {
-    if (_availableTerms == null || _availableTerms!.isEmpty) {
-      return const SizedBox.shrink();
+  Widget _buildTermSelectionView() {
+    if (_availableTerms == null) {
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  '学年学期',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+    return Center(
+      child: Card(
+        margin: const EdgeInsets.all(32),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.calendar_today, size: 48, color: Colors.blue),
+              const SizedBox(height: 16),
+              const Text(
+                '选择学期',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+              DropdownButtonFormField<TermInfo>(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: '学年学期',
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<TermInfo>(
-              value: _currentTerm,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                isDense: true,
+                isExpanded: true,
+                items: _availableTerms!.map((term) {
+                  return DropdownMenuItem<TermInfo>(
+                    value: term,
+                    child: Text('${term.year}学年 第${term.season}学期'),
+                  );
+                }).toList(),
+                onChanged: (TermInfo? selectedTerm) {
+                  if (selectedTerm != null) {
+                    _loadCurriculumForTerm(selectedTerm);
+                  }
+                },
               ),
-              isExpanded: true,
-              items: _availableTerms!.map((term) {
-                return DropdownMenuItem<TermInfo>(
-                  value: term,
-                  child: Text('${term.year}学年 第${term.season}学期'),
-                );
-              }).toList(),
-              onChanged: (TermInfo? newTerm) {
-                if (newTerm != null && newTerm != _currentTerm) {
-                  _loadCurriculumForTerm(newTerm);
-                }
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _refreshCurriculumData() async {
+    _serviceProvider.storeService.removeCache("curriculum_data");
+    await _loadCurriculumFromCacheOrService();
+  }
+
+  Future<void> _clearCacheAndSelectTerm() async {
+    _serviceProvider.storeService.removeCache("curriculum_data");
+    if (mounted) {
+      setState(() {
+        _curriculumData = null;
+      });
+    }
+    await _loadTermsForSelection();
   }
 
   Widget _buildWeekSelector() {
@@ -398,7 +402,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: _refreshCurriculum,
+          onPressed: _refreshCurriculumData,
           icon: _isLoading
               ? const SizedBox(
                   width: 16,
@@ -432,8 +436,8 @@ class _CurriculumPageState extends State<CurriculumPage> {
   int _getMaxValidWeek() {
     int maxWeekWithClasses = 0;
 
-    if (_allClasses != null && _allClasses!.isNotEmpty) {
-      for (final classItem in _allClasses!) {
+    if (_curriculumData != null && _curriculumData!.allClasses.isNotEmpty) {
+      for (final classItem in _curriculumData!.allClasses) {
         if (classItem.weeks.isNotEmpty) {
           final maxWeekInClass = classItem.weeks.reduce(
             (a, b) => a > b ? a : b,
@@ -446,8 +450,9 @@ class _CurriculumPageState extends State<CurriculumPage> {
     }
 
     int maxWeekFromCalendar = 0;
-    if (_calendarDays != null && _calendarDays!.isNotEmpty) {
-      for (final calendarDay in _calendarDays!) {
+    if (_curriculumData?.calendarDays != null &&
+        _curriculumData!.calendarDays!.isNotEmpty) {
+      for (final calendarDay in _curriculumData!.calendarDays!) {
         if (calendarDay.weekIndex > 0 && calendarDay.weekIndex < 99) {
           if (calendarDay.weekIndex > maxWeekFromCalendar) {
             maxWeekFromCalendar = calendarDay.weekIndex;
@@ -465,12 +470,13 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Map<int, int> _getWeekDates() {
-    if (_calendarDays == null || _calendarDays!.isEmpty) {
+    if (_curriculumData?.calendarDays == null ||
+        _curriculumData!.calendarDays!.isEmpty) {
       return {};
     }
 
     final weekDays = <int, int>{};
-    for (final calendarDay in _calendarDays!) {
+    for (final calendarDay in _curriculumData!.calendarDays!) {
       if (calendarDay.weekIndex == _currentWeek) {
         weekDays[calendarDay.weekday] = calendarDay.day;
       }
@@ -479,11 +485,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   String? _getCurrentYear() {
-    if (_calendarDays == null || _calendarDays!.isEmpty) {
+    if (_curriculumData?.calendarDays == null ||
+        _curriculumData!.calendarDays!.isEmpty) {
       return null;
     }
 
-    for (final calendarDay in _calendarDays!) {
+    for (final calendarDay in _curriculumData!.calendarDays!) {
       if (calendarDay.weekIndex == _currentWeek) {
         return '${calendarDay.year}年';
       }
@@ -493,11 +500,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   String? _getCurrentMonth() {
-    if (_calendarDays == null || _calendarDays!.isEmpty) {
+    if (_curriculumData?.calendarDays == null ||
+        _curriculumData!.calendarDays!.isEmpty) {
       return null;
     }
 
-    for (final calendarDay in _calendarDays!) {
+    for (final calendarDay in _curriculumData!.calendarDays!) {
       if (calendarDay.weekIndex == _currentWeek) {
         return '${calendarDay.month}月';
       }
@@ -506,7 +514,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Widget _buildCurriculumTable() {
-    if (_allPeriods == null || _allPeriods!.isEmpty) {
+    if (_curriculumData == null || _curriculumData!.allPeriods.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -524,7 +532,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _refreshCurriculum,
+              onPressed: _refreshCurriculumData,
               child: const Text('重新加载'),
             ),
           ],
@@ -532,8 +540,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
       );
     }
 
-    // 获取当前周的课程
-    final weekClasses = _allClasses!
+    final weekClasses = _curriculumData!.allClasses
         .where((classItem) => classItem.weeks.contains(_currentWeek))
         .toList();
 
@@ -542,7 +549,18 @@ class _CurriculumPageState extends State<CurriculumPage> {
         try {
           return SingleChildScrollView(
             scrollDirection: Axis.vertical,
-            child: _buildTable(weekClasses, constraints.maxWidth),
+            child: FutureBuilder<Widget>(
+              future: _buildTable(weekClasses, constraints.maxWidth),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('构建课表时出错: ${snapshot.error}'));
+                }
+                return snapshot.data ?? const SizedBox();
+              },
+            ),
           );
         } catch (e) {
           return Center(
@@ -558,7 +576,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: _refreshCurriculum,
+                  onPressed: _refreshCurriculumData,
                   child: const Text('重试'),
                 ),
               ],
@@ -569,12 +587,18 @@ class _CurriculumPageState extends State<CurriculumPage> {
     );
   }
 
-  Widget _buildTable(List<ClassItem> weekClasses, double availableWidth) {
-    final periods = _allPeriods ?? [];
+  Future<Widget> _buildTable(
+    List<ClassItem> weekClasses,
+    double availableWidth,
+  ) async {
+    final periods = _curriculumData!.allPeriods;
     final majorPeriods = _getMajorPeriods(periods);
 
     final courseDays = weekClasses.map((c) => c.day).toSet().toList();
-    final displayDays = getSettings().calculateDisplayDays(courseDays);
+
+    final settings = await getSettings();
+
+    final displayDays = settings.calculateDisplayDays(courseDays);
 
     final dayColumnWidth = (availableWidth - 2) / (displayDays + 1);
 
@@ -591,7 +615,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
             i: FixedColumnWidth(dayColumnWidth),
         },
         children: [
-          // 表头
           TableRow(
             children: [
               _buildHeaderCell(
@@ -605,7 +628,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 ),
             ],
           ),
-          // 数据行
           for (final majorPeriod in majorPeriods)
             TableRow(
               children: [
@@ -726,36 +748,43 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Widget _buildMajorTimeCell(MajorPeriodInfo majorPeriod) {
-    final cellHeight = getSettings().tableSize.height;
-    return Container(
-      height: cellHeight,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        color: Colors.grey.shade50,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            majorPeriod.startTime,
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
+    return FutureBuilder<CurriculumSettings>(
+      future: getSettings(),
+      builder: (context, snapshot) {
+        final settings = snapshot.data ?? CurriculumSettings.defaultSettings;
+        final cellHeight = settings.tableSize.height;
+
+        return Container(
+          height: cellHeight,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            color: Colors.grey.shade50,
           ),
-          const SizedBox(height: 2),
-          Text(
-            '${majorPeriod.id}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                majorPeriod.startTime,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${majorPeriod.id}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                majorPeriod.endTime,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            majorPeriod.endTime,
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -768,18 +797,25 @@ class _CurriculumPageState extends State<CurriculumPage> {
       return classItem.day == day && classItem.period == majorPeriod.id;
     }).toList();
 
-    final cellHeight = getSettings().tableSize.height;
-    return Container(
-      height: cellHeight,
-      decoration: BoxDecoration(
-        color: classesInSlot.isEmpty
-            ? Colors.white
-            : _getClassColor(classesInSlot.first),
-        border: Border.all(color: Colors.grey.shade300, width: 0.5),
-      ),
-      child: classesInSlot.isEmpty
-          ? const SizedBox.expand() // 空单元格也填充满整个区域
-          : _buildClassContent(classesInSlot),
+    return FutureBuilder<CurriculumSettings>(
+      future: getSettings(),
+      builder: (context, snapshot) {
+        final settings = snapshot.data ?? CurriculumSettings.defaultSettings;
+        final cellHeight = settings.tableSize.height;
+
+        return Container(
+          height: cellHeight,
+          decoration: BoxDecoration(
+            color: classesInSlot.isEmpty
+                ? Colors.white
+                : _getClassColor(classesInSlot.first),
+            border: Border.all(color: Colors.grey.shade300, width: 0.5),
+          ),
+          child: classesInSlot.isEmpty
+              ? const SizedBox.expand()
+              : _buildClassContent(classesInSlot),
+        );
+      },
     );
   }
 
@@ -899,8 +935,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _buildTermSelectorInDrawer(),
-                const SizedBox(height: 16),
                 _buildWeekendDisplaySetting(),
                 const SizedBox(height: 16),
                 _buildTableSizeSetting(),
@@ -930,20 +964,29 @@ class _CurriculumPageState extends State<CurriculumPage> {
             const SizedBox(width: 16),
             SizedBox(
               width: 100,
-              child: DropdownButtonFormField<WeekendDisplayMode>(
-                initialValue: getSettings().weekendMode,
-                items: WeekendDisplayMode.values.map((mode) {
-                  return DropdownMenuItem(
-                    value: mode,
-                    child: Text(mode.displayName),
+              child: FutureBuilder<CurriculumSettings>(
+                future: getSettings(),
+                builder: (context, snapshot) {
+                  final settings =
+                      snapshot.data ?? CurriculumSettings.defaultSettings;
+                  return DropdownButtonFormField<WeekendDisplayMode>(
+                    initialValue: settings.weekendMode,
+                    items: WeekendDisplayMode.values.map((mode) {
+                      return DropdownMenuItem(
+                        value: mode,
+                        child: Text(mode.displayName),
+                      );
+                    }).toList(),
+                    onChanged: (WeekendDisplayMode? newMode) async {
+                      if (newMode != null) {
+                        final currentSettings = await getSettings();
+                        await saveSettings(
+                          currentSettings..weekendMode = newMode,
+                        );
+                        setState(() {});
+                      }
+                    },
                   );
-                }).toList(),
-                onChanged: (WeekendDisplayMode? newMode) {
-                  if (newMode != null) {
-                    setState(() {
-                      saveSettings(getSettings()..weekendMode = newMode);
-                    });
-                  }
                 },
               ),
             ),
@@ -971,20 +1014,29 @@ class _CurriculumPageState extends State<CurriculumPage> {
             const SizedBox(width: 16),
             SizedBox(
               width: 100,
-              child: DropdownButtonFormField<TableSize>(
-                initialValue: getSettings().tableSize,
-                items: TableSize.values.map((size) {
-                  return DropdownMenuItem(
-                    value: size,
-                    child: Text(size.displayName),
+              child: FutureBuilder<CurriculumSettings>(
+                future: getSettings(),
+                builder: (context, snapshot) {
+                  final settings =
+                      snapshot.data ?? CurriculumSettings.defaultSettings;
+                  return DropdownButtonFormField<TableSize>(
+                    initialValue: settings.tableSize,
+                    items: TableSize.values.map((size) {
+                      return DropdownMenuItem(
+                        value: size,
+                        child: Text(size.displayName),
+                      );
+                    }).toList(),
+                    onChanged: (TableSize? newSize) async {
+                      if (newSize != null) {
+                        final currentSettings = await getSettings();
+                        await saveSettings(
+                          currentSettings..tableSize = newSize,
+                        );
+                        setState(() {});
+                      }
+                    },
                   );
-                }).toList(),
-                onChanged: (TableSize? newSize) {
-                  if (newSize != null) {
-                    setState(() {
-                      saveSettings(getSettings()..tableSize = newSize);
-                    });
-                  }
                 },
               ),
             ),
