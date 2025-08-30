@@ -150,6 +150,30 @@ Map<String, dynamic> _$TermInfoToJson(TermInfo instance) => <String, dynamic>{
   'season': instance.season,
 };
 
+CurriculumIntegratedData _$CurriculumIntegratedDataFromJson(
+  Map<String, dynamic> json,
+) => CurriculumIntegratedData(
+  currentTerm: TermInfo.fromJson(json['currentTerm'] as Map<String, dynamic>),
+  allClasses: (json['allClasses'] as List<dynamic>)
+      .map((e) => ClassItem.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  allPeriods: (json['allPeriods'] as List<dynamic>)
+      .map((e) => ClassPeriod.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  calendarDays: (json['calendarDays'] as List<dynamic>?)
+      ?.map((e) => CalendarDay.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$CurriculumIntegratedDataToJson(
+  CurriculumIntegratedData instance,
+) => <String, dynamic>{
+  'currentTerm': instance.currentTerm,
+  'allClasses': instance.allClasses,
+  'allPeriods': instance.allPeriods,
+  'calendarDays': instance.calendarDays,
+};
+
 CourseDetail _$CourseDetailFromJson(Map<String, dynamic> json) => CourseDetail(
   classId: json['classId'] as String,
   extraName: json['extraName'] as String?,

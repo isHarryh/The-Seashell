@@ -218,6 +218,34 @@ class TermInfo extends BaseDataClass {
 }
 
 @JsonSerializable()
+class CurriculumIntegratedData extends BaseDataClass {
+  final TermInfo currentTerm;
+  final List<ClassItem> allClasses;
+  final List<ClassPeriod> allPeriods;
+  final List<CalendarDay>? calendarDays;
+
+  const CurriculumIntegratedData({
+    required this.currentTerm,
+    required this.allClasses,
+    required this.allPeriods,
+    this.calendarDays,
+  });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'currentTerm': currentTerm.getEssentials(),
+      'classCount': allClasses.length,
+      'periodCount': allPeriods.length,
+    };
+  }
+
+  factory CurriculumIntegratedData.fromJson(Map<String, dynamic> json) =>
+      _$CurriculumIntegratedDataFromJson(json);
+  Map<String, dynamic> toJson() => _$CurriculumIntegratedDataToJson(this);
+}
+
+@JsonSerializable()
 class CourseDetail extends BaseDataClass {
   final String classId; // 讲台代码
   final String? extraName; // 额外名称
