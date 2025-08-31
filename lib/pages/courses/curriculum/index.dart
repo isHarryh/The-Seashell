@@ -3,6 +3,7 @@ import '/services/provider.dart';
 import '/types/courses.dart';
 import '/types/preferences.dart';
 import '/utils/app_bar.dart';
+import 'common.dart';
 
 class MajorPeriodInfo {
   final int id;
@@ -24,9 +25,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
 
   CurriculumIntegratedData? _curriculumData;
-  List<TermInfo>? _availableTerms;
-  bool _isLoading = false;
-  bool _isSelectingTerm = false;
   String? _errorMessage;
   int _currentWeek = 1;
 
@@ -80,7 +78,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
       if (mounted) {
         setState(() {
           _curriculumData = cachedData.value;
-          _isSelectingTerm = false;
           _errorMessage = null;
           _adjustCurrentWeek();
         });
@@ -93,45 +90,10 @@ class _CurriculumPageState extends State<CurriculumPage> {
       if (mounted) {
         setState(() {
           _curriculumData = null;
-          _availableTerms = null;
-          _isSelectingTerm = false;
           _errorMessage = null;
-          _isLoading = false;
         });
       }
       return;
-    }
-
-    await _loadTermsForSelection();
-  }
-
-  Future<void> _loadTermsForSelection() async {
-    final service = _serviceProvider.coursesService;
-
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _isSelectingTerm = true;
-        _errorMessage = null;
-      });
-    }
-
-    try {
-      final terms = await service.getTerms();
-
-      if (mounted) {
-        setState(() {
-          _availableTerms = terms;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
-      }
     }
   }
 
@@ -140,13 +102,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
     if (!service.isOnline) {
       return;
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
     }
 
     try {
@@ -161,6 +116,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
       final calendarDays = futures[2] as List<CalendarDay>;
 
       final integratedData = CurriculumIntegratedData(
+        activated: true, // Do activate
         currentTerm: termInfo,
         allClasses: classes,
         allPeriods: periods,
@@ -175,8 +131,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
       if (mounted) {
         setState(() {
           _curriculumData = integratedData;
-          _isSelectingTerm = false;
-          _isLoading = false;
           _adjustCurrentWeek();
         });
       }
@@ -184,7 +138,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();
-          _isLoading = false;
         });
       }
     }
@@ -211,23 +164,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Widget _buildBody() {
-    if (_curriculumData == null && !_serviceProvider.coursesService.isOnline) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.login, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('请先登录', style: TextStyle(fontSize: 18, color: Colors.grey)),
-          ],
-        ),
-      );
-    }
-
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
+    // 如果有错误信息，显示错误页面
     if (_errorMessage != null) {
       return Center(
         child: Column(
@@ -250,10 +187,142 @@ class _CurriculumPageState extends State<CurriculumPage> {
       );
     }
 
-    if (_isSelectingTerm) {
-      return _buildTermSelectionView();
-    }
+    final cachedData = _serviceProvider.storeService
+        .getCache<CurriculumIntegratedData>(
+          "curriculum_data",
+          CurriculumIntegratedData.fromJson,
+        );
 
+    if (cachedData.isNotEmpty) {
+      final data = cachedData.value!;
+      // activated
+      if (data.activated) {
+        if (mounted && _curriculumData != data) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _curriculumData = data;
+              _adjustCurrentWeek();
+            });
+          });
+        }
+        return _buildCurriculumView();
+      } else {
+        // not activated
+        return _buildSelectionView(cachedData);
+      }
+    } else {
+      if (!_serviceProvider.coursesService.isOnline) {
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.login, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text('请先登录', style: TextStyle(fontSize: 18, color: Colors.grey)),
+            ],
+          ),
+        );
+      }
+
+      return _buildSelectionView(null);
+    }
+  }
+
+  Widget _buildSelectionView(cachedData) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool shouldUseDoubleColumn = constraints.maxWidth > 1000;
+
+          if (shouldUseDoubleColumn &&
+              cachedData != null &&
+              cachedData.isNotEmpty) {
+            // Two column layout
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChooseCacheCard(
+                        cachedData: cachedData,
+                        onSubmit: _activateAndViewCachedData,
+                        useFlexLayout: true,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: ChooseLatestCard(
+                        isLoggedIn: _serviceProvider.coursesService.isOnline,
+                        getTerms: () =>
+                            _serviceProvider.coursesService.getTerms(),
+                        onTermSelected: _loadCurriculumForTerm,
+                        useFlexLayout: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // Single column layout
+            return Column(
+              children: [
+                if (cachedData != null && cachedData.isNotEmpty)
+                  ChooseCacheCard(
+                    cachedData: cachedData,
+                    onSubmit: _activateAndViewCachedData,
+                  ),
+                ChooseLatestCard(
+                  isLoggedIn: _serviceProvider.coursesService.isOnline,
+                  getTerms: () => _serviceProvider.coursesService.getTerms(),
+                  onTermSelected: _loadCurriculumForTerm,
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  void _activateAndViewCachedData() {
+    final cachedData = _serviceProvider.storeService
+        .getCache<CurriculumIntegratedData>(
+          "curriculum_data",
+          CurriculumIntegratedData.fromJson,
+        );
+
+    if (cachedData.isNotEmpty) {
+      final data = cachedData.value!;
+
+      final activatedData = CurriculumIntegratedData(
+        activated: true,
+        currentTerm: data.currentTerm,
+        allClasses: data.allClasses,
+        allPeriods: data.allPeriods,
+        calendarDays: data.calendarDays,
+      );
+
+      _serviceProvider.storeService.putCache<CurriculumIntegratedData>(
+        "curriculum_data",
+        activatedData,
+      );
+
+      if (mounted) {
+        setState(() {
+          _curriculumData = activatedData;
+          _adjustCurrentWeek();
+        });
+      }
+    }
+  }
+
+  Widget _buildCurriculumView() {
     if (_curriculumData == null || _curriculumData!.allClasses.isEmpty) {
       return Center(
         child: Column(
@@ -293,55 +362,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
     );
   }
 
-  Widget _buildTermSelectionView() {
-    if (_availableTerms == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return Center(
-      child: Card(
-        margin: const EdgeInsets.all(32),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.calendar_today, size: 48, color: Colors.blue),
-              const SizedBox(height: 16),
-              const Text(
-                '选择学期',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 24),
-              DropdownButtonFormField<TermInfo>(
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: '学年学期',
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                isExpanded: true,
-                items: _availableTerms!.map((term) {
-                  return DropdownMenuItem<TermInfo>(
-                    value: term,
-                    child: Text('${term.year}学年 第${term.season}学期'),
-                  );
-                }).toList(),
-                onChanged: (TermInfo? selectedTerm) {
-                  if (selectedTerm != null) {
-                    _loadCurriculumForTerm(selectedTerm);
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _refreshCurriculumData() async {
     _serviceProvider.storeService.removeCache("curriculum_data");
     await _loadCurriculumFromCacheOrService();
@@ -352,9 +372,9 @@ class _CurriculumPageState extends State<CurriculumPage> {
     if (mounted) {
       setState(() {
         _curriculumData = null;
+        _errorMessage = null;
       });
     }
-    await _loadTermsForSelection();
   }
 
   Widget _buildWeekSelector() {
@@ -388,21 +408,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
                 ? () => _changeWeek(1)
                 : null,
             icon: const Icon(Icons.chevron_right),
-          ),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton.icon(
-          onPressed: _refreshCurriculumData,
-          icon: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh, size: 18),
-          label: Text(_isLoading ? '刷新中...' : '刷新'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
         ),
       ],
@@ -901,6 +906,8 @@ class _CurriculumPageState extends State<CurriculumPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                _buildChangeSemesterSetting(),
+                const SizedBox(height: 16),
                 _buildWeekendDisplaySetting(),
                 const SizedBox(height: 16),
                 _buildTableSizeSetting(),
@@ -910,6 +917,58 @@ class _CurriculumPageState extends State<CurriculumPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildChangeSemesterSetting() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '更换学期或更新数据',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _deactivateCurrentData,
+              label: const Text('前往'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _deactivateCurrentData() {
+    if (_curriculumData != null) {
+      // Set activated to false
+      final deactivatedData = CurriculumIntegratedData(
+        activated: false,
+        currentTerm: _curriculumData!.currentTerm,
+        allClasses: _curriculumData!.allClasses,
+        allPeriods: _curriculumData!.allPeriods,
+        calendarDays: _curriculumData!.calendarDays,
+      );
+
+      // Update cache
+      _serviceProvider.storeService.putCache<CurriculumIntegratedData>(
+        "curriculum_data",
+        deactivatedData,
+      );
+
+      if (mounted) {
+        setState(() {
+          _curriculumData = deactivatedData;
+          _errorMessage = null;
+        });
+      }
+
+      Navigator.of(context).pop();
+    }
   }
 
   // 构建周末显示设置

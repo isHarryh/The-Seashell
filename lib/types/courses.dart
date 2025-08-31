@@ -219,12 +219,14 @@ class TermInfo extends BaseDataClass {
 
 @JsonSerializable()
 class CurriculumIntegratedData extends BaseDataClass {
+  final bool activated;
   final TermInfo currentTerm;
   final List<ClassItem> allClasses;
   final List<ClassPeriod> allPeriods;
   final List<CalendarDay>? calendarDays;
 
   const CurriculumIntegratedData({
+    this.activated = true,
     required this.currentTerm,
     required this.allClasses,
     required this.allPeriods,
@@ -234,6 +236,7 @@ class CurriculumIntegratedData extends BaseDataClass {
   @override
   Map<String, dynamic> getEssentials() {
     return {
+      'activated': activated,
       'currentTerm': currentTerm.getEssentials(),
       'classCount': allClasses.length,
       'periodCount': allPeriods.length,
