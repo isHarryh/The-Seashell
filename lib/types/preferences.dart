@@ -67,12 +67,18 @@ extension TableSizeExtension on TableSize {
 class CurriculumSettings extends Serializable {
   WeekendDisplayMode weekendMode;
   TableSize tableSize;
+  bool activated;
 
-  CurriculumSettings({required this.weekendMode, required this.tableSize});
+  CurriculumSettings({
+    required this.weekendMode, 
+    required this.tableSize,
+    this.activated = true,
+  });
 
   static final CurriculumSettings defaultSettings = CurriculumSettings(
     weekendMode: WeekendDisplayMode.auto,
     tableSize: TableSize.small,
+    activated: true,
   );
 
   int get minWeekdays {

@@ -153,7 +153,6 @@ Map<String, dynamic> _$TermInfoToJson(TermInfo instance) => <String, dynamic>{
 CurriculumIntegratedData _$CurriculumIntegratedDataFromJson(
   Map<String, dynamic> json,
 ) => CurriculumIntegratedData(
-  activated: json['activated'] as bool? ?? true,
   currentTerm: TermInfo.fromJson(json['currentTerm'] as Map<String, dynamic>),
   allClasses: (json['allClasses'] as List<dynamic>)
       .map((e) => ClassItem.fromJson(e as Map<String, dynamic>))
@@ -169,7 +168,6 @@ CurriculumIntegratedData _$CurriculumIntegratedDataFromJson(
 Map<String, dynamic> _$CurriculumIntegratedDataToJson(
   CurriculumIntegratedData instance,
 ) => <String, dynamic>{
-  'activated': instance.activated,
   'currentTerm': instance.currentTerm,
   'allClasses': instance.allClasses,
   'allPeriods': instance.allPeriods,

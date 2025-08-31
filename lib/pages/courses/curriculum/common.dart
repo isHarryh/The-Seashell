@@ -75,23 +75,23 @@ class ChooseCacheCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row(
-                  //   children: [
-                  //     Icon(
-                  //       Icons.access_time,
-                  //       size: 16,
-                  //       color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  //     ),
-                  //     const SizedBox(width: 8),
-                  //     Text(
-                  //       '缓存时间：${formatCacheTime(cachedData)}',
-                  //       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  //         color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-                  // const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '缓存时间：${formatCacheTime(cachedData)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Icon(

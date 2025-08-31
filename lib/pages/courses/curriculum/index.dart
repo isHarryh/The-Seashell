@@ -59,6 +59,18 @@ class _CurriculumPageState extends State<CurriculumPage> {
     );
   }
 
+  bool get isActivated => getSettings().activated;
+
+  void setActivated(bool activated) {
+    final settings = getSettings();
+    final newSettings = CurriculumSettings(
+      weekendMode: settings.weekendMode,
+      tableSize: settings.tableSize,
+      activated: activated,
+    );
+    saveSettings(newSettings);
+  }
+
   void _onServiceStatusChanged() {
     if (mounted) {
       setState(() {
@@ -116,7 +128,6 @@ class _CurriculumPageState extends State<CurriculumPage> {
       final calendarDays = futures[2] as List<CalendarDay>;
 
       final integratedData = CurriculumIntegratedData(
-        activated: true, // Do activate
         currentTerm: termInfo,
         allClasses: classes,
         allPeriods: periods,
@@ -127,6 +138,9 @@ class _CurriculumPageState extends State<CurriculumPage> {
         "curriculum_data",
         integratedData,
       );
+
+      // Set activated to true when loading new data
+      setActivated(true);
 
       if (mounted) {
         setState(() {
@@ -195,8 +209,8 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
     if (cachedData.isNotEmpty) {
       final data = cachedData.value!;
-      // activated
-      if (data.activated) {
+      // Check activated status from settings
+      if (isActivated) {
         if (mounted && _curriculumData != data) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             setState(() {
@@ -246,9 +260,11 @@ class _CurriculumPageState extends State<CurriculumPage> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ChooseCacheCard(
-                        cachedData: cachedData,
-                        onSubmit: _activateAndViewCachedData,
+                      child: ChooseLatestCard(
+                        isLoggedIn: _serviceProvider.coursesService.isOnline,
+                        getTerms: () =>
+                            _serviceProvider.coursesService.getTerms(),
+                        onTermSelected: _loadCurriculumForTerm,
                         useFlexLayout: true,
                       ),
                     ),
@@ -256,11 +272,9 @@ class _CurriculumPageState extends State<CurriculumPage> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 8),
-                      child: ChooseLatestCard(
-                        isLoggedIn: _serviceProvider.coursesService.isOnline,
-                        getTerms: () =>
-                            _serviceProvider.coursesService.getTerms(),
-                        onTermSelected: _loadCurriculumForTerm,
+                      child: ChooseCacheCard(
+                        cachedData: cachedData,
+                        onSubmit: _activateAndViewCachedData,
                         useFlexLayout: true,
                       ),
                     ),
@@ -272,16 +286,16 @@ class _CurriculumPageState extends State<CurriculumPage> {
             // Single column layout
             return Column(
               children: [
-                if (cachedData != null && cachedData.isNotEmpty)
-                  ChooseCacheCard(
-                    cachedData: cachedData,
-                    onSubmit: _activateAndViewCachedData,
-                  ),
                 ChooseLatestCard(
                   isLoggedIn: _serviceProvider.coursesService.isOnline,
                   getTerms: () => _serviceProvider.coursesService.getTerms(),
                   onTermSelected: _loadCurriculumForTerm,
                 ),
+                if (cachedData != null && cachedData.isNotEmpty)
+                  ChooseCacheCard(
+                    cachedData: cachedData,
+                    onSubmit: _activateAndViewCachedData,
+                  ),
               ],
             );
           }
@@ -300,22 +314,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
     if (cachedData.isNotEmpty) {
       final data = cachedData.value!;
 
-      final activatedData = CurriculumIntegratedData(
-        activated: true,
-        currentTerm: data.currentTerm,
-        allClasses: data.allClasses,
-        allPeriods: data.allPeriods,
-        calendarDays: data.calendarDays,
-      );
-
-      _serviceProvider.storeService.putCache<CurriculumIntegratedData>(
-        "curriculum_data",
-        activatedData,
-      );
+      // Set activated to true in settings
+      setActivated(true);
 
       if (mounted) {
         setState(() {
-          _curriculumData = activatedData;
+          _curriculumData = data;
           _adjustCurrentWeek();
         });
       }
@@ -901,15 +905,18 @@ class _CurriculumPageState extends State<CurriculumPage> {
               ],
             ),
           ),
+          // 学期信息
+          if (_curriculumData != null) ...[
+            _buildCurriculumInfo(),
+            const Divider(),
+          ],
           // 设置项
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               children: [
-                _buildChangeSemesterSetting(),
-                const SizedBox(height: 16),
                 _buildWeekendDisplaySetting(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _buildTableSizeSetting(),
               ],
             ),
@@ -919,50 +926,64 @@ class _CurriculumPageState extends State<CurriculumPage> {
     );
   }
 
-  Widget _buildChangeSemesterSetting() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                '更换学期或更新数据',
+  Widget _buildCurriculumInfo() {
+    final cachedData = _serviceProvider.storeService
+        .getCache<CurriculumIntegratedData>(
+          "curriculum_data",
+          CurriculumIntegratedData.fromJson,
+        );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.school, size: 18),
+              const SizedBox(width: 4),
+              Text(
+                '${_curriculumData!.currentTerm.year}学年 第${_curriculumData!.currentTerm.season}学期',
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (cachedData.isNotEmpty)
+            Text(
+              '缓存时间：${formatCacheTime(cachedData)}',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
-            ElevatedButton.icon(
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
               onPressed: _deactivateCurrentData,
-              label: const Text('前往'),
+              icon: const Icon(Icons.cached),
+              label: const Text('切换学期或更新'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   void _deactivateCurrentData() {
     if (_curriculumData != null) {
-      // Set activated to false
-      final deactivatedData = CurriculumIntegratedData(
-        activated: false,
-        currentTerm: _curriculumData!.currentTerm,
-        allClasses: _curriculumData!.allClasses,
-        allPeriods: _curriculumData!.allPeriods,
-        calendarDays: _curriculumData!.calendarDays,
-      );
-
-      // Update cache
-      _serviceProvider.storeService.putCache<CurriculumIntegratedData>(
-        "curriculum_data",
-        deactivatedData,
-      );
+      // Set activated to false in settings
+      setActivated(false);
 
       if (mounted) {
         setState(() {
-          _curriculumData = deactivatedData;
           _errorMessage = null;
         });
       }

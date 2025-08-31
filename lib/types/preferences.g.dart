@@ -13,12 +13,14 @@ CurriculumSettings _$CurriculumSettingsFromJson(Map<String, dynamic> json) =>
         json['weekendMode'],
       ),
       tableSize: $enumDecode(_$TableSizeEnumMap, json['tableSize']),
+      activated: json['activated'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$CurriculumSettingsToJson(CurriculumSettings instance) =>
     <String, dynamic>{
       'weekendMode': _$WeekendDisplayModeEnumMap[instance.weekendMode]!,
       'tableSize': _$TableSizeEnumMap[instance.tableSize]!,
+      'activated': instance.activated,
     };
 
 const _$WeekendDisplayModeEnumMap = {
