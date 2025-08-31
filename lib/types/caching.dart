@@ -38,10 +38,9 @@ class CacheHolder<T extends Serializable> extends Serializable {
     'lastUpdateTime': _lastUpdateTime?.toIso8601String(),
   };
 
-  @override
-  factory CacheHolder.fromJson(
+  static CacheHolder<T> fromJson<T extends Serializable>(
     Map<String, dynamic> json,
-    Function valueFactory,
+    T Function(Map<String, dynamic>) valueFactory,
   ) {
     final valueJson = json['value'];
     final lastUpdateTimeStr = json['lastUpdateTime'] as String?;
@@ -49,7 +48,7 @@ class CacheHolder<T extends Serializable> extends Serializable {
         ? DateTime.parse(lastUpdateTimeStr)
         : null;
 
-    final value = valueJson != null ? valueFactory(valueJson) as T : null;
+    final value = valueJson != null ? valueFactory(valueJson) : null;
 
     final holder = CacheHolder<T>(value);
     holder._lastUpdateTime = lastUpdateTime;

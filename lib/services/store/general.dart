@@ -58,12 +58,13 @@ class GeneralStoreService extends BaseStoreService {
     ensureInitialized();
 
     try {
-      final jsonData = value.toJson();
+      final cacheHolder = _memoryCache[key] ?? CacheHolder<T>();
+      cacheHolder.update(value);
+
+      final jsonData = cacheHolder.toJson();
       final file = File(_getCacheFilePath(key));
       file.writeAsStringSync(json.encode(jsonData));
 
-      final cacheHolder = _memoryCache[key] ?? CacheHolder<T>();
-      cacheHolder.update(value);
       _memoryCache[key] = cacheHolder;
       return true;
     } catch (e) {
@@ -74,7 +75,7 @@ class GeneralStoreService extends BaseStoreService {
   @override
   CacheHolder<T> getCache<T extends Serializable>(
     String key,
-    Function factory,
+    T Function(Map<String, dynamic>) factory,
   ) {
     ensureInitialized();
 
@@ -90,7 +91,7 @@ class GeneralStoreService extends BaseStoreService {
 
       final content = file.readAsStringSync();
       final jsonData = json.decode(content) as Map<String, dynamic>;
-      final value = factory(jsonData) as CacheHolder<T>;
+      final value = CacheHolder.fromJson(jsonData, factory);
 
       _memoryCache[key] = value;
       return _memoryCache[key] as CacheHolder<T>;
@@ -150,7 +151,10 @@ class GeneralStoreService extends BaseStoreService {
   }
 
   @override
-  T? getPref<T extends Serializable>(String key, Function factory) {
+  T? getPref<T extends Serializable>(
+    String key,
+    T Function(Map<String, dynamic>) factory,
+  ) {
     ensureInitialized();
 
     try {

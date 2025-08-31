@@ -10,7 +10,10 @@ abstract class BaseStoreService {
 
   bool putCache<T extends Serializable>(String key, T value);
 
-  CacheHolder<T> getCache<T extends Serializable>(String key, Function factory);
+  CacheHolder<T> getCache<T extends Serializable>(
+    String key,
+    T Function(Map<String, dynamic>) factory,
+  );
 
   void removeCache(String key);
 
@@ -20,7 +23,10 @@ abstract class BaseStoreService {
 
   bool putPref<T extends Serializable>(String key, T value);
 
-  T? getPref<T extends Serializable>(String key, Function factory);
+  T? getPref<T extends Serializable>(
+    String key,
+    T Function(Map<String, dynamic>) factory,
+  );
 
   void removePref(String key);
 

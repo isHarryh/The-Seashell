@@ -4,13 +4,8 @@
 abstract class Serializable {
   Serializable();
 
-  Map<String, dynamic> toJson() {
-    throw UnimplementedError('toJson not implemented yet');
-  }
-
-  factory Serializable.fromJson(Map<String, dynamic> json) {
-    throw UnimplementedError('fromJson not implemented yet');
-  }
+  Map<String, dynamic> toJson() =>
+      throw UnimplementedError('toJson not implemented yet');
 }
 
 /// A base class for data classes.
