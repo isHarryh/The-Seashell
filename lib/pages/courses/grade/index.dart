@@ -594,7 +594,7 @@ class _GradePageState extends State<GradePage> {
     List<double> columnWidths,
     double tableWidth,
   ) {
-    return Container(
+    return SizedBox(
       width: tableWidth,
       child: Column(
         children: [
@@ -658,7 +658,7 @@ class _GradePageState extends State<GradePage> {
               ),
               child: Row(children: _buildDataRow(grade, columnWidths)),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

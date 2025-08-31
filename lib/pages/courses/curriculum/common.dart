@@ -15,12 +15,14 @@ class ChooseCacheCard extends StatelessWidget {
   final CacheHolder<CurriculumIntegratedData> cachedData;
   final VoidCallback onSubmit;
   final bool useFlexLayout;
+  final bool isLoading;
 
   const ChooseCacheCard({
     super.key,
     required this.cachedData,
     required this.onSubmit,
     this.useFlexLayout = false,
+    this.isLoading = false,
   });
 
   @override
@@ -118,9 +120,20 @@ class ChooseCacheCard extends StatelessWidget {
               height: 36,
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: onSubmit,
-                icon: const Icon(Icons.visibility),
-                label: const Text('查看'),
+                onPressed: isLoading ? null : onSubmit,
+                icon: isLoading
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.visibility),
+                label: Text(isLoading ? '加载中' : '查看'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -139,6 +152,7 @@ class ChooseLatestCard extends StatefulWidget {
   final bool isLoggedIn;
   final ValueChanged<TermInfo>? onTermSelected;
   final bool useFlexLayout;
+  final bool isLoading;
   final Future<List<TermInfo>> Function() getTerms;
 
   const ChooseLatestCard({
@@ -147,6 +161,7 @@ class ChooseLatestCard extends StatefulWidget {
     required this.getTerms,
     this.onTermSelected,
     this.useFlexLayout = false,
+    this.isLoading = false,
   });
 
   @override
@@ -363,14 +378,26 @@ class _ChooseLatestCardState extends State<ChooseLatestCard> {
               height: 36,
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed:
-                    widget.isLoggedIn &&
-                        _selectedTerm != null &&
-                        widget.onTermSelected != null
-                    ? () => widget.onTermSelected!(_selectedTerm!)
-                    : null,
-                icon: const Icon(Icons.visibility),
-                label: const Text('查看'),
+                onPressed: widget.isLoading
+                    ? null
+                    : (widget.isLoggedIn &&
+                              _selectedTerm != null &&
+                              widget.onTermSelected != null
+                          ? () => widget.onTermSelected!(_selectedTerm!)
+                          : null),
+                icon: widget.isLoading
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.visibility),
+                label: Text(widget.isLoading ? '加载中' : '查看'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,

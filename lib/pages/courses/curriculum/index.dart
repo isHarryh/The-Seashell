@@ -21,12 +21,16 @@ class CurriculumPage extends StatefulWidget {
   State<CurriculumPage> createState() => _CurriculumPageState();
 }
 
-class _CurriculumPageState extends State<CurriculumPage> {
+class _CurriculumPageState extends State<CurriculumPage>
+    with TickerProviderStateMixin {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
 
   CurriculumIntegratedData? _curriculumData;
   String? _errorMessage;
   int _currentWeek = 1;
+  bool _isLoading = false;
+  late AnimationController _fadeAnimationController;
+  late Animation<double> _fadeAnimation;
 
   static const int maxWeeks = 50;
   static const List<String> dayNames = ['一', '二', '三', '四', '五', '六', '日'];
@@ -35,11 +39,21 @@ class _CurriculumPageState extends State<CurriculumPage> {
   void initState() {
     super.initState();
     _serviceProvider.addListener(_onServiceStatusChanged);
+
+    _fadeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeAnimationController, curve: Curves.linear),
+    );
+
     _loadCurriculumFromCacheOrService();
   }
 
   @override
   void dispose() {
+    _fadeAnimationController.dispose();
     _serviceProvider.removeListener(_onServiceStatusChanged);
     super.dispose();
   }
@@ -93,6 +107,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
           _errorMessage = null;
           _adjustCurrentWeek();
         });
+        _fadeAnimationController.forward();
       }
       return;
     }
@@ -114,6 +129,13 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
     if (!service.isOnline) {
       return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
     }
 
     try {
@@ -139,19 +161,21 @@ class _CurriculumPageState extends State<CurriculumPage> {
         integratedData,
       );
 
-      // Set activated to true when loading new data
       setActivated(true);
 
       if (mounted) {
         setState(() {
           _curriculumData = integratedData;
+          _isLoading = false;
           _adjustCurrentWeek();
         });
+        _fadeAnimationController.forward();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();
+          _isLoading = false;
         });
       }
     }
@@ -266,6 +290,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                             _serviceProvider.coursesService.getTerms(),
                         onTermSelected: _loadCurriculumForTerm,
                         useFlexLayout: true,
+                        isLoading: _isLoading,
                       ),
                     ),
                   ),
@@ -276,6 +301,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
                         cachedData: cachedData,
                         onSubmit: _activateAndViewCachedData,
                         useFlexLayout: true,
+                        isLoading: _isLoading,
                       ),
                     ),
                   ),
@@ -290,11 +316,13 @@ class _CurriculumPageState extends State<CurriculumPage> {
                   isLoggedIn: _serviceProvider.coursesService.isOnline,
                   getTerms: () => _serviceProvider.coursesService.getTerms(),
                   onTermSelected: _loadCurriculumForTerm,
+                  isLoading: _isLoading,
                 ),
                 if (cachedData != null && cachedData.isNotEmpty)
                   ChooseCacheCard(
                     cachedData: cachedData,
                     onSubmit: _activateAndViewCachedData,
+                    isLoading: _isLoading,
                   ),
               ],
             );
@@ -304,7 +332,13 @@ class _CurriculumPageState extends State<CurriculumPage> {
     );
   }
 
-  void _activateAndViewCachedData() {
+  void _activateAndViewCachedData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
     final cachedData = _serviceProvider.storeService
         .getCache<CurriculumIntegratedData>(
           "curriculum_data",
@@ -314,13 +348,20 @@ class _CurriculumPageState extends State<CurriculumPage> {
     if (cachedData.isNotEmpty) {
       final data = cachedData.value!;
 
-      // Set activated to true in settings
       setActivated(true);
 
       if (mounted) {
         setState(() {
           _curriculumData = data;
+          _isLoading = false;
           _adjustCurrentWeek();
+        });
+        _fadeAnimationController.forward();
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
         });
       }
     }
@@ -360,7 +401,34 @@ class _CurriculumPageState extends State<CurriculumPage> {
         children: [
           _buildWeekSelector(),
           const SizedBox(height: 16),
-          Expanded(child: _buildCurriculumTable()),
+          Expanded(
+            child: GestureDetector(
+              onPanEnd: (details) {
+                if (details.velocity.pixelsPerSecond.dx.abs() > 400) {
+                  if (details.velocity.pixelsPerSecond.dx > 0) {
+                    // Slide from left
+                    if (_currentWeek > 1) {
+                      _changeWeek(-1);
+                    }
+                  } else {
+                    // Slide from right
+                    if (_currentWeek < _getMaxValidWeek()) {
+                      _changeWeek(1);
+                    }
+                  }
+                }
+              },
+              child: AnimatedBuilder(
+                animation: _fadeAnimationController,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: _buildCurriculumTable(),
+                  );
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -395,13 +463,20 @@ class _CurriculumPageState extends State<CurriculumPage> {
               color: Theme.of(context).colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              '第 $_currentWeek 周',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: Text(
+                '第 $_currentWeek 周',
+                key: ValueKey(_currentWeek),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -420,9 +495,15 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
   void _changeWeek(int delta) {
     final maxValidWeek = _getMaxValidWeek();
+    final newWeek = (_currentWeek + delta).clamp(1, maxValidWeek);
+
+    if (newWeek == _currentWeek) return;
+
+    _fadeAnimationController.reset();
     setState(() {
-      _currentWeek = (_currentWeek + delta).clamp(1, maxValidWeek);
+      _currentWeek = newWeek;
     });
+    _fadeAnimationController.forward();
   }
 
   void _adjustCurrentWeek() {
@@ -797,51 +878,61 @@ class _CurriculumPageState extends State<CurriculumPage> {
   Widget _buildClassContent(List<ClassItem> classesInSlot) {
     final firstClass = classesInSlot.first;
 
-    return InkWell(
-      onTap: () => _showClassDetails(firstClass),
-      child: Container(
-        padding: const EdgeInsets.all(2.0),
-        width: double.infinity,
-        height: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Center(
-                child: Text(
-                  firstClass.className,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showClassDetails(firstClass),
+        splashColor: Colors.white.withOpacity(0.3),
+        highlightColor: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(2.0),
+          width: double.infinity,
+          height: double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Center(
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    child: Text(
+                      firstClass.className,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                ),
+              ),
+              if (firstClass.teacherName.isNotEmpty)
+                Text(
+                  firstClass.teacherName,
+                  style: const TextStyle(fontSize: 10, color: Colors.white70),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              if (firstClass.locationName.isNotEmpty)
+                Text(
+                  firstClass.locationName,
+                  style: const TextStyle(fontSize: 9, color: Colors.white70),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ),
-            if (firstClass.teacherName.isNotEmpty)
-              Text(
-                firstClass.teacherName,
-                style: const TextStyle(fontSize: 10, color: Colors.white70),
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (firstClass.locationName.isNotEmpty)
-              Text(
-                firstClass.locationName,
-                style: const TextStyle(fontSize: 9, color: Colors.white70),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (classesInSlot.length > 1)
-              Text(
-                '+${classesInSlot.length - 1}',
-                style: const TextStyle(fontSize: 9, color: Colors.white70),
-              ),
-          ],
+              if (classesInSlot.length > 1)
+                Text(
+                  '+${classesInSlot.length - 1}',
+                  style: const TextStyle(fontSize: 9, color: Colors.white70),
+                ),
+            ],
+          ),
         ),
       ),
     );
