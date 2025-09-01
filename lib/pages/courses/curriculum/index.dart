@@ -399,6 +399,7 @@ class _CurriculumPageState extends State<CurriculumPage>
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
+          const SizedBox(height: 8),
           _buildWeekSelector(),
           const SizedBox(height: 16),
           Expanded(
@@ -780,7 +781,6 @@ class _CurriculumPageState extends State<CurriculumPage>
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300, width: 0.5),
         color: Theme.of(context).colorScheme.primaryContainer,
       ),
       child: Center(
@@ -876,6 +876,8 @@ class _CurriculumPageState extends State<CurriculumPage>
   }
 
   Widget _buildClassContent(List<ClassItem> classesInSlot) {
+    final settings = getSettings();
+    final maxLines = settings.tableSize.height >= 100 ? 3 : 2;
     final firstClass = classesInSlot.first;
 
     return Material(
@@ -899,32 +901,26 @@ class _CurriculumPageState extends State<CurriculumPage>
                   child: AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 200),
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                     child: Text(
                       firstClass.className,
                       textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: maxLines,
+                      overflow: TextOverflow.fade,
                     ),
                   ),
                 ),
               ),
-              if (firstClass.teacherName.isNotEmpty)
-                Text(
-                  firstClass.teacherName,
-                  style: const TextStyle(fontSize: 10, color: Colors.white70),
-                  overflow: TextOverflow.ellipsis,
-                ),
               if (firstClass.locationName.isNotEmpty)
                 Text(
                   firstClass.locationName,
-                  style: const TextStyle(fontSize: 9, color: Colors.white70),
+                  style: const TextStyle(fontSize: 10, color: Colors.white70),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: maxLines,
+                  overflow: TextOverflow.fade,
                 ),
               if (classesInSlot.length > 1)
                 Text(
@@ -940,17 +936,11 @@ class _CurriculumPageState extends State<CurriculumPage>
 
   Color _getClassColor(ClassItem classItem) {
     final hash = classItem.className.hashCode;
-    final colors = [
-      Colors.blue.shade400,
-      Colors.green.shade400,
-      Colors.orange.shade400,
-      Colors.purple.shade400,
-      Colors.red.shade400,
-      Colors.teal.shade400,
-      Colors.indigo.shade400,
-      Colors.brown.shade400,
-    ];
-    return colors[hash.abs() % colors.length];
+    final hueSteps = 18;
+    final hue = (hash.abs() % hueSteps) * (360.0 / hueSteps);
+    const saturation = 0.667;
+    const value = 0.75;
+    return HSVColor.fromAHSV(1.0, hue, saturation, value).toColor();
   }
 
   void _showClassDetails(ClassItem classItem) {
