@@ -9,6 +9,7 @@ class CourseDetailCard extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
   final VoidCallback? onSelectionChanged;
+  final List<String> selectedCourseIds;
 
   const CourseDetailCard({
     super.key,
@@ -17,6 +18,7 @@ class CourseDetailCard extends StatefulWidget {
     required this.isExpanded,
     required this.onToggle,
     this.onSelectionChanged,
+    required this.selectedCourseIds,
   });
 
   @override
@@ -36,6 +38,10 @@ class _CourseDetailCardState extends State<CourseDetailCard>
   List<CourseInfo> _courseDetails = [];
   bool _isLoadingDetails = false;
   String? _detailsErrorMessage;
+
+  // Expand/collapse states
+  bool _isScheduleExpanded = false;
+  bool _isTargetExpanded = false;
 
   // To locate the details widget in the list context
   final GlobalKey _detailsKey = GlobalKey();
@@ -173,7 +179,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
         if (context != null) {
           Scrollable.ensureVisible(
             context,
-            alignment: 0.3,
+            alignment: 0.25,
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeOut,
           );
@@ -330,6 +336,37 @@ class _CourseDetailCardState extends State<CourseDetailCard>
   }
 
   Widget _buildCourseDetailsList() {
+    // Check if this course is already selected
+    final isAlreadySelected = widget.selectedCourseIds.contains(
+      widget.course.courseId,
+    );
+
+    if (isAlreadySelected) {
+      if (widget.course.classDetail != null) {
+        return _buildSelectedCourseDetail(widget.course);
+      } else {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.shade200, width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                '此课程已选',
+                style: TextStyle(color: Colors.green.shade700, fontSize: 14),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    // For non-selected courses
     if (_isLoadingDetails) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -550,7 +587,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (detail.extraName?.isNotEmpty == true) ...[
+        if (detail.extraName?.trim().isNotEmpty == true) ...[
           Row(
             children: [
               Icon(
@@ -560,7 +597,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
               ),
               const SizedBox(width: 8),
               Text(
-                detail.extraName!,
+                detail.extraName!.trim(),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -605,50 +642,17 @@ class _CourseDetailCardState extends State<CourseDetailCard>
           const SizedBox(height: 8),
 
         if (detail.detailSchedule?.isNotEmpty == true) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(
-                '排课：',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: detail.detailSchedule!
-                    .map(
-                      (schedule) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.cyan.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.cyan.shade200,
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          schedule,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.cyan.shade700,
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
+          _buildExpandableList(
+            label: '排课：',
+            icon: Icons.schedule,
+            items: detail.detailSchedule!,
+            isExpanded: _isScheduleExpanded,
+            onToggle: () {
+              setState(() {
+                _isScheduleExpanded = !_isScheduleExpanded;
+              });
+            },
+            baseColor: Colors.cyan,
           ),
         ],
 
@@ -684,50 +688,17 @@ class _CourseDetailCardState extends State<CourseDetailCard>
         if (detail.detailClasses?.isNotEmpty == true) const SizedBox(height: 8),
 
         if (detail.detailTarget?.isNotEmpty == true) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(Icons.group, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(
-                '面向对象：',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: detail.detailTarget!
-                    .map(
-                      (target) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.orange.shade200,
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          target,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.orange.shade700,
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
+          _buildExpandableList(
+            label: '面向对象：',
+            icon: Icons.group,
+            items: detail.detailTarget!,
+            isExpanded: _isTargetExpanded,
+            onToggle: () {
+              setState(() {
+                _isTargetExpanded = !_isTargetExpanded;
+              });
+            },
+            baseColor: Colors.orange,
           ),
         ],
 
@@ -756,6 +727,107 @@ class _CourseDetailCardState extends State<CourseDetailCard>
               ),
             ],
           ),
+      ],
+    );
+  }
+
+  Widget _buildExpandableList({
+    required String label,
+    required IconData icon,
+    required List<String> items,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+    required Color baseColor,
+  }) {
+    const maxVisibleItems = 5;
+    final visibleItems = isExpanded
+        ? items
+        : items.take(maxVisibleItems).toList();
+    final hasMore = items.length > maxVisibleItems;
+    final remainingCount = items.length - maxVisibleItems;
+
+    final chipColor = baseColor.withOpacity(0.1);
+    final chipBorderColor = baseColor.withOpacity(0.4);
+    final chipTextColor = baseColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.grey.shade600),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: visibleItems
+              .map(
+                (item) => Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: chipColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: chipBorderColor, width: 1),
+                  ),
+                  child: Text(
+                    item,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: chipTextColor,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        if (hasMore) ...[
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: onToggle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isExpanded ? '收起' : '展开更多 $remainingCount 个',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -884,6 +956,91 @@ class _CourseDetailCardState extends State<CourseDetailCard>
               valueColor: AlwaysStoppedAnimation<Color>(
                 isFull ? Colors.red : Colors.blue,
               ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedCourseDetail(CourseInfo courseDetail) {
+    final detail = courseDetail.classDetail!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              '已选讲台详情',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.shade200, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Left: Selection Status (Fixed Width)
+                SizedBox(
+                  width: 60,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.green.shade300,
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          size: 22,
+                          color: Colors.green.shade700,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '已选',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.green.shade700,
+                          ),
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Right: Basic Info (Flexible)
+                Expanded(child: _buildBasicInfoSection(courseDetail, detail)),
+              ],
             ),
           ),
         ),

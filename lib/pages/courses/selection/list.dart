@@ -823,6 +823,7 @@ class _CourseTableRowState extends State<_CourseTableRow>
           isExpanded: widget.isExpanded,
           onToggle: widget.onToggle,
           onSelectionChanged: widget.onSelectionChanged,
+          selectedCourseIds: widget.selectedCourseIds,
         ),
       ],
     );

@@ -195,7 +195,7 @@ class UstbByytProdService extends BaseCoursesService {
         'cxbj': '-1',
         'pylx': '1',
         'current': 1,
-        'pageSize': 100,
+        'pageSize': 1000,
         'sffx': null,
       });
 
@@ -558,7 +558,7 @@ class UstbByytProdService extends BaseCoursesService {
       final formData = params.toFormData();
 
       formData['pageNum'] = '1';
-      formData['pageSize'] = '100';
+      formData['pageSize'] = '1000';
 
       response = await http.post(
         Uri.parse('$_baseUrl/Xsxk/queryKxrw'),
@@ -709,7 +709,7 @@ class UstbByytProdService extends BaseCoursesService {
       final formData = params.toFormData();
 
       formData['pageNum'] = '1';
-      formData['pageSize'] = '100';
+      formData['pageSize'] = '1000';
 
       response = await http.post(
         Uri.parse('$_baseUrl/Xsxk/queryKxrw'),
