@@ -22,6 +22,7 @@ class _CourseListPageState extends State<CourseListPage> {
   List<CourseTab> _courseTabs = [];
   CourseTab? _selectedTab;
   List<CourseInfo> _courses = [];
+  List<String> _selectedCourseIds = [];
   bool _isLoading = false;
   bool _isLoadingCourses = false;
   String? _errorMessage;
@@ -86,12 +87,32 @@ class _CourseListPageState extends State<CourseListPage> {
     });
 
     try {
-      final courses = await _serviceProvider.coursesService
+      // Get both selectable and selected courses
+      final selectableCourses = await _serviceProvider.coursesService
           .getSelectableCourses(widget.termInfo, _selectedTab!.tabId);
+      final selectedCourses = await _serviceProvider.coursesService
+          .getSelectedCourses(widget.termInfo, _selectedTab!.tabId);
+
       if (!mounted) return;
 
+      final selectedIds = selectedCourses
+          .map((course) => course.courseId)
+          .toSet();
+
+      // Separate courses into selected and unselected
+      final selectedInTab = selectableCourses
+          .where((course) => selectedIds.contains(course.courseId))
+          .toList();
+      final unselectedInTab = selectableCourses
+          .where((course) => !selectedIds.contains(course.courseId))
+          .toList();
+
+      // Combine
+      final combinedCourses = [...selectedInTab, ...unselectedInTab];
+
       setState(() {
-        _courses = courses;
+        _courses = combinedCourses;
+        _selectedCourseIds = selectedIds.toList();
         _isLoadingCourses = false;
       });
     } catch (e) {
@@ -294,7 +315,7 @@ class _CourseListPageState extends State<CourseListPage> {
         final availableWidth = constraints.maxWidth;
 
         final columnConfig = [
-          {'name': '', 'minWidth': 70.0, 'flex': 0, 'isNumeric': false},
+          {'name': '', 'minWidth': 80.0, 'flex': 0, 'isNumeric': false},
           {'name': '课程代码', 'minWidth': 80.0, 'flex': 2, 'isNumeric': false},
           {'name': '课程名称', 'minWidth': 120.0, 'flex': 4, 'isNumeric': false},
           {'name': '性质', 'minWidth': 60.0, 'flex': 1, 'isNumeric': false},
@@ -382,6 +403,7 @@ class _CourseListPageState extends State<CourseListPage> {
                           // Ensure refreshed
                           setState(() {});
                         },
+                        selectedCourseIds: _selectedCourseIds,
                       );
                     },
                   ),
@@ -462,9 +484,8 @@ class _CourseListPageState extends State<CourseListPage> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CourseSubmitPage(
-                        termInfo: widget.termInfo,
-                      ),
+                      builder: (context) =>
+                          CourseSubmitPage(termInfo: widget.termInfo),
                     ),
                   );
 
@@ -569,6 +590,7 @@ class _CourseTableRow extends StatefulWidget {
   final List<double> columnWidths;
   final VoidCallback onToggle;
   final VoidCallback? onSelectionChanged;
+  final List<String> selectedCourseIds;
 
   const _CourseTableRow({
     required this.course,
@@ -577,6 +599,7 @@ class _CourseTableRow extends StatefulWidget {
     required this.columnWidths,
     required this.onToggle,
     this.onSelectionChanged,
+    required this.selectedCourseIds,
   });
 
   @override
@@ -599,33 +622,47 @@ class _CourseTableRowState extends State<_CourseTableRow>
 
   Widget _buildSelectionStatusIndicator() {
     final selectedCount = _getSelectedCountForCourse();
-    if (selectedCount == 0) {
+    final isAlreadySelected = widget.selectedCourseIds.contains(
+      widget.course.courseId,
+    );
+
+    if (selectedCount == 0 && !isAlreadySelected) {
       return const SizedBox.shrink();
     }
 
+    // For already selected courses
+    if (isAlreadySelected && selectedCount == 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Text(
+          '已选',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+
+    // For courses in current selection
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.add,
-            size: 12,
-            color: Theme.of(context).colorScheme.onPrimary,
-          ),
-          Text(
-            '$selectedCount',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimary,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+      child: Text(
+        '+ $selectedCount',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
@@ -720,6 +757,7 @@ class _CourseTableRowState extends State<_CourseTableRow>
                           );
                         },
                       ),
+                      const SizedBox(width: 4),
                       _buildSelectionStatusIndicator(),
                     ],
                   ),

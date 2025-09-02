@@ -450,7 +450,7 @@ extension CourseInfoUstbByytExtension on CourseInfo {
       credits: double.tryParse(data['xf']?.toString() ?? '0') ?? 0.0,
       hours:
           double.tryParse(
-            data['zxs']?.toString() ?? data['xs']?.toString() ?? '0',
+            data['xszxs']?.toString() ?? data['xs']?.toString() ?? '0',
           ) ??
           0.0,
       classDetail: classDetail,

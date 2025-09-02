@@ -225,7 +225,10 @@ class UstbByytMockService extends BaseCoursesService {
   }
 
   @override
-  Future<List<CourseInfo>> getSelectedCourses(TermInfo termInfo) async {
+  Future<List<CourseInfo>> getSelectedCourses(
+    TermInfo termInfo, [
+    String? tab,
+  ]) async {
     try {
       if (status == ServiceStatus.offline) {
         throw Exception('Not logged in');
@@ -233,12 +236,20 @@ class UstbByytMockService extends BaseCoursesService {
 
       await Future.delayed(Duration(milliseconds: 800));
 
-      final String jsonString = await rootBundle.loadString(
-        'assets/mock/ustb_byyt/queryCourseAdded.json',
-      );
+      String jsonString;
+      if (tab != null) {
+        jsonString = await rootBundle.loadString(
+          'assets/mock/ustb_byyt/queryCourseList[$tab].json',
+        );
+      } else {
+        jsonString = await rootBundle.loadString(
+          'assets/mock/ustb_byyt/queryCourseAdded.json',
+        );
+      }
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
-      if (jsonData['code'] != 200) {
+      // Handle different response formats - some mock files don't have code field
+      if (jsonData.containsKey('code') && jsonData['code'] != 200) {
         throw Exception(
           'API returned error: ${jsonData['msg'] ?? 'Unknown error'}',
         );

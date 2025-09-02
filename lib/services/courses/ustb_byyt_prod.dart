@@ -449,24 +449,41 @@ class UstbByytProdService extends BaseCoursesService {
   }
 
   @override
-  Future<List<CourseInfo>> getSelectedCourses(TermInfo termInfo) async {
+  Future<List<CourseInfo>> getSelectedCourses(
+    TermInfo termInfo, [
+    String? tab,
+  ]) async {
     if (status == ServiceStatus.offline || _cookie == null) {
       throw const CourseServiceOffline();
     }
 
     http.Response response;
     try {
-      final params = _CourseSelectionSharedParams(
-        termInfo: termInfo,
-        tabId: 'yixuan',
-      );
-      final formData = params.toFormData();
+      if (tab != null) {
+        final params = _CourseSelectionSharedParams(
+          termInfo: termInfo,
+          tabId: tab,
+        );
+        final formData = params.toFormData();
 
-      response = await http.post(
-        Uri.parse('$_baseUrl/Xsxk/queryYxkc'),
-        headers: _getHeaders(),
-        body: formData,
-      );
+        response = await http.post(
+          Uri.parse('$_baseUrl/Xsxk/queryKxrw'),
+          headers: _getHeaders(),
+          body: formData,
+        );
+      } else {
+        final params = _CourseSelectionSharedParams(
+          termInfo: termInfo,
+          tabId: 'yixuan',
+        );
+        final formData = params.toFormData();
+
+        response = await http.post(
+          Uri.parse('$_baseUrl/Xsxk/queryYxkc'),
+          headers: _getHeaders(),
+          body: formData,
+        );
+      }
     } catch (e) {
       throw CourseServiceNetworkError('Failed to get selected courses', e);
     }
@@ -476,23 +493,40 @@ class UstbByytProdService extends BaseCoursesService {
     try {
       final data = json.decode(response.body);
 
-      if (data['code'] != 200) {
-        throw CourseServiceBadRequest(
-          'API returned error: ${data['msg'] ?? 'No msg'}',
-          data['code'] as int?,
-        );
+      // Handle different response formats
+      if (data is Map<String, dynamic> && data.containsKey('code')) {
+        // Response with code field
+        if (data['code'] != 200) {
+          throw CourseServiceBadRequest(
+            'API returned error: ${data['msg'] ?? 'No msg'}',
+            data['code'] as int?,
+          );
+        }
+        if (data['content'] == null) {
+          throw CourseServiceBadResponse('Response content is null');
+        }
       }
-      if (data['content'] == null) {
-        throw CourseServiceBadResponse('Response content is null');
-      }
+      // For responses without code field, proceed directly
 
-      final coursesList = data['content'] as List<dynamic>? ?? [];
+      List<dynamic> coursesList;
+      if (tab != null) {
+        // /Xsxk/queryKxrw response
+        coursesList = data['yxkcList'] as List<dynamic>? ?? [];
+      } else {
+        // /Xsxk/queryYxkc response
+        if (data.containsKey('content')) {
+          coursesList = data['content'] as List<dynamic>? ?? [];
+        } else {
+          // Direct array response
+          coursesList = data['yxkcList'] as List<dynamic>? ?? [];
+        }
+      }
 
       return coursesList
           .map(
             (item) => CourseInfoUstbByytExtension.parse(
               item as Map<String, dynamic>,
-              fromTabId: 'yixuan',
+              fromTabId: tab ?? 'yixuan',
             ),
           )
           .toList();
