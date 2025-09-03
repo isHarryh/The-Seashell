@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
 import '/types/preferences.dart';
@@ -202,7 +203,6 @@ class _CurriculumPageState extends State<CurriculumPage>
   }
 
   Widget _buildBody() {
-    // 如果有错误信息，显示错误页面
     if (_errorMessage != null) {
       return Center(
         child: Column(
@@ -250,13 +250,22 @@ class _CurriculumPageState extends State<CurriculumPage>
       }
     } else {
       if (!_serviceProvider.coursesService.isOnline) {
-        return const Center(
+        return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.login, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('请先登录', style: TextStyle(fontSize: 18, color: Colors.grey)),
+              IconButton(
+                icon: Container(
+                  padding: EdgeInsets.only(right: 8.0),
+                  child: Icon(Icons.login, size: 64, color: Colors.grey),
+                ),
+                onPressed: () => context.router.pushPath('/courses/account'),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '请先登录',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
             ],
           ),
         );

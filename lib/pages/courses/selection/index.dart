@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
 import '/utils/app_bar.dart';
@@ -34,6 +35,13 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
   Future<void> _loadTerms() async {
     if (!mounted) return;
 
+    if (!_serviceProvider.coursesService.isOnline) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -62,6 +70,10 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
 
   Future<void> _loadCourseTabs() async {
     if (_selectedTerm == null || !mounted) return;
+
+    if (!_serviceProvider.coursesService.isOnline) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -171,124 +183,159 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
             Expanded(
               child: Column(
                 children: [
-                  Card(
-                    elevation: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_today),
-                              const SizedBox(width: 12),
-                              Text(
-                                '学期选择',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<TermInfo>(
-                            initialValue: _selectedTerm,
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(),
-                              labelText: '选择学期',
-                            ),
-                            items: _terms.map((term) {
-                              return DropdownMenuItem(
-                                value: term,
-                                child: Text(
-                                  '${term.year}学年 第${term.season}学期',
-                                  style: const TextStyle(fontSize: 14),
+                  if (!_serviceProvider.coursesService.isOnline)
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: Container(
+                                padding: EdgeInsets.only(right: 8.0),
+                                child: Icon(
+                                  Icons.login,
+                                  size: 64,
+                                  color: Colors.grey,
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (TermInfo? newTerm) {
-                              if (mounted) {
-                                setState(() {
-                                  _selectedTerm = newTerm;
-                                });
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: _selectedTerm != null
-                          ? LinearGradient(
-                              colors: [
-                                Theme.of(context).primaryColor,
-                                Theme.of(context).primaryColor.withOpacity(0.8),
-                              ],
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: _selectedTerm != null
-                          ? [
-                              BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).primaryColor.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
                               ),
-                            ]
-                          : null,
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _selectedTerm != null && !_isLoading
-                          ? _loadCourseTabs
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                              onPressed: () =>
+                                  context.router.pushPath('/courses/account'),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '请先登录',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.arrow_forward,
-                            size: 24,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '开始选课',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                    )
+                  else
+                    Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '学期选择',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<TermInfo>(
+                              initialValue: _selectedTerm,
+                              decoration: InputDecoration(
+                                border: const OutlineInputBorder(),
+                                labelText: '选择学期',
+                              ),
+                              items: _terms.map((term) {
+                                return DropdownMenuItem(
+                                  value: term,
+                                  child: Text(
+                                    '${term.year}学年 第${term.season}学期',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (TermInfo? newTerm) {
+                                if (mounted) {
+                                  setState(() {
+                                    _selectedTerm = newTerm;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  if (_serviceProvider.coursesService.isOnline) ...[
+                    const Spacer(),
+
+                    Container(
+                      width: double.infinity,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: _selectedTerm != null
+                            ? LinearGradient(
+                                colors: [
+                                  Theme.of(context).primaryColor,
+                                  Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.8),
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: _selectedTerm != null
+                            ? [
+                                BoxShadow(
+                                  color: Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: ElevatedButton(
+                        onPressed: _selectedTerm != null && !_isLoading
+                            ? _loadCourseTabs
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.arrow_forward,
+                              size: 24,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '开始选课',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  if (_selectedTerm == null)
-                    Text(
-                      '请先选择学期才能开始选课',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
+                    if (_selectedTerm == null)
+                      Text(
+                        '请先选择学期才能开始选课',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
+                  ],
                 ],
               ),
             ),

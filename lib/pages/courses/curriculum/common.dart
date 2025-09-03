@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 import '/types/courses.dart';
 import '/types/caching.dart';
 
@@ -251,7 +252,7 @@ class _ChooseLatestCardState extends State<ChooseLatestCard> {
             if (!widget.isLoggedIn)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade50,
                   border: Border.all(color: Colors.orange.shade200),
@@ -259,7 +260,15 @@ class _ChooseLatestCardState extends State<ChooseLatestCard> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.login, color: Colors.orange.shade700, size: 20),
+                    IconButton(
+                      icon: Icon(
+                        Icons.login,
+                        color: Colors.orange.shade700,
+                        size: 24,
+                      ),
+                      onPressed: () =>
+                          context.router.pushPath('/courses/account'),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
