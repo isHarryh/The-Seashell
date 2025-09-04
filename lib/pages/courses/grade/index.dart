@@ -15,17 +15,15 @@ class _GradePageState extends State<GradePage> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
   final TextEditingController _searchController = TextEditingController();
 
-  // 原始数据和过滤后数据分离
-  List<CourseGradeItem>? _allGrades; // 原始完整数据
-  List<CourseGradeItem>? _filteredGrades; // 过滤后显示的数据
+  List<CourseGradeItem>? _allGrades;
+  List<CourseGradeItem>? _filteredGrades;
 
   bool _isLoading = false;
   String? _errorMessage;
   String _currentSearchQuery = '';
 
-  // 选择状态管理
-  Set<String> _selectedCourseIds = {}; // 存储选中课程的ID
-  bool _isAllSelected = false; // 全选状态
+  final Set<String> _selectedCourseIds = {};
+  bool _isAllSelected = false;
 
   @override
   void initState() {
@@ -76,9 +74,8 @@ class _GradePageState extends State<GradePage> {
       if (mounted) {
         setState(() {
           _allGrades = grades;
-          _filteredGrades = grades; // 初始时显示所有数据
+          _filteredGrades = grades;
           _isLoading = false;
-          // 如果有搜索查询，重新应用搜索
           if (_currentSearchQuery.isNotEmpty) {
             _performSearch(_currentSearchQuery);
           }
@@ -109,7 +106,7 @@ class _GradePageState extends State<GradePage> {
         _filteredGrades = _searchGrades(_allGrades!, query);
       }
 
-      // 清除被筛选隐藏的课程的选择状态
+      // Clear the selection state of courses that are filtered out
       if (_filteredGrades != null) {
         final visibleCourseIds = _filteredGrades!
             .map((g) => g.courseId)
@@ -118,7 +115,6 @@ class _GradePageState extends State<GradePage> {
           (courseId) => visibleCourseIds.contains(courseId),
         );
 
-        // 更新全选状态
         _isAllSelected =
             visibleCourseIds.isNotEmpty &&
             visibleCourseIds.every((id) => _selectedCourseIds.contains(id));
@@ -206,17 +202,16 @@ class _GradePageState extends State<GradePage> {
     _performSearch('');
   }
 
-  // 选择管理方法
   void _toggleSelectAll() {
     if (_filteredGrades == null) return;
 
     setState(() {
       if (_isAllSelected) {
-        // 取消全选
+        // Cancel select all
         _selectedCourseIds.clear();
         _isAllSelected = false;
       } else {
-        // 全选当前显示的课程
+        // Select all
         _selectedCourseIds.clear();
         for (final grade in _filteredGrades!) {
           _selectedCourseIds.add(grade.courseId);
@@ -234,7 +229,6 @@ class _GradePageState extends State<GradePage> {
         _selectedCourseIds.add(courseId);
       }
 
-      // 更新全选状态
       if (_filteredGrades != null) {
         final visibleCourseIds = _filteredGrades!
             .map((g) => g.courseId)
@@ -258,7 +252,6 @@ class _GradePageState extends State<GradePage> {
 
     if (_allGrades == null) return;
 
-    // 获取选中的课程成绩
     final selectedGrades = _allGrades!
         .where((grade) => _selectedCourseIds.contains(grade.courseId))
         .toList();
@@ -272,7 +265,6 @@ class _GradePageState extends State<GradePage> {
       return;
     }
 
-    // 计算平均成绩和加权成绩
     double totalScore = 0;
     double totalWeightedScore = 0;
     double totalCredits = 0;
@@ -389,7 +381,7 @@ class _GradePageState extends State<GradePage> {
       );
     }
 
-    // 如果还没有加载数据，显示无数据状态
+    // No data
     if (_allGrades == null) {
       return const Center(
         child: Column(
@@ -403,22 +395,18 @@ class _GradePageState extends State<GradePage> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          _buildActionBar(),
-          const SizedBox(height: 16),
-          Expanded(child: _buildTableOrEmptyState()),
-        ],
-      ),
+    return Column(
+      children: [
+        Container(padding: const EdgeInsets.all(12), child: _buildActionBar()),
+        Expanded(child: _buildTableOrEmptyState()),
+      ],
     );
   }
 
   Widget _buildTableOrEmptyState() {
     if (_filteredGrades == null || _filteredGrades!.isEmpty) {
       if (_currentSearchQuery.isNotEmpty) {
-        // 有搜索但没有结果，在表格位置显示搜索无结果
+        // Searching but no data
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -438,7 +426,7 @@ class _GradePageState extends State<GradePage> {
           ),
         );
       } else {
-        // 没有搜索但也没有数据
+        // No searching and no data
         return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -463,7 +451,6 @@ class _GradePageState extends State<GradePage> {
 
     return Row(
       children: [
-        // 搜索框
         Expanded(
           flex: 3,
           child: SizedBox(
@@ -492,8 +479,9 @@ class _GradePageState extends State<GradePage> {
             ),
           ),
         ),
+
         const SizedBox(width: 12),
-        // 刷新按钮
+
         ElevatedButton.icon(
           onPressed: (service.isOnline && !_isLoading) ? _refreshGrades : null,
           icon: _isLoading
@@ -506,18 +494,17 @@ class _GradePageState extends State<GradePage> {
           label: Text(_isLoading ? '刷新中...' : '刷新'),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            minimumSize: const Size(0, 40),
           ),
         ),
-        const SizedBox(width: 12),
-        // 快捷计算按钮
+
+        const SizedBox(width: 8),
+
         ElevatedButton.icon(
           onPressed: _showQuickCalculation,
           icon: const Icon(Icons.calculate, size: 18),
           label: const Text('快捷计算'),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            minimumSize: const Size(0, 40),
           ),
         ),
       ],
@@ -529,7 +516,6 @@ class _GradePageState extends State<GradePage> {
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
 
-        // 定义列的配置
         final columnConfig = [
           {'name': '', 'minWidth': 50.0, 'flex': 0, 'isNumeric': false},
           {'name': '学期', 'minWidth': 80.0, 'flex': 2, 'isNumeric': false},
@@ -545,7 +531,6 @@ class _GradePageState extends State<GradePage> {
           {'name': '成绩', 'minWidth': 60.0, 'flex': 1, 'isNumeric': true},
         ];
 
-        // 计算总的最小宽度和权重
         final totalMinWidth = columnConfig.fold<double>(
           0,
           (sum, col) => sum + (col['minWidth'] as double),
@@ -555,12 +540,10 @@ class _GradePageState extends State<GradePage> {
           (sum, col) => sum + (col['flex'] as int),
         );
 
-        // 决定是否需要水平滚动
         final needsHorizontalScroll = availableWidth < totalMinWidth;
 
         Widget table;
         if (needsHorizontalScroll) {
-          // 使用最小宽度
           final columnWidths = columnConfig
               .map((col) => col['minWidth'] as double)
               .toList();
@@ -570,7 +553,6 @@ class _GradePageState extends State<GradePage> {
             totalMinWidth,
           );
         } else {
-          // 按比例分配可用宽度
           final extraWidth = availableWidth - totalMinWidth;
           final columnWidths = columnConfig.map((col) {
             final minWidth = col['minWidth'] as double;
@@ -608,14 +590,18 @@ class _GradePageState extends State<GradePage> {
       width: tableWidth,
       child: Column(
         children: [
-          // 表头
+          // Table header
           Container(
             height: 60.0,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               border: Border(
-                top: BorderSide(color: Theme.of(context).dividerColor),
-                bottom: BorderSide(color: Theme.of(context).dividerColor),
+                top: BorderSide(
+                  color: Theme.of(context).dividerColor.withOpacity(0.6),
+                ),
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor.withOpacity(0.6),
+                ),
               ),
             ),
             child: Row(
@@ -648,25 +634,27 @@ class _GradePageState extends State<GradePage> {
               }).toList(),
             ),
           ),
-          // 数据行
-          ..._filteredGrades!.asMap().entries.map((entry) {
-            final index = entry.key;
-            final grade = entry.value;
-            final isEven = index % 2 == 0;
 
-            return Container(
-              height: 80.0,
-              decoration: BoxDecoration(
-                color: isEven
-                    ? null
-                    : Theme.of(
-                        context,
-                      ).colorScheme.surfaceVariant.withOpacity(0.3),
-                border: Border(
-                  bottom: BorderSide(color: Theme.of(context).dividerColor),
+          // Data rows
+          ..._filteredGrades!.asMap().entries.map((entry) {
+            final grade = entry.value;
+
+            return InkWell(
+              onTap: () {
+                // Do nothing
+              },
+              child: Container(
+                height: 80.0,
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).dividerColor.withOpacity(0.6),
+                      width: 0.5,
+                    ),
+                  ),
                 ),
+                child: Row(children: _buildDataRow(grade, columnWidths)),
               ),
-              child: Row(children: _buildDataRow(grade, columnWidths)),
             );
           }),
         ],
