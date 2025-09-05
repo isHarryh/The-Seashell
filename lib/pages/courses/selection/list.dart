@@ -5,6 +5,7 @@ import '/utils/app_bar.dart';
 import 'detail.dart';
 import 'submit.dart';
 import 'common.dart';
+import 'filter.dart';
 
 class CourseListPage extends StatefulWidget {
   final TermInfo termInfo;
@@ -18,15 +19,29 @@ class CourseListPage extends StatefulWidget {
 
 class _CourseListPageState extends State<CourseListPage> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
+  final TextEditingController _searchController = TextEditingController();
 
   List<CourseTab> _courseTabs = [];
   CourseTab? _selectedTab;
+
   List<CourseInfo> _courses = [];
+  List<CourseInfo> _filteredCourses = [];
+
   List<String> _selectedCourseIds = [];
+  String? _expandedCourseId; // Current expanded course ID
+
   bool _isLoading = false;
   bool _isLoadingCourses = false;
   String? _errorMessage;
-  String? _expandedCourseId; // Current expanded course ID
+
+  String _currentSearchQuery = '';
+  Filterers _filterers = Filterers();
+  List<String> _availableCourseTypes = [];
+  List<String> _availableCourseCategories = [];
+  double _minAvailableCredits = 0;
+  double _maxAvailableCredits = 10;
+  double _minAvailableHours = 0;
+  double _maxAvailableHours = 100;
 
   @override
   void initState() {
@@ -35,14 +50,9 @@ class _CourseListPageState extends State<CourseListPage> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Ensure refreshed
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCourseTabs() async {
@@ -80,6 +90,8 @@ class _CourseListPageState extends State<CourseListPage> {
   Future<void> _loadCourses() async {
     if (_selectedTab == null || !mounted) return;
 
+    final currentTabId = _selectedTab!.tabId;
+
     setState(() {
       _isLoadingCourses = true;
       _errorMessage = null;
@@ -88,35 +100,107 @@ class _CourseListPageState extends State<CourseListPage> {
 
     try {
       // Get both selectable and selected courses
-      final selectableCourses = await _serviceProvider.coursesService
-          .getSelectableCourses(widget.termInfo, _selectedTab!.tabId);
-      final selectedCourses = await _serviceProvider.coursesService
-          .getSelectedCourses(widget.termInfo, _selectedTab!.tabId);
+      final [selectableCourses, selectedCourses] = await Future.wait([
+        _serviceProvider.coursesService.getSelectableCourses(
+          widget.termInfo,
+          _selectedTab!.tabId,
+        ),
+        _serviceProvider.coursesService.getSelectedCourses(
+          widget.termInfo,
+          _selectedTab!.tabId,
+        ),
+      ]);
 
-      if (!mounted) return;
+      // Ignore loaded actions if the tab has changed
+      if (!mounted || _selectedTab?.tabId != currentTabId) return;
 
+      // Remove duplicates
+      final courseMap = <String, CourseInfo>{};
+      for (final course in [...selectableCourses, ...selectedCourses]) {
+        courseMap[course.courseId] = course;
+      }
+      final uniqueCourses = courseMap.values.toList();
+
+      // Calculate available course types
+      final courseTypes =
+          uniqueCourses
+              .map((course) => course.courseType)
+              .where((type) => type.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
+
+      // Calculate available course categories
+      final courseCategories =
+          uniqueCourses
+              .map((course) => course.courseCategory)
+              .where((category) => category.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
+
+      // Calculate available credits range
+      final creditsList = uniqueCourses
+          .map((course) => course.credits)
+          .toList();
+      final minCredits = creditsList.isNotEmpty
+          ? creditsList.reduce((a, b) => a < b ? a : b)
+          : 0.0;
+      final maxCredits = creditsList.isNotEmpty
+          ? creditsList.reduce((a, b) => a > b ? a : b)
+          : 10.0;
+
+      // Calculate available hours range
+      final hoursList = uniqueCourses.map((course) => course.hours).toList();
+      final minHours = hoursList.isNotEmpty
+          ? hoursList.reduce((a, b) => a < b ? a : b)
+          : 0.0;
+      final maxHours = hoursList.isNotEmpty
+          ? hoursList.reduce((a, b) => a > b ? a : b)
+          : 100.0;
+
+      // Separate courses into selected and unselected for display order
       final selectedIds = selectedCourses
           .map((course) => course.courseId)
           .toSet();
-
-      // Separate courses into selected and unselected
-      final selectedInTab = selectableCourses
+      final selectedInTab = uniqueCourses
           .where((course) => selectedIds.contains(course.courseId))
           .toList();
-      final unselectedInTab = selectableCourses
+      final unselectedInTab = uniqueCourses
           .where((course) => !selectedIds.contains(course.courseId))
           .toList();
 
-      // Combine
+      // Combine with selected courses first
       final combinedCourses = [...selectedInTab, ...unselectedInTab];
 
       setState(() {
         _courses = combinedCourses;
+        _filteredCourses = combinedCourses;
         _selectedCourseIds = selectedIds.toList();
+        _availableCourseTypes = courseTypes;
+        _availableCourseCategories = courseCategories;
+        _minAvailableCredits = minCredits;
+        _maxAvailableCredits = maxCredits;
+        _minAvailableHours = minHours;
+        _maxAvailableHours = maxHours;
         _isLoadingCourses = false;
+        _filterers.clear();
+
+        // Reset filters to extreme values
+        _filterers = Filterers(
+          minCredits: minCredits,
+          maxCredits: maxCredits,
+          minHours: minHours,
+          maxHours: maxHours,
+        );
+
+        // Reapply searching
+        if (_currentSearchQuery.isNotEmpty) {
+          _filteredCourses = _searchCourses(_courses, _currentSearchQuery);
+        }
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || _selectedTab?.tabId != currentTabId) return;
 
       setState(() {
         _errorMessage = e.toString();
@@ -125,11 +209,160 @@ class _CourseListPageState extends State<CourseListPage> {
     }
   }
 
+  void _performSearch(String query) {
+    setState(() {
+      _currentSearchQuery = query;
+      _applyFilters();
+    });
+  }
+
+  bool _isWideScreen(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 900;
+  }
+
+  void _showFilterDialog() {
+    if (_isWideScreen(context)) {
+      // 宽屏模式下，筛选条件在侧边栏中实时更新，不需要弹窗
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return FilterDialog(
+          initialFilter: _filterers,
+          availableCourseTypes: _availableCourseTypes,
+          availableCourseCategories: _availableCourseCategories,
+          minAvailableCredits: _minAvailableCredits,
+          maxAvailableCredits: _maxAvailableCredits,
+          minAvailableHours: _minAvailableHours,
+          maxAvailableHours: _maxAvailableHours,
+          onApply: (Filterers filter) {
+            setState(() {
+              _filterers = filter;
+              _applyFilters();
+            });
+          },
+          onReset: () {
+            setState(() {
+              _filterers.clear();
+              _applyFilters();
+            });
+          },
+        );
+      },
+    );
+  }
+
+  void _applyFilters() {
+    List<CourseInfo> filtered = _courses;
+
+    if (_currentSearchQuery.isNotEmpty) {
+      filtered = _searchCourses(filtered, _currentSearchQuery);
+    }
+
+    if (_filterers.courseType != null && _filterers.courseType!.isNotEmpty) {
+      filtered = filtered
+          .where((course) => course.courseType == _filterers.courseType)
+          .toList();
+    }
+
+    if (_filterers.courseCategory != null &&
+        _filterers.courseCategory!.isNotEmpty) {
+      filtered = filtered
+          .where((course) => course.courseCategory == _filterers.courseCategory)
+          .toList();
+    }
+
+    if (_filterers.minCredits != null && _filterers.maxCredits != null) {
+      filtered = filtered
+          .where(
+            (course) =>
+                course.credits >= _filterers.minCredits! &&
+                course.credits <= _filterers.maxCredits!,
+          )
+          .toList();
+    }
+
+    if (_filterers.minHours != null && _filterers.maxHours != null) {
+      filtered = filtered
+          .where(
+            (course) =>
+                course.hours >= _filterers.minHours! &&
+                course.hours <= _filterers.maxHours!,
+          )
+          .toList();
+    }
+
+    setState(() {
+      _filteredCourses = filtered;
+    });
+  }
+
+  List<CourseInfo> _searchCourses(List<CourseInfo> courses, String query) {
+    final queryLower = query.toLowerCase();
+
+    final List<CourseInfo> priorityResults = [];
+    final Set<String> addedIds = <String>{};
+
+    // 1. 课程代码精确匹配
+    for (final course in courses) {
+      final courseIdMatch = course.courseId.toLowerCase().contains(queryLower);
+
+      if (courseIdMatch) {
+        if (!addedIds.contains(course.courseId)) {
+          priorityResults.add(course);
+          addedIds.add(course.courseId);
+        }
+      }
+    }
+
+    // 2. 课程名称模糊匹配
+    for (final course in courses) {
+      final courseNameMatch = course.courseName.toLowerCase().contains(
+        queryLower,
+      );
+
+      if (courseNameMatch) {
+        if (!addedIds.contains(course.courseId)) {
+          priorityResults.add(course);
+          addedIds.add(course.courseId);
+        }
+      }
+    }
+
+    // 3. 课程alt名称模糊匹配
+    for (final course in courses) {
+      final courseNameAltMatch =
+          course.courseNameAlt?.toLowerCase().contains(queryLower) ?? false;
+
+      if (courseNameAltMatch) {
+        if (!addedIds.contains(course.courseId)) {
+          priorityResults.add(course);
+          addedIds.add(course.courseId);
+        }
+      }
+    }
+
+    return priorityResults;
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _currentSearchQuery = '';
+      _filterers.clear();
+      _applyFilters();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final content = _buildContent();
     final selectionState = _serviceProvider.coursesService
         .getCourseSelectionState();
+
+    final isWideScreen = _isWideScreen(context);
 
     return Scaffold(
       appBar: PageAppBar(
@@ -140,7 +373,34 @@ class _CourseListPageState extends State<CourseListPage> {
         ),
         actions: [buildTermInfoDisplay(context, widget.termInfo)],
       ),
-      body: content,
+      body: isWideScreen
+          ? Row(
+              children: [
+                FilterSidebar(
+                  filter: _filterers,
+                  availableCourseTypes: _availableCourseTypes,
+                  availableCourseCategories: _availableCourseCategories,
+                  minAvailableCredits: _minAvailableCredits,
+                  maxAvailableCredits: _maxAvailableCredits,
+                  minAvailableHours: _minAvailableHours,
+                  maxAvailableHours: _maxAvailableHours,
+                  onFilterChanged: (Filterers filter) {
+                    setState(() {
+                      _filterers = filter;
+                      _applyFilters();
+                    });
+                  },
+                  onReset: () {
+                    setState(() {
+                      _filterers.clear();
+                      _applyFilters();
+                    });
+                  },
+                ),
+                Expanded(child: content),
+              ],
+            )
+          : content,
       floatingActionButton: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         transitionBuilder: (Widget child, Animation<double> animation) {
@@ -244,6 +504,16 @@ class _CourseListPageState extends State<CourseListPage> {
                           _selectedTab?.tabId != tab.tabId) {
                         setState(() {
                           _selectedTab = tab;
+                          _courses = [];
+                          _filteredCourses = [];
+                          _selectedCourseIds = [];
+                          _availableCourseTypes = [];
+                          _availableCourseCategories = [];
+                          _filterers.clear();
+                          _currentSearchQuery = '';
+                          _searchController.clear();
+                          _expandedCourseId = null;
+                          _errorMessage = null;
                         });
                         _loadCourses();
                       }
@@ -256,6 +526,58 @@ class _CourseListPageState extends State<CourseListPage> {
                 );
               }).toList(),
             ),
+          ),
+        ),
+
+        const Divider(height: 1),
+
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: '搜索课程代码、名称...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _currentSearchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: _clearSearch,
+                            padding: EdgeInsets.zero,
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.all(8),
+                    isDense: true,
+                  ),
+                  style: const TextStyle(fontSize: 14),
+                  onChanged: _performSearch,
+                  onSubmitted: _performSearch,
+                ),
+              ),
+              if (!_isWideScreen(context)) ...[
+                const SizedBox(width: 12),
+                SizedBox(
+                  height: 36,
+                  child: ElevatedButton.icon(
+                    onPressed: _showFilterDialog,
+                    icon: const Icon(Icons.filter_list, size: 18),
+                    label: const Text('高级筛选'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
 
@@ -284,22 +606,22 @@ class _CourseListPageState extends State<CourseListPage> {
       );
     }
 
-    if (_courses.isEmpty) {
+    if (_filteredCourses.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.list_alt,
+              Icons.question_mark_rounded,
               size: 80,
-              color: Theme.of(context).primaryColor.withOpacity(0.2),
+              color: Theme.of(context).primaryColor.withOpacity(0.4),
             ),
             const SizedBox(height: 16),
             Text(
-              '暂无课程数据',
+              _courses.isNotEmpty ? '未找到符合条件的课程' : '暂无课程数据',
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+              ).textTheme.titleLarge?.copyWith(color: Colors.grey[700]),
             ),
           ],
         ),
@@ -382,9 +704,9 @@ class _CourseListPageState extends State<CourseListPage> {
 
                 Expanded(
                   child: ListView.builder(
-                    itemCount: _courses.length,
+                    itemCount: _filteredCourses.length,
                     itemBuilder: (context, index) {
-                      final course = _courses[index];
+                      final course = _filteredCourses[index];
                       final isExpanded = _expandedCourseId == course.courseId;
 
                       return _CourseTableRow(
