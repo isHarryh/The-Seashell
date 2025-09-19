@@ -38,6 +38,7 @@ dependencies:
   http: ^1.5.0
   json_annotation: ^4.9.0
   path_provider: ^2.1.4
+  ustb_sso: ^1.1.0
 
 dev_dependencies:
   flutter_test:
