@@ -5,6 +5,7 @@ import '/types/courses.dart';
 import '/utils/app_bar.dart';
 import 'ustb_byyt_mock.dart';
 import 'ustb_byyt_cookie.dart';
+import 'ustb_byyt_sso.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -285,6 +286,26 @@ class _AccountPageState extends State<AccountPage> {
                 Card(
                   child: Column(
                     children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.security,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 32,
+                        ),
+                        title: const Text('统一身份认证登录'),
+                        subtitle: const Text('推荐方式，使用USTB SSO系统安全便捷登录'),
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const UstbByytSsoLoginPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
                       ListTile(
                         leading: Icon(
                           Icons.build_circle_outlined,
