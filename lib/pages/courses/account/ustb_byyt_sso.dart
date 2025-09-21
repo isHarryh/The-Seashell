@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:ustb_sso/ustb_sso.dart';
 import '/services/provider.dart';
-import '/utils/app_bar.dart';
+import '/utils/login_dialog.dart';
 import '/utils/ustb_sso.dart';
 
-class UstbByytSsoLoginPage extends StatefulWidget {
-  const UstbByytSsoLoginPage({super.key});
-
-  @override
-  State<UstbByytSsoLoginPage> createState() => _UstbByytSsoLoginPageState();
+Future<void> showSsoLoginDialog(BuildContext context) async {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return const _SsoLoginDialog();
+    },
+  );
 }
 
-class _UstbByytSsoLoginPageState extends State<UstbByytSsoLoginPage> {
+class _SsoLoginDialog extends StatefulWidget {
+  const _SsoLoginDialog();
+
+  @override
+  State<_SsoLoginDialog> createState() => _SsoLoginDialogState();
+}
+
+class _SsoLoginDialogState extends State<_SsoLoginDialog> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
   bool _isLoggingIn = false;
 
@@ -20,7 +30,7 @@ class _UstbByytSsoLoginPageState extends State<UstbByytSsoLoginPage> {
     super.initState();
     _serviceProvider.addListener(_onServiceStatusChanged);
 
-    // Switch to production service when entering this page
+    // Switch to production service when opening dialog
     _serviceProvider.switchToProductionService();
   }
 
@@ -36,7 +46,7 @@ class _UstbByytSsoLoginPageState extends State<UstbByytSsoLoginPage> {
       if (service.isOnline) {
         if (mounted) {
           await Future.delayed(const Duration(milliseconds: 500));
-          // Navigate back to account page on successful login
+          // Close dialog on successful login
           Navigator.of(context).pop();
         }
       }
@@ -97,97 +107,49 @@ class _UstbByytSsoLoginPageState extends State<UstbByytSsoLoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const PageAppBar(title: '统一身份认证登录'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Info card
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: Card(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.security,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'USTB SSO 统一认证',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          '使用北京科技大学统一身份认证系统登录。\n'
-                          '支持微信扫码和短信验证码两种方式。',
-                          style: TextStyle(height: 1.5),
-                        ),
-                      ],
-                    ),
+    return LoginDialog(
+      title: '统一身份认证',
+      description: '本研一体教务管理系统',
+      icon: Icons.security,
+      iconColor: Theme.of(context).colorScheme.primary,
+      headerColor: Theme.of(context).colorScheme.primaryContainer,
+      onHeaderColor: Theme.of(context).colorScheme.onPrimaryContainer,
+      maxWidth: 900,
+      maxHeight: 700,
+      child: Column(
+        children: [
+          // Authentication widget
+          UstbSsoAuthWidget(
+            applicationParam: Prefabs.byytUstbEduCn,
+            onSuccess: _handleAuthSuccess,
+          ),
+
+          // Login status overlay
+          if (_isLoggingIn) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                ),
+                  const SizedBox(width: 16),
+                  Text(
+                    '正在登录到课程系统...',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            // Authentication widget
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: UstbSsoAuthWidget(
-                  applicationParam: Prefabs.byytUstbEduCn,
-                  onSuccess: _handleAuthSuccess,
-                ),
-              ),
-            ),
-
-            // Login status overlay
-            if (_isLoggingIn) ...[
-              const SizedBox(height: 24),
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Card(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            '正在登录到课程系统...',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
           ],
-        ),
+        ],
       ),
     );
   }

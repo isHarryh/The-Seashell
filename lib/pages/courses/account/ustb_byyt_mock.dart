@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import '/services/provider.dart';
-import '/utils/app_bar.dart';
+import '/utils/login_dialog.dart';
 
-class UstbByytMockLoginPage extends StatefulWidget {
-  const UstbByytMockLoginPage({super.key});
-
-  @override
-  State<UstbByytMockLoginPage> createState() => _UstbByytMockLoginPageState();
+Future<void> showMockLoginDialog(BuildContext context) async {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return const _MockLoginDialog();
+    },
+  );
 }
 
-class _UstbByytMockLoginPageState extends State<UstbByytMockLoginPage> {
+class _MockLoginDialog extends StatefulWidget {
+  const _MockLoginDialog();
+
+  @override
+  State<_MockLoginDialog> createState() => _MockLoginDialogState();
+}
+
+class _MockLoginDialogState extends State<_MockLoginDialog> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
   bool _isLoading = false;
   String? _errorMessage;
@@ -65,105 +75,135 @@ class _UstbByytMockLoginPageState extends State<UstbByytMockLoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const PageAppBar(title: 'Mock登录 (开发者)'),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Info card
-            Card(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return LoginDialog(
+      title: 'Mock登录',
+      description: '本研一体教务管理系统',
+      icon: Icons.build_circle_outlined,
+      iconColor: Theme.of(context).colorScheme.secondary,
+      headerColor: Theme.of(context).colorScheme.secondaryContainer,
+      onHeaderColor: Theme.of(context).colorScheme.onSecondaryContainer,
+      maxWidth: 500,
+      maxHeight: 400,
+      scrollable: false,
+      child: Column(
+        children: [
+          // Info card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '开发者模式',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
+                    Icon(
+                      Icons.info_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '此模式使用模拟数据进行测试，不会连接到真实的教务系统。\n'
-                      '适用于开发者调试和功能演示。',
-                      style: TextStyle(height: 1.5),
+                    const SizedBox(width: 8),
+                    Text(
+                      '开发者模式',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 8),
+                const Text(
+                  '此模式将使用离线的模拟数据，不会进行实际的网络请求。\n'
+                  '适用于开发和测试环境。',
+                  style: TextStyle(height: 1.4),
+                ),
+              ],
             ),
+          ),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            // Login section
-            Text('模拟登录', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-
-            if (_errorMessage != null) ...[
-              Card(
+          // Error message
+          if (_errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.errorContainer,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 16),
-            ],
-
-            // Login button
-            SizedBox(
-              height: 48,
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _handleLogin,
-                icon: _isLoading
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.onPrimary,
-                          ),
-                        ),
-                      )
-                    : const Icon(Icons.play_arrow),
-                label: Text(_isLoading ? '正在模拟登录...' : '模拟登录'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Theme.of(context).colorScheme.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 16),
           ],
-        ),
+
+          // Login button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleLogin,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isLoading
+                  ? const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text('登录中...'),
+                      ],
+                    )
+                  : const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.login, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          '使用Mock登录',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -296,13 +296,7 @@ class _AccountPageState extends State<AccountPage> {
                         subtitle: const Text('推荐方式，使用USTB SSO系统安全便捷登录'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const UstbByytSsoLoginPage(),
-                            ),
-                          );
+                          showSsoLoginDialog(context);
                         },
                       ),
                       const Divider(height: 1),
@@ -316,13 +310,7 @@ class _AccountPageState extends State<AccountPage> {
                         subtitle: const Text('适用于开发者，将使用离线的模拟数据进行测试'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const UstbByytMockLoginPage(),
-                            ),
-                          );
+                          showMockLoginDialog(context);
                         },
                       ),
                       const Divider(height: 1),
@@ -336,13 +324,7 @@ class _AccountPageState extends State<AccountPage> {
                         subtitle: const Text('适用于高级用户，需要手动提供Cookie'),
                         trailing: const Icon(Icons.arrow_forward_ios),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const UstbByytCookieLoginPage(),
-                            ),
-                          );
+                          showCookieLoginDialog(context);
                         },
                       ),
                     ],
