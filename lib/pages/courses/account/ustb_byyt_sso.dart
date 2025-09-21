@@ -3,19 +3,25 @@ import 'package:ustb_sso/ustb_sso.dart';
 import '/services/provider.dart';
 import '/utils/login_dialog.dart';
 import '/utils/ustb_sso.dart';
+import '/types/courses.dart';
 
-Future<void> showSsoLoginDialog(BuildContext context) async {
+Future<void> showSsoLoginDialog(
+  BuildContext context, {
+  Function(String method, String cookie)? onLoginSuccess,
+}) async {
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
-      return const _SsoLoginDialog();
+      return _SsoLoginDialog(onLoginSuccess: onLoginSuccess);
     },
   );
 }
 
 class _SsoLoginDialog extends StatefulWidget {
-  const _SsoLoginDialog();
+  final Function(String method, String cookie)? onLoginSuccess;
+
+  const _SsoLoginDialog({this.onLoginSuccess});
 
   @override
   State<_SsoLoginDialog> createState() => _SsoLoginDialogState();
@@ -67,6 +73,9 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
 
       // Login with extracted cookie
       await _serviceProvider.loginToCoursesServiceWithCookie(cookie);
+
+      // Notify success with method and cookie
+      widget.onLoginSuccess?.call("sso", cookie);
     } catch (e) {
       // Error handling is done by the auth widget
       print('Login failed: $e');
@@ -77,6 +86,25 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
         });
       }
     }
+  }
+
+  void _onUpdateSmsPhone(String phoneNumber) {
+    final serviceProvider = ServiceProvider.instance;
+    final existingData = serviceProvider.storeService
+        .getCache<UserLoginIntegratedData>(
+          "course_account_data",
+          UserLoginIntegratedData.fromJson,
+        );
+    final updatedData = UserLoginIntegratedData(
+      user: existingData.value?.user,
+      method: existingData.value?.method,
+      cookie: existingData.value?.cookie,
+      lastSmsPhone: phoneNumber,
+    );
+    serviceProvider.storeService.putCache<UserLoginIntegratedData>(
+      "course_account_data",
+      updatedData,
+    );
   }
 
   // Extract BYYT-specific cookies from session
@@ -107,6 +135,17 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Get default SMS phone from cache
+    final serviceProvider = ServiceProvider.instance;
+    final cachedData = serviceProvider.storeService
+        .getCache<UserLoginIntegratedData>(
+          "course_account_data",
+          UserLoginIntegratedData.fromJson,
+        );
+    final defaultSmsPhone = cachedData.isNotEmpty
+        ? cachedData.value!.lastSmsPhone
+        : null;
+
     return LoginDialog(
       title: '统一身份认证',
       description: '本研一体教务管理系统',
@@ -120,6 +159,8 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
           UstbSsoAuthWidget(
             applicationParam: Prefabs.byytUstbEduCn,
             onSuccess: _handleAuthSuccess,
+            defaultSmsPhone: defaultSmsPhone,
+            onUpdateSmsPhone: _onUpdateSmsPhone,
           ),
 
           // Login status overlay

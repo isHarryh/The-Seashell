@@ -22,6 +22,26 @@ Map<String, dynamic> _$UserInfoToJson(UserInfo instance) => <String, dynamic>{
   'userId': instance.userId,
 };
 
+UserLoginIntegratedData _$UserLoginIntegratedDataFromJson(
+  Map<String, dynamic> json,
+) => UserLoginIntegratedData(
+  user: json['user'] == null
+      ? null
+      : UserInfo.fromJson(json['user'] as Map<String, dynamic>),
+  method: json['method'] as String?,
+  cookie: json['cookie'] as String?,
+  lastSmsPhone: json['lastSmsPhone'] as String?,
+);
+
+Map<String, dynamic> _$UserLoginIntegratedDataToJson(
+  UserLoginIntegratedData instance,
+) => <String, dynamic>{
+  'user': instance.user,
+  'method': instance.method,
+  'cookie': instance.cookie,
+  'lastSmsPhone': instance.lastSmsPhone,
+};
+
 CourseGradeItem _$CourseGradeItemFromJson(Map<String, dynamic> json) =>
     CourseGradeItem(
       courseId: json['courseId'] as String,

@@ -20,11 +20,15 @@ class _AccountPageState extends State<AccountPage> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _showLoginButton = true;
+  String? _currentLoginMethod;
+  String? _currentLoginCookie;
 
   @override
   void initState() {
     super.initState();
     _serviceProvider.addListener(_onServiceStatusChanged);
+
+    _tryRestoreLoginFromCache();
 
     final service = _serviceProvider.coursesService;
     _showLoginButton = !service.isOnline;
@@ -62,6 +66,80 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  Future<void> _tryRestoreLoginFromCache() async {
+    try {
+      final cachedData = _serviceProvider.storeService
+          .getCache<UserLoginIntegratedData>(
+            "course_account_data",
+            UserLoginIntegratedData.fromJson,
+          );
+
+      if (cachedData.isEmpty) return;
+
+      final data = cachedData.value!;
+      final method = data.method;
+
+      if (method == "mock") {
+        _serviceProvider.switchToMockService();
+        await _serviceProvider.loginToCoursesService();
+        if (mounted) {
+          setState(() {
+            _userInfo = data.user;
+          });
+        }
+      } else if (method == "cookie" || method == "sso") {
+        if (data.cookie != null && data.user != null) {
+          _serviceProvider.switchToProductionService();
+          await _serviceProvider.loginToCoursesServiceWithCookie(data.cookie!);
+          // Get new user info and assert consistency
+          final newUserInfo = await _serviceProvider.coursesService
+              .getUserInfo();
+          assert(
+            newUserInfo == data.user,
+            "User info mismatch after login with cached cookie",
+          );
+          // Set user info
+          if (mounted) {
+            setState(() {
+              _userInfo = newUserInfo;
+            });
+          }
+        }
+      }
+      // Other methods: do nothing, remain logged out
+    } catch (e) {
+      // On any exception, remain logged out
+    }
+  }
+
+  void _writeLoginDataToCache() {
+    final method = _currentLoginMethod;
+    final cookie = _currentLoginCookie;
+    if (method == null) return;
+
+    final existingData = _serviceProvider.storeService
+        .getCache<UserLoginIntegratedData>(
+          "course_account_data",
+          UserLoginIntegratedData.fromJson,
+        );
+
+    final updatedData = UserLoginIntegratedData(
+      user: _userInfo,
+      method: method,
+      cookie: cookie,
+      lastSmsPhone: existingData.value?.lastSmsPhone,
+    );
+
+    _serviceProvider.storeService.putCache<UserLoginIntegratedData>(
+      "course_account_data",
+      updatedData,
+    );
+
+    // Clear after writing
+    _currentLoginMethod = null;
+    _currentLoginCookie = null;
+  }
+
   Future<void> _loadUserInfoIfOnlineSilently() async {
     final service = _serviceProvider.coursesService;
 
@@ -91,6 +169,9 @@ class _AccountPageState extends State<AccountPage> {
           _userInfo = userInfo;
           _errorMessage = null;
         });
+
+        // Write login data to cache after user info is loaded
+        _writeLoginDataToCache();
       }
     } catch (e) {
       if (mounted) {
@@ -267,7 +348,13 @@ class _AccountPageState extends State<AccountPage> {
                       subtitle: const Text('推荐方式，使用USTB SSO系统安全便捷登录'),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        showSsoLoginDialog(context);
+                        showSsoLoginDialog(
+                          context,
+                          onLoginSuccess: (method, cookie) {
+                            _currentLoginMethod = method;
+                            _currentLoginCookie = cookie;
+                          },
+                        );
                       },
                     ),
                     const Divider(height: 1),
@@ -281,7 +368,13 @@ class _AccountPageState extends State<AccountPage> {
                       subtitle: const Text('适用于开发者，将使用离线的模拟数据进行测试'),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        showMockLoginDialog(context);
+                        showMockLoginDialog(
+                          context,
+                          onLoginSuccess: (method, cookie) {
+                            _currentLoginMethod = method;
+                            _currentLoginCookie = cookie;
+                          },
+                        );
                       },
                     ),
                     const Divider(height: 1),
@@ -295,7 +388,13 @@ class _AccountPageState extends State<AccountPage> {
                       subtitle: const Text('适用于高级用户，需要手动提供Cookie'),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        showCookieLoginDialog(context);
+                        showCookieLoginDialog(
+                          context,
+                          onLoginSuccess: (method, cookie) {
+                            _currentLoginMethod = method;
+                            _currentLoginCookie = cookie;
+                          },
+                        );
                       },
                     ),
                   ],

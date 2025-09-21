@@ -2,18 +2,23 @@ import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/utils/login_dialog.dart';
 
-Future<void> showMockLoginDialog(BuildContext context) async {
+Future<void> showMockLoginDialog(
+  BuildContext context, {
+  Function(String method, String? cookie)? onLoginSuccess,
+}) async {
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
-      return const _MockLoginDialog();
+      return _MockLoginDialog(onLoginSuccess: onLoginSuccess);
     },
   );
 }
 
 class _MockLoginDialog extends StatefulWidget {
-  const _MockLoginDialog();
+  final Function(String method, String? cookie)? onLoginSuccess;
+
+  const _MockLoginDialog({this.onLoginSuccess});
 
   @override
   State<_MockLoginDialog> createState() => _MockLoginDialogState();
@@ -57,6 +62,9 @@ class _MockLoginDialogState extends State<_MockLoginDialog> {
       });
 
       await _serviceProvider.loginToCoursesService();
+
+      // Notify success
+      widget.onLoginSuccess?.call("mock", null);
 
       if (mounted) {
         setState(() {

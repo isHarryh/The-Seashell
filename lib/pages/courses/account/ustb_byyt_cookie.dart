@@ -2,18 +2,23 @@ import 'package:flutter/material.dart';
 import '/services/provider.dart';
 import '/utils/login_dialog.dart';
 
-Future<void> showCookieLoginDialog(BuildContext context) async {
+Future<void> showCookieLoginDialog(
+  BuildContext context, {
+  Function(String method, String cookie)? onLoginSuccess,
+}) async {
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
-      return const _CookieLoginDialog();
+      return _CookieLoginDialog(onLoginSuccess: onLoginSuccess);
     },
   );
 }
 
 class _CookieLoginDialog extends StatefulWidget {
-  const _CookieLoginDialog();
+  final Function(String method, String cookie)? onLoginSuccess;
+
+  const _CookieLoginDialog({this.onLoginSuccess});
 
   @override
   State<_CookieLoginDialog> createState() => _CookieLoginDialogState();
@@ -67,6 +72,9 @@ class _CookieLoginDialogState extends State<_CookieLoginDialog> {
       });
 
       await _serviceProvider.loginToCoursesServiceWithCookie(cookie);
+
+      // Notify success
+      widget.onLoginSuccess?.call("cookie", cookie);
 
       if (mounted) {
         setState(() {

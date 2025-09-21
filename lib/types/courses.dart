@@ -36,6 +36,35 @@ class UserInfo extends BaseDataClass {
 }
 
 @JsonSerializable()
+class UserLoginIntegratedData extends BaseDataClass {
+  final UserInfo? user;
+  final String? method;
+  final String? cookie;
+  final String? lastSmsPhone;
+
+  const UserLoginIntegratedData({
+    this.user,
+    this.method,
+    this.cookie,
+    this.lastSmsPhone,
+  });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'user': user,
+      'method': method,
+      'cookie': cookie,
+      'lastSmsPhone': lastSmsPhone,
+    };
+  }
+
+  factory UserLoginIntegratedData.fromJson(Map<String, dynamic> json) =>
+      _$UserLoginIntegratedDataFromJson(json);
+  Map<String, dynamic> toJson() => _$UserLoginIntegratedDataToJson(this);
+}
+
+@JsonSerializable()
 class CourseGradeItem extends BaseDataClass {
   final String courseId;
   final String courseName;

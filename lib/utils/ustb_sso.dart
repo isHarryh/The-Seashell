@@ -75,10 +75,16 @@ class UstbSsoAuthWidget extends StatefulWidget {
 
   final Function(dynamic response, HttpSession session) onSuccess;
 
+  final String? defaultSmsPhone;
+
+  final Function(String)? onUpdateSmsPhone;
+
   const UstbSsoAuthWidget({
     super.key,
     required this.applicationParam,
     required this.onSuccess,
+    this.defaultSmsPhone,
+    this.onUpdateSmsPhone,
   });
 
   @override
@@ -144,6 +150,11 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
     _tabController.addListener(_onTabChanged);
     _phoneController.addListener(() => setState(() {}));
     _smsCodeController.addListener(() => setState(() {}));
+
+    // Set default SMS phone if provided
+    if (widget.defaultSmsPhone != null) {
+      _phoneController.text = widget.defaultSmsPhone!;
+    }
 
     _initializeQrAuth();
   }
@@ -345,6 +356,9 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
     if (phoneNumber.isEmpty) {
       return;
     }
+
+    // Update SMS phone via callback if provided
+    widget.onUpdateSmsPhone?.call(phoneNumber);
 
     try {
       _updateSmsState(UstbSsoState.init);
@@ -683,6 +697,15 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
             decoration: InputDecoration(
               labelText: '手机号码',
               prefixIcon: const Icon(Icons.phone),
+              suffixIcon: _phoneController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        _phoneController.clear();
+                        widget.onUpdateSmsPhone?.call("");
+                      },
+                    )
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
