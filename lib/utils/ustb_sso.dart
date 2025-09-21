@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:ustb_sso/ustb_sso.dart';
 
-enum _UstbSsoState {
+enum UstbSsoState {
   none,
   init,
   openingAuth,
@@ -15,53 +15,53 @@ enum _UstbSsoState {
 }
 
 // SSO State Extension
-extension UstbSsoStateExtension on _UstbSsoState {
+extension UstbSsoStateExtension on UstbSsoState {
   IconData get icon {
     switch (this) {
-      case _UstbSsoState.none:
+      case UstbSsoState.none:
         return Icons.hourglass_bottom;
-      case _UstbSsoState.init:
-      case _UstbSsoState.openingAuth:
-      case _UstbSsoState.fetchingAuth:
+      case UstbSsoState.init:
+      case UstbSsoState.openingAuth:
+      case UstbSsoState.fetchingAuth:
         return Icons.pending_outlined;
-      case _UstbSsoState.solvingAuth:
+      case UstbSsoState.solvingAuth:
         return Icons.hourglass_bottom;
-      case _UstbSsoState.authFinishing:
+      case UstbSsoState.authFinishing:
         return Icons.pending_outlined;
-      case _UstbSsoState.success:
+      case UstbSsoState.success:
         return Icons.check_circle;
-      case _UstbSsoState.initFailed:
-      case _UstbSsoState.authFailed:
+      case UstbSsoState.initFailed:
+      case UstbSsoState.authFailed:
         return Icons.error_outline;
     }
   }
 
   double get progress {
     switch (this) {
-      case _UstbSsoState.none:
+      case UstbSsoState.none:
         return 0.0;
-      case _UstbSsoState.init:
+      case UstbSsoState.init:
         return 0.2;
-      case _UstbSsoState.openingAuth:
+      case UstbSsoState.openingAuth:
         return 0.5;
-      case _UstbSsoState.fetchingAuth:
+      case UstbSsoState.fetchingAuth:
         return 0.8;
-      case _UstbSsoState.solvingAuth:
+      case UstbSsoState.solvingAuth:
         return 1.0;
-      case _UstbSsoState.authFinishing:
+      case UstbSsoState.authFinishing:
         return 0.5;
-      case _UstbSsoState.success:
+      case UstbSsoState.success:
         return 1.0;
-      case _UstbSsoState.initFailed:
-      case _UstbSsoState.authFailed:
+      case UstbSsoState.initFailed:
+      case UstbSsoState.authFailed:
         return 0.0;
     }
   }
 
   bool get isError {
     switch (this) {
-      case _UstbSsoState.initFailed:
-      case _UstbSsoState.authFailed:
+      case UstbSsoState.initFailed:
+      case UstbSsoState.authFailed:
         return true;
       default:
         return false;
@@ -97,7 +97,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   // QR Code authentication state
   QrAuthProcedure? _qrAuth;
   Uint8List? _qrImageBytes;
-  _UstbSsoState _qrState = _UstbSsoState.none;
+  UstbSsoState _qrState = UstbSsoState.none;
   String? _qrErrorMessage;
 
   // SMS authentication state
@@ -105,14 +105,14 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _smsCodeController = TextEditingController();
   int _smsCountdown = 0;
-  _UstbSsoState _smsState = _UstbSsoState.none;
+  UstbSsoState _smsState = UstbSsoState.none;
   String? _smsErrorMessage;
 
   // Common authentication
   HttpSession? _session;
 
   // Current displayed state (based on active tab)
-  _UstbSsoState get _currentState =>
+  UstbSsoState get _currentState =>
       _tabController.index == 0 ? _qrState : _smsState;
   String? get _errorMessage =>
       _tabController.index == 0 ? _qrErrorMessage : _smsErrorMessage;
@@ -155,7 +155,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
 
       // Initialize QR authentication if switching to QR tab and not already initialized
       if (_tabController.index == 0) {
-        if (_qrState == _UstbSsoState.none && _qrImageBytes == null) {
+        if (_qrState == UstbSsoState.none && _qrImageBytes == null) {
           _initializeQrAuth();
         }
       }
@@ -167,49 +167,49 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   }
 
   // Get status message based on state and authentication type
-  String _getStatusMessage(_UstbSsoState state, bool isSmsTab) {
+  String _getStatusMessage(UstbSsoState state, bool isSmsTab) {
     if (!isSmsTab) {
       // QR authentication messages
       switch (state) {
-        case _UstbSsoState.none:
+        case UstbSsoState.none:
           return '等待初始化';
-        case _UstbSsoState.init:
+        case UstbSsoState.init:
           return '正在初始化';
-        case _UstbSsoState.openingAuth:
+        case UstbSsoState.openingAuth:
           return '正在建立认证管线';
-        case _UstbSsoState.fetchingAuth:
+        case UstbSsoState.fetchingAuth:
           return '正在获取二维码';
-        case _UstbSsoState.solvingAuth:
+        case UstbSsoState.solvingAuth:
           return '请扫描二维码并确认登录';
-        case _UstbSsoState.authFinishing:
+        case UstbSsoState.authFinishing:
           return '正在获取令牌';
-        case _UstbSsoState.success:
+        case UstbSsoState.success:
           return '认证完成';
-        case _UstbSsoState.initFailed:
+        case UstbSsoState.initFailed:
           return '无法获取二维码';
-        case _UstbSsoState.authFailed:
+        case UstbSsoState.authFailed:
           return '认证失败';
       }
     } else {
       // SMS authentication messages
       switch (state) {
-        case _UstbSsoState.none:
+        case UstbSsoState.none:
           return '等待发送验证码';
-        case _UstbSsoState.init:
+        case UstbSsoState.init:
           return '正在初始化';
-        case _UstbSsoState.openingAuth:
+        case UstbSsoState.openingAuth:
           return '正在建立认证管线';
-        case _UstbSsoState.fetchingAuth:
+        case UstbSsoState.fetchingAuth:
           return '正在发送验证码';
-        case _UstbSsoState.solvingAuth:
+        case UstbSsoState.solvingAuth:
           return '请输入验证码';
-        case _UstbSsoState.authFinishing:
+        case UstbSsoState.authFinishing:
           return '正在获取令牌';
-        case _UstbSsoState.success:
+        case UstbSsoState.success:
           return '认证完成';
-        case _UstbSsoState.initFailed:
+        case UstbSsoState.initFailed:
           return '无法发送验证码';
-        case _UstbSsoState.authFailed:
+        case UstbSsoState.authFailed:
           return '认证失败';
       }
     }
@@ -225,7 +225,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   }
 
   // Update progress animation when state changes
-  void _updateProgressAnimation(_UstbSsoState newState) {
+  void _updateProgressAnimation(UstbSsoState newState) {
     bool shouldShowProgress(double progress) {
       return progress != 0.0 && progress != 1.0;
     }
@@ -274,7 +274,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   }
 
   // Helper method to update QR state with progress animation
-  void _updateQrState(_UstbSsoState newState, {String? errorMessage}) {
+  void _updateQrState(UstbSsoState newState, {String? errorMessage}) {
     _updateProgressAnimation(newState);
     setState(() {
       _qrState = newState;
@@ -285,7 +285,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   }
 
   // Helper method to update SMS state with progress animation
-  void _updateSmsState(_UstbSsoState newState, {String? errorMessage}) {
+  void _updateSmsState(UstbSsoState newState, {String? errorMessage}) {
     _updateProgressAnimation(newState);
     setState(() {
       _smsState = newState;
@@ -297,7 +297,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
 
   Future<void> _initializeQrAuth() async {
     try {
-      _updateQrState(_UstbSsoState.init);
+      _updateQrState(UstbSsoState.init);
 
       _session = HttpSession();
       _qrAuth = QrAuthProcedure(
@@ -309,33 +309,33 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
 
       await _qrAuth!.openAuth();
 
-      _updateQrState(_UstbSsoState.openingAuth);
+      _updateQrState(UstbSsoState.openingAuth);
       await _qrAuth!.useWechatAuth();
       await _qrAuth!.useQrCode();
 
-      _updateQrState(_UstbSsoState.fetchingAuth);
+      _updateQrState(UstbSsoState.fetchingAuth);
       _qrImageBytes = await _qrAuth!.getQrImage();
 
-      _updateQrState(_UstbSsoState.solvingAuth);
+      _updateQrState(UstbSsoState.solvingAuth);
       // Wait for QR code scanning and confirmation
       try {
         final passCode = await _qrAuth!.waitForPassCode();
 
-        _updateQrState(_UstbSsoState.authFinishing);
+        _updateQrState(UstbSsoState.authFinishing);
         final response = await _qrAuth!.completeQrAuth(passCode);
 
-        _updateQrState(_UstbSsoState.success);
+        _updateQrState(UstbSsoState.success);
         widget.onSuccess(response, _session!);
       } catch (e) {
         if (mounted) {
           final errorMsg = '$e';
-          _updateQrState(_UstbSsoState.authFailed, errorMessage: errorMsg);
+          _updateQrState(UstbSsoState.authFailed, errorMessage: errorMsg);
         }
       }
     } catch (e) {
       if (mounted) {
         final errorMsg = '$e';
-        _updateQrState(_UstbSsoState.initFailed, errorMessage: errorMsg);
+        _updateQrState(UstbSsoState.initFailed, errorMessage: errorMsg);
       }
     }
   }
@@ -347,7 +347,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
     }
 
     try {
-      _updateSmsState(_UstbSsoState.init);
+      _updateSmsState(UstbSsoState.init);
 
       _session ??= HttpSession();
       _smsAuth = SmsAuthProcedure(
@@ -357,12 +357,12 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
         session: _session!,
       );
 
-      _updateSmsState(_UstbSsoState.openingAuth);
+      _updateSmsState(UstbSsoState.openingAuth);
       await _smsAuth!.openAuth();
     } catch (e) {
       if (mounted) {
         final errorMsg = '$e';
-        _updateSmsState(_UstbSsoState.initFailed, errorMessage: errorMsg);
+        _updateSmsState(UstbSsoState.initFailed, errorMessage: errorMsg);
         return;
       }
     }
@@ -371,7 +371,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
 
     do {
       try {
-        _updateSmsState(_UstbSsoState.fetchingAuth);
+        _updateSmsState(UstbSsoState.fetchingAuth);
         await _smsAuth!.sendSms(phoneNumber);
         break;
       } catch (e) {
@@ -381,7 +381,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
             autoRetry -= 1;
             await Future.delayed(const Duration(seconds: 1));
           } else {
-            _updateSmsState(_UstbSsoState.initFailed, errorMessage: errorMsg);
+            _updateSmsState(UstbSsoState.initFailed, errorMessage: errorMsg);
             return;
           }
         } else {
@@ -396,12 +396,12 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
         _smsErrorMessage = null;
       });
 
-      _updateSmsState(_UstbSsoState.solvingAuth);
+      _updateSmsState(UstbSsoState.solvingAuth);
       _startSmsCountdown();
     } catch (e) {
       if (mounted) {
         final errorMsg = '$e';
-        _updateSmsState(_UstbSsoState.authFailed, errorMessage: errorMsg);
+        _updateSmsState(UstbSsoState.authFailed, errorMessage: errorMsg);
       }
     }
   }
@@ -427,16 +427,16 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
     }
 
     try {
-      _updateSmsState(_UstbSsoState.authFinishing);
+      _updateSmsState(UstbSsoState.authFinishing);
       final token = await _smsAuth!.submitSmsCode(phoneNumber, smsCode);
       final response = await _smsAuth!.completeSmsAuth(token);
 
-      _updateSmsState(_UstbSsoState.success);
+      _updateSmsState(UstbSsoState.success);
       widget.onSuccess(response, _session!);
     } catch (e) {
       if (mounted) {
         final errorMsg = '$e';
-        _updateSmsState(_UstbSsoState.authFailed, errorMessage: errorMsg);
+        _updateSmsState(UstbSsoState.authFailed, errorMessage: errorMsg);
       }
     }
   }
@@ -527,7 +527,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
           child: _qrImageBytes != null
               ? AnimatedOpacity(
                   duration: const Duration(milliseconds: 300),
-                  opacity: _currentState != _UstbSsoState.solvingAuth
+                  opacity: _currentState != UstbSsoState.solvingAuth
                       ? 0.2
                       : 1.0,
                   child: Image.memory(
@@ -566,7 +566,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
                   _qrErrorMessage = null;
                   _qrImageBytes = null;
                 });
-                _updateQrState(_UstbSsoState.none);
+                _updateQrState(UstbSsoState.none);
                 await _initializeQrAuth();
               }
             },
@@ -592,7 +592,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(child: Center(child: _buildQrCodeArea())),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(child: Center(child: _buildStatusArea())),
             ],
           );
@@ -602,7 +602,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               _buildQrCodeArea(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildStatusArea(),
             ],
           );
@@ -623,7 +623,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(child: Center(child: _buildSmsInputArea())),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(child: Center(child: _buildStatusArea())),
             ],
           );
@@ -633,7 +633,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               _buildSmsInputArea(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildStatusArea(),
             ],
           );
@@ -645,16 +645,16 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   // Build SMS input area
   Widget _buildSmsInputArea() {
     final isBusy =
-        _currentState == _UstbSsoState.init ||
-        _currentState == _UstbSsoState.openingAuth ||
-        _currentState == _UstbSsoState.fetchingAuth;
+        _currentState == UstbSsoState.init ||
+        _currentState == UstbSsoState.openingAuth ||
+        _currentState == UstbSsoState.fetchingAuth;
     final canInputCode =
-        _currentState != _UstbSsoState.none &&
-        _currentState != _UstbSsoState.init &&
-        _currentState != _UstbSsoState.openingAuth &&
-        _currentState != _UstbSsoState.fetchingAuth;
+        _currentState != UstbSsoState.none &&
+        _currentState != UstbSsoState.init &&
+        _currentState != UstbSsoState.openingAuth &&
+        _currentState != UstbSsoState.fetchingAuth;
     final canSendSms =
-        _currentState == _UstbSsoState.none &&
+        _currentState == UstbSsoState.none &&
         _smsCountdown <= 0 &&
         _phoneController.text.trim().isNotEmpty;
     final canResendSms =
@@ -662,17 +662,17 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
         _smsCountdown <= 0 &&
         _phoneController.text.trim().isNotEmpty;
     final canLogin =
-        (_currentState == _UstbSsoState.solvingAuth ||
-            _currentState == _UstbSsoState.authFailed) &&
+        (_currentState == UstbSsoState.solvingAuth ||
+            _currentState == UstbSsoState.authFailed) &&
         _phoneController.text.trim().isNotEmpty &&
         _smsCodeController.text.trim().isNotEmpty;
 
     return SizedBox(
       width: 300,
-      height: 200,
+      height: 240,
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Phone number input
           TextField(
@@ -805,7 +805,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size(double.infinity, 52),
               ),
-              child: (_currentState == _UstbSsoState.authFinishing)
+              child: (_currentState == UstbSsoState.authFinishing)
                   ? const SizedBox(
                       height: 20,
                       width: 20,
@@ -862,9 +862,10 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
           ),
           // Tab content
           SizedBox(
-            height: 400,
+            height: 450,
             child: TabBarView(
               controller: _tabController,
+              physics: const NeverScrollableScrollPhysics(),
               children: [
                 // QR Code login tab
                 Padding(

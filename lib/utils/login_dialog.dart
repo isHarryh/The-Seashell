@@ -10,7 +10,6 @@ class LoginDialog extends StatelessWidget {
   final Widget child;
   final double maxWidth;
   final double maxHeight;
-  final bool scrollable;
 
   const LoginDialog({
     super.key,
@@ -21,9 +20,8 @@ class LoginDialog extends StatelessWidget {
     this.iconColor,
     this.headerColor,
     this.onHeaderColor,
-    this.maxWidth = 900,
-    this.maxHeight = 700,
-    this.scrollable = true,
+    this.maxWidth = 800,
+    this.maxHeight = 800,
   });
 
   @override
@@ -45,12 +43,12 @@ class LoginDialog extends StatelessWidget {
           children: [
             // Dialog header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 color: effectiveHeaderColor,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
               ),
               child: Row(
@@ -87,12 +85,10 @@ class LoginDialog extends StatelessWidget {
 
             // Dialog content
             Flexible(
-              child: scrollable
-                  ? SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: child,
-                    )
-                  : Padding(padding: const EdgeInsets.all(20), child: child),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: child,
+              ),
             ),
           ],
         ),

@@ -82,9 +82,6 @@ class _MockLoginDialogState extends State<_MockLoginDialog> {
       iconColor: Theme.of(context).colorScheme.secondary,
       headerColor: Theme.of(context).colorScheme.secondaryContainer,
       onHeaderColor: Theme.of(context).colorScheme.onSecondaryContainer,
-      maxWidth: 500,
-      maxHeight: 400,
-      scrollable: false,
       child: Column(
         children: [
           // Info card

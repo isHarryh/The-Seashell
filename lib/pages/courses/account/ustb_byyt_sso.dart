@@ -114,8 +114,6 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
       iconColor: Theme.of(context).colorScheme.primary,
       headerColor: Theme.of(context).colorScheme.primaryContainer,
       onHeaderColor: Theme.of(context).colorScheme.onPrimaryContainer,
-      maxWidth: 900,
-      maxHeight: 700,
       child: Column(
         children: [
           // Authentication widget

@@ -89,11 +89,9 @@ class _CookieLoginDialogState extends State<_CookieLoginDialog> {
       title: 'Cookie登录',
       description: '本研一体教务管理系统',
       icon: Icons.cookie_outlined,
-      iconColor: Theme.of(context).colorScheme.tertiary,
-      headerColor: Theme.of(context).colorScheme.tertiaryContainer,
-      onHeaderColor: Theme.of(context).colorScheme.onTertiaryContainer,
-      maxWidth: 600,
-      maxHeight: 650,
+      iconColor: Theme.of(context).colorScheme.error,
+      headerColor: Theme.of(context).colorScheme.errorContainer,
+      onHeaderColor: Theme.of(context).colorScheme.onErrorContainer,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -103,6 +101,9 @@ class _CookieLoginDialogState extends State<_CookieLoginDialog> {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.errorContainer,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
