@@ -23,27 +23,27 @@ class _AppConstants {
     _NavigationItem(icon: Icons.home, title: '主页', path: '/'),
     _NavigationItem(
       icon: Icons.account_circle,
-      title: '账户',
+      title: '教务账户',
       path: '/courses/account',
-      category: '课程',
+      category: '本研一体教务管理系统',
     ),
     _NavigationItem(
       icon: Icons.school,
       title: '选课',
       path: '/courses/selection',
-      category: '课程',
+      category: '本研一体教务管理系统',
     ),
     _NavigationItem(
       icon: Icons.calendar_today,
       title: '课表',
       path: '/courses/curriculum',
-      category: '课程',
+      category: '本研一体教务管理系统',
     ),
     _NavigationItem(
       icon: Icons.assessment,
       title: '成绩',
       path: '/courses/grade',
-      category: '课程',
+      category: '本研一体教务管理系统',
     ),
   ];
 }

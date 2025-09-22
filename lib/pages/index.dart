@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
-import '/services/base.dart';
 import '/utils/page_mixins.dart';
 import '/types/courses.dart';
 
@@ -108,6 +107,7 @@ class _HomePageState extends State<HomePage>
         final double aspectRatio = cardWidth / cardHeight;
 
         final List<Widget> cards = [
+          _buildAccountCard(context),
           _buildFeatureCard(
             context,
             '选课',
@@ -132,7 +132,6 @@ class _HomePageState extends State<HomePage>
             Colors.orange,
             () => context.router.pushPath('/courses/grade'),
           ),
-          _buildAccountCard(context),
         ];
 
         if (crossAxisCount == 1) {
@@ -225,7 +224,7 @@ class _HomePageState extends State<HomePage>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '账户',
+                      '教务账户',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -257,25 +256,17 @@ class _HomePageState extends State<HomePage>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '处理中...',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.orange[700],
-                          ),
-                        ),
+                        Text('处理中', style: TextStyle(fontSize: 14)),
                       ],
                     );
                   } else if (service.hasError) {
                     return Text(
-                      service.status == ServiceStatus.errorAuth
-                          ? '认证错误'
-                          : '网络错误',
+                      '教务账户登录失败',
                       style: TextStyle(fontSize: 14, color: Colors.red[700]),
                     );
                   } else {
                     return Text(
-                      '未登录账户',
+                      '尚未登录教务账户',
                       style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     );
                   }

@@ -118,14 +118,14 @@ class UstbByytProdService extends BaseCoursesService {
       _cookie = null;
       if (e is CourseServiceNetworkError) {
         setNetworkError('Failed to login with cookie (network error): $e');
+      } else if (e is CourseServiceException) {
+        setAuthError('Failed to login with cookie: $e');
+      } else {
+        throw CourseServiceException(
+          'Failed to login with cookie (unexpected exception)',
+          e,
+        );
       }
-      if (e is CourseServiceException) {
-        rethrow;
-      }
-      throw CourseServiceException(
-        'Failed to login with cookie (unexpected exception)',
-        e,
-      );
     }
   }
 

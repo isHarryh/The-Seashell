@@ -220,6 +220,11 @@ class _AccountPageState extends State<AccountPage> {
       case ServiceStatus.errorAuth:
         return '认证错误';
       case ServiceStatus.errorNetwork:
+        if (service.errorMessage != null &&
+            service.errorMessage!.contains('HTTP 302')) {
+          // Special case: 302 redirect often indicates session expired
+          return '登录可能已过期';
+        }
         return '网络错误';
     }
   }
@@ -244,7 +249,7 @@ class _AccountPageState extends State<AccountPage> {
     final service = _serviceProvider.coursesService;
 
     return Scaffold(
-      appBar: const PageAppBar(title: '账户'),
+      appBar: const PageAppBar(title: '教务账户'),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
@@ -270,7 +275,7 @@ class _AccountPageState extends State<AccountPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '服务状态',
+                            '本机登录状态',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           Text(
@@ -316,7 +321,7 @@ class _AccountPageState extends State<AccountPage> {
                                 ),
                               )
                             : const Icon(Icons.logout),
-                        label: Text(_isLoading ? '登出中' : '登出'),
+                        label: Text(_isLoading ? '请稍后' : '登出'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
