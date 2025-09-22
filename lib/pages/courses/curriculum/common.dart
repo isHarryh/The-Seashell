@@ -138,7 +138,6 @@ class ChooseCacheCard extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
@@ -178,6 +177,15 @@ class _ChooseLatestCardState extends State<ChooseLatestCard> {
   void initState() {
     super.initState();
     if (widget.isLoggedIn) {
+      _loadTerms();
+    }
+  }
+
+  @override
+  void didUpdateWidget(ChooseLatestCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When login status changes from false to true, load terms
+    if (!oldWidget.isLoggedIn && widget.isLoggedIn) {
       _loadTerms();
     }
   }
@@ -410,7 +418,6 @@ class _ChooseLatestCardState extends State<ChooseLatestCard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),

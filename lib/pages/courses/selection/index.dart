@@ -24,12 +24,22 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
   @override
   void initState() {
     super.initState();
+    _serviceProvider.addListener(_onServiceStatusChanged);
     _loadTerms();
   }
 
   @override
   void dispose() {
+    _serviceProvider.removeListener(_onServiceStatusChanged);
     super.dispose();
+  }
+
+  void _onServiceStatusChanged() {
+    if (mounted) {
+      setState(() {
+        _loadTerms();
+      });
+    }
   }
 
   Future<void> _loadTerms() async {
