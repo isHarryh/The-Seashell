@@ -459,19 +459,25 @@ class _CurriculumPageState extends State<CurriculumPage>
           icon: const Icon(Icons.chevron_left),
         ),
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '第 $_currentWeek 周',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
+          child: GestureDetector(
+            onTap: _showWeekJumper,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '第 $_currentWeek 周',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -495,6 +501,75 @@ class _CurriculumPageState extends State<CurriculumPage>
       _previousWeek = _currentWeek;
       _currentWeek = newWeek;
     });
+  }
+
+  void _showWeekJumper() {
+    final maxValidWeek = _getMaxValidWeek();
+    final todayWeek = _getCurrentDateWeek();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.calendar_today),
+            const SizedBox(width: 8),
+            const Text('周次跳转'),
+          ],
+        ),
+        content: SizedBox(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: List.generate(maxValidWeek, (index) {
+                  final week = index + 1;
+                  final isCurrentWeek = week == _currentWeek;
+                  final isTodayWeek = week == todayWeek;
+
+                  return FilterChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('$week'),
+                        if (isCurrentWeek) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.visibility,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                        if (isTodayWeek && !isCurrentWeek) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.today,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                        ],
+                      ],
+                    ),
+                    selected: false,
+                    onSelected: (selected) {
+                      Navigator.of(context).pop();
+                      gotoWeekSafe(week);
+                    },
+                    backgroundColor: isCurrentWeek
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer.withOpacity(0.6)
+                        : null,
+                  );
+                }),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _gotoCurrentDateWeek() {
