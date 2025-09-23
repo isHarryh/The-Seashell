@@ -40,4 +40,5 @@ const _$TableSizeEnumMap = {
 const _$AnimationModeEnumMap = {
   AnimationMode.none: 'none',
   AnimationMode.fade: 'fade',
+  AnimationMode.slide: 'slide',
 };

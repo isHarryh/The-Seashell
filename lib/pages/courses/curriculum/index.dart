@@ -30,6 +30,7 @@ class _CurriculumPageState extends State<CurriculumPage>
   CurriculumIntegratedData? _curriculumData;
   String? _errorMessage;
   int _currentWeek = 1;
+  int _previousWeek = 0;
   bool _isLoading = false;
   late AnimationController _fadeAnimationController;
   late Animation<double> _fadeAnimation;
@@ -107,7 +108,7 @@ class _CurriculumPageState extends State<CurriculumPage>
         setState(() {
           _curriculumData = cachedData.value;
           _errorMessage = null;
-          _adjustCurrentWeek();
+          _gotoCurrentDateWeek();
         });
         _fadeAnimationController.forward();
       }
@@ -169,7 +170,7 @@ class _CurriculumPageState extends State<CurriculumPage>
         setState(() {
           _curriculumData = integratedData;
           _isLoading = false;
-          _adjustCurrentWeek();
+          _gotoCurrentDateWeek();
         });
         _fadeAnimationController.forward();
       }
@@ -240,7 +241,7 @@ class _CurriculumPageState extends State<CurriculumPage>
           WidgetsBinding.instance.addPostFrameCallback((_) {
             setState(() {
               _curriculumData = data;
-              _adjustCurrentWeek();
+              _gotoCurrentDateWeek();
             });
           });
         }
@@ -364,7 +365,7 @@ class _CurriculumPageState extends State<CurriculumPage>
         setState(() {
           _curriculumData = data;
           _isLoading = false;
-          _adjustCurrentWeek();
+          _gotoCurrentDateWeek();
         });
         _fadeAnimationController.forward();
       }
@@ -412,23 +413,22 @@ class _CurriculumPageState extends State<CurriculumPage>
           _buildWeekSelector(),
           const SizedBox(height: 16),
           Expanded(
-            child: GestureDetector(
-              onPanEnd: (details) {
-                if (details.velocity.pixelsPerSecond.dx.abs() > 400) {
-                  if (details.velocity.pixelsPerSecond.dx > 0) {
-                    // Slide from left
-                    if (_currentWeek > 1) {
-                      _changeWeek(-1);
-                    }
-                  } else {
-                    // Slide from right
-                    if (_currentWeek < _getMaxValidWeek()) {
-                      _changeWeek(1);
+            // To avoid animation overflow
+            child: ClipRect(
+              child: GestureDetector(
+                onPanEnd: (details) {
+                  if (details.velocity.pixelsPerSecond.dx.abs() > 400) {
+                    if (details.velocity.pixelsPerSecond.dx > 0) {
+                      // Slide from left
+                      gotoWeekSafe(_currentWeek - 1);
+                    } else {
+                      // Slide from right
+                      gotoWeekSafe(_currentWeek + 1);
                     }
                   }
-                }
-              },
-              child: _buildCurriculumTableWithAnimation(),
+                },
+                child: _buildCurriculumTableWithAnimation(),
+              ),
             ),
           ),
         ],
@@ -455,7 +455,7 @@ class _CurriculumPageState extends State<CurriculumPage>
     return Row(
       children: [
         IconButton(
-          onPressed: _currentWeek > 1 ? () => _changeWeek(-1) : null,
+          onPressed: () => gotoWeekSafe(_currentWeek - 1),
           icon: const Icon(Icons.chevron_left),
         ),
         Expanded(
@@ -465,29 +465,20 @@ class _CurriculumPageState extends State<CurriculumPage>
               color: Theme.of(context).colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: Text(
-                '第 $_currentWeek 周',
-                key: ValueKey(_currentWeek),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+            child: Text(
+              '第 $_currentWeek 周',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
         ),
         Tooltip(
           message: _currentWeek >= _getMaxValidWeek() ? '已经到最大周次了~' : '',
           child: IconButton(
-            onPressed: _currentWeek < _getMaxValidWeek()
-                ? () => _changeWeek(1)
-                : null,
+            onPressed: () => gotoWeekSafe(_currentWeek + 1),
             icon: const Icon(Icons.chevron_right),
           ),
         ),
@@ -495,33 +486,29 @@ class _CurriculumPageState extends State<CurriculumPage>
     );
   }
 
-  void _changeWeek(int delta) {
-    final maxValidWeek = _getMaxValidWeek();
-    final newWeek = (_currentWeek + delta).clamp(1, maxValidWeek);
+  void gotoWeekSafe(int newWeek) {
+    newWeek = newWeek.clamp(1, _getMaxValidWeek());
 
     if (newWeek == _currentWeek) return;
 
-    _fadeAnimationController.reset();
     setState(() {
+      _previousWeek = _currentWeek;
       _currentWeek = newWeek;
     });
-    _fadeAnimationController.forward();
   }
 
-  void _adjustCurrentWeek() {
+  void _gotoCurrentDateWeek() {
     final maxValidWeek = _getMaxValidWeek();
     if (_currentWeek > maxValidWeek) {
       _currentWeek = maxValidWeek;
     }
 
-    // 尝试自动切换到当前日期所在的周次
     final todayWeek = _getCurrentDateWeek();
     if (todayWeek != null && todayWeek >= 1 && todayWeek <= maxValidWeek) {
       _currentWeek = todayWeek;
     }
   }
 
-  // 获取当前日期对应的周次
   int? _getCurrentDateWeek() {
     if (_curriculumData?.calendarDays == null ||
         _curriculumData!.calendarDays!.isEmpty) {
@@ -599,26 +586,62 @@ class _CurriculumPageState extends State<CurriculumPage>
 
   Widget _buildCurriculumTableWithAnimation() {
     final settings = getSettings();
-    final useAnimation = settings.animationMode == AnimationMode.fade;
+    final animationMode = settings.animationMode;
 
-    if (useAnimation) {
-      return AnimatedBuilder(
-        animation: _fadeAnimationController,
-        builder: (context, child) {
-          return FadeTransition(
-            opacity: _fadeAnimation,
-            child: _buildCurriculumTable(),
-          );
-        },
-      );
-    } else {
-      return _buildCurriculumTable();
+    final slideDirection = (_currentWeek - _previousWeek).clamp(-1, 1);
+
+    Widget tableContent;
+
+    switch (animationMode) {
+      case AnimationMode.fade:
+        tableContent = AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: _buildCurriculumTable(key: ValueKey(_currentWeek)),
+        );
+        break;
+
+      case AnimationMode.slide:
+        tableContent = AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: Offset(slideDirection * 0.4, 0.0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
+              child: child,
+            );
+          },
+          child: _buildCurriculumTable(key: ValueKey(_currentWeek)),
+        );
+        break;
+
+      case AnimationMode.none:
+        tableContent = _buildCurriculumTable();
+        break;
     }
+
+    return AnimatedBuilder(
+      animation: _fadeAnimationController,
+      builder: (context, child) {
+        return FadeTransition(opacity: _fadeAnimation, child: tableContent);
+      },
+    );
   }
 
-  Widget _buildCurriculumTable() {
+  Widget _buildCurriculumTable({Key? key}) {
     if (_curriculumData == null || _curriculumData!.allPeriods.isEmpty) {
       return Center(
+        key: key,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -644,6 +667,7 @@ class _CurriculumPageState extends State<CurriculumPage>
     }
 
     return LayoutBuilder(
+      key: key,
       builder: (context, constraints) {
         try {
           final settings = getSettings();

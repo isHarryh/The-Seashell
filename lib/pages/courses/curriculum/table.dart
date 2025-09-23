@@ -337,7 +337,7 @@ class CurriculumTable extends StatelessWidget {
   ) {
     final maxLines = settings.tableSize.height >= 100 ? 3 : 2;
     final firstClass = classesInSlot.first;
-    final useAnimation = settings.animationMode == AnimationMode.fade;
+    final useAnimation = settings.animationMode != AnimationMode.none;
 
     return Material(
       color: Colors.transparent,

@@ -18,6 +18,7 @@ enum TableSize {
 enum AnimationMode {
   none, // 无动画
   fade, // 渐变动画
+  slide, // 滑动动画
 }
 
 extension WeekendDisplayModeExtension on WeekendDisplayMode {
@@ -75,6 +76,8 @@ extension AnimationModeExtension on AnimationMode {
         return '无';
       case AnimationMode.fade:
         return '渐变';
+      case AnimationMode.slide:
+        return '滑动';
     }
   }
 
@@ -84,6 +87,8 @@ extension AnimationModeExtension on AnimationMode {
         return '无动画效果';
       case AnimationMode.fade:
         return '渐变动画效果';
+      case AnimationMode.slide:
+        return '滑动动画效果';
     }
   }
 }
@@ -105,7 +110,7 @@ class CurriculumSettings extends Serializable {
   static final CurriculumSettings defaultSettings = CurriculumSettings(
     weekendMode: WeekendDisplayMode.auto,
     tableSize: TableSize.small,
-    animationMode: AnimationMode.fade,
+    animationMode: AnimationMode.slide,
     activated: true,
   );
 
