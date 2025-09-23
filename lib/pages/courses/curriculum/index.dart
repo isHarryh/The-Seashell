@@ -5,6 +5,7 @@ import '/types/courses.dart';
 import '/types/preferences.dart';
 import '/utils/app_bar.dart';
 import 'common.dart';
+import 'table.dart';
 
 class MajorPeriodInfo {
   final int id;
@@ -34,7 +35,6 @@ class _CurriculumPageState extends State<CurriculumPage>
   late Animation<double> _fadeAnimation;
 
   static const int maxWeeks = 50;
-  static const List<String> dayNames = ['一', '二', '三', '四', '五', '六', '日'];
 
   @override
   void initState() {
@@ -521,6 +521,37 @@ class _CurriculumPageState extends State<CurriculumPage>
     if (_currentWeek > maxValidWeek) {
       _currentWeek = maxValidWeek;
     }
+
+    // 尝试自动切换到当前日期所在的周次
+    final todayWeek = _getCurrentDateWeek();
+    if (todayWeek != null && todayWeek >= 1 && todayWeek <= maxValidWeek) {
+      _currentWeek = todayWeek;
+    }
+  }
+
+  // 获取当前日期对应的周次
+  int? _getCurrentDateWeek() {
+    if (_curriculumData?.calendarDays == null ||
+        _curriculumData!.calendarDays!.isEmpty) {
+      return null;
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (final calendarDay in _curriculumData!.calendarDays!) {
+      final dayDate = DateTime(
+        calendarDay.year,
+        calendarDay.month,
+        calendarDay.day,
+      );
+      if (dayDate.year == today.year &&
+          dayDate.month == today.month &&
+          dayDate.day == today.day) {
+        return calendarDay.weekIndex;
+      }
+    }
+    return null;
   }
 
   int _getMaxValidWeek() {
@@ -574,35 +605,6 @@ class _CurriculumPageState extends State<CurriculumPage>
     return weekDays;
   }
 
-  String? _getCurrentYear() {
-    if (_curriculumData?.calendarDays == null ||
-        _curriculumData!.calendarDays!.isEmpty) {
-      return null;
-    }
-
-    for (final calendarDay in _curriculumData!.calendarDays!) {
-      if (calendarDay.weekIndex == _currentWeek) {
-        return '${calendarDay.year}年';
-      }
-    }
-
-    return null;
-  }
-
-  String? _getCurrentMonth() {
-    if (_curriculumData?.calendarDays == null ||
-        _curriculumData!.calendarDays!.isEmpty) {
-      return null;
-    }
-
-    for (final calendarDay in _curriculumData!.calendarDays!) {
-      if (calendarDay.weekIndex == _currentWeek) {
-        return '${calendarDay.month}月';
-      }
-    }
-    return null;
-  }
-
   Widget _buildCurriculumTable() {
     if (_curriculumData == null || _curriculumData!.allPeriods.isEmpty) {
       return Center(
@@ -630,16 +632,21 @@ class _CurriculumPageState extends State<CurriculumPage>
       );
     }
 
-    final weekClasses = _curriculumData!.allClasses
-        .where((classItem) => classItem.weeks.contains(_currentWeek))
-        .toList();
-
     return LayoutBuilder(
       builder: (context, constraints) {
         try {
+          final settings = getSettings();
+          final weekDates = _getWeekDates();
+
           return SingleChildScrollView(
             scrollDirection: Axis.vertical,
-            child: _buildTable(weekClasses, constraints.maxWidth),
+            child: CurriculumTable(
+              curriculumData: _curriculumData!,
+              availableWidth: constraints.maxWidth,
+              settings: settings,
+              weekDates: weekDates,
+              currentWeek: _currentWeek,
+            ),
           );
         } catch (e) {
           return Center(
@@ -666,323 +673,10 @@ class _CurriculumPageState extends State<CurriculumPage>
     );
   }
 
-  Widget _buildTable(List<ClassItem> weekClasses, double availableWidth) {
-    final periods = _curriculumData!.allPeriods;
-    final majorPeriods = _getMajorPeriods(periods);
-
-    final courseDays = weekClasses.map((c) => c.day).toSet().toList();
-
-    final settings = getSettings();
-
-    final displayDays = settings.calculateDisplayDays(courseDays);
-
-    final dayColumnWidth = (availableWidth - 2) / (displayDays + 1);
-
-    final weekDates = _getWeekDates();
-
-    return Container(
-      width: availableWidth,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300, width: 0.5),
-      ),
-      child: Table(
-        columnWidths: {
-          for (int i = 0; i <= displayDays; i++)
-            i: FixedColumnWidth(dayColumnWidth),
-        },
-        children: [
-          TableRow(
-            children: [
-              _buildHeaderCell(
-                _getCurrentMonth() ?? '时间',
-                subtitle: _getCurrentYear(),
-              ),
-              for (int day = 1; day <= displayDays; day++)
-                _buildHeaderCell(
-                  '周${dayNames[day - 1]}',
-                  subtitle: weekDates[day]?.toString(),
-                ),
-            ],
-          ),
-          for (final majorPeriod in majorPeriods)
-            TableRow(
-              children: [
-                _buildMajorTimeCell(majorPeriod),
-                for (int day = 1; day <= displayDays; day++)
-                  _buildMajorClassCell(weekClasses, day, majorPeriod),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  // 从课时数据中提取大节信息
-  List<MajorPeriodInfo> _getMajorPeriods(List<ClassPeriod> periods) {
-    if (periods.isEmpty) {
-      throw StateError('课时数据为空，无法显示课表。请检查网络连接或联系管理员。');
-    }
-
-    final majorPeriodsMap = <int, List<ClassPeriod>>{};
-
-    for (final period in periods) {
-      final majorId = period.majorId;
-      majorPeriodsMap.putIfAbsent(majorId, () => []).add(period);
-    }
-
-    final majorPeriodsList = <MajorPeriodInfo>[];
-
-    for (final entry in majorPeriodsMap.entries) {
-      final majorId = entry.key;
-      final periodsInMajor = entry.value;
-
-      if (periodsInMajor.isEmpty) continue;
-
-      final majorName = periodsInMajor.first.majorName;
-
-      String majorStartTime = '';
-      String majorEndTime = '';
-
-      for (final period in periodsInMajor) {
-        if (period.majorStartTime != null &&
-            period.majorStartTime!.isNotEmpty) {
-          majorStartTime = period.majorStartTime!;
-          break;
-        }
-      }
-
-      for (final period in periodsInMajor) {
-        if (period.majorEndTime != null && period.majorEndTime!.isNotEmpty) {
-          majorEndTime = period.majorEndTime!;
-          break;
-        }
-      }
-
-      if (majorStartTime.isEmpty) {
-        periodsInMajor.sort((a, b) => a.minorId.compareTo(b.minorId));
-        majorStartTime = periodsInMajor.first.minorStartTime;
-      }
-
-      if (majorEndTime.isEmpty) {
-        periodsInMajor.sort((a, b) => b.minorId.compareTo(a.minorId));
-        majorEndTime = periodsInMajor.first.minorEndTime;
-      }
-
-      if (majorStartTime.isEmpty || majorEndTime.isEmpty) {
-        throw StateError('大节 $majorId ($majorName) 的时间数据不完整');
-      }
-
-      majorPeriodsList.add(
-        MajorPeriodInfo(majorId, majorName, majorStartTime, majorEndTime),
-      );
-    }
-
-    majorPeriodsList.sort((a, b) => a.id.compareTo(b.id));
-
-    if (majorPeriodsList.isEmpty) {
-      throw StateError('未能从课时数据中提取到有效的大节信息');
-    }
-
-    return majorPeriodsList;
-  }
-
-  Widget _buildHeaderCell(String text, {String? subtitle}) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              text,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontSize: subtitle == null ? 16 : 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (subtitle != null)
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer.withOpacity(0.6),
-                ),
-                textAlign: TextAlign.center,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMajorTimeCell(MajorPeriodInfo majorPeriod) {
-    final settings = getSettings();
-    final cellHeight = settings.tableSize.height;
-
-    return Container(
-      height: cellHeight,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        color: Colors.grey.shade50,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            majorPeriod.startTime,
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${majorPeriod.id}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            majorPeriod.endTime,
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMajorClassCell(
-    List<ClassItem> weekClasses,
-    int day,
-    MajorPeriodInfo majorPeriod,
-  ) {
-    final classesInSlot = weekClasses.where((classItem) {
-      return classItem.day == day && classItem.period == majorPeriod.id;
-    }).toList();
-
-    final settings = getSettings();
-    final cellHeight = settings.tableSize.height;
-
-    return Container(
-      height: cellHeight,
-      decoration: BoxDecoration(
-        color: classesInSlot.isEmpty
-            ? Colors.white
-            : _getClassColor(classesInSlot.first),
-        border: Border.all(color: Colors.grey.shade300, width: 0.5),
-      ),
-      child: classesInSlot.isEmpty
-          ? const SizedBox.expand()
-          : _buildClassContent(classesInSlot),
-    );
-  }
-
-  Widget _buildClassContent(List<ClassItem> classesInSlot) {
-    final settings = getSettings();
-    final maxLines = settings.tableSize.height >= 100 ? 3 : 2;
-    final firstClass = classesInSlot.first;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _showClassDetails(firstClass),
-        splashColor: Colors.white.withOpacity(0.3),
-        highlightColor: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(2),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(2.0),
-          width: double.infinity,
-          height: double.infinity,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Center(
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    child: Text(
-                      firstClass.className,
-                      textAlign: TextAlign.center,
-                      maxLines: maxLines,
-                      overflow: TextOverflow.fade,
-                    ),
-                  ),
-                ),
-              ),
-              if (firstClass.locationName.isNotEmpty)
-                Text(
-                  firstClass.locationName,
-                  style: const TextStyle(fontSize: 10, color: Colors.white70),
-                  textAlign: TextAlign.center,
-                  maxLines: maxLines,
-                  overflow: TextOverflow.fade,
-                ),
-              if (classesInSlot.length > 1)
-                Text(
-                  '+${classesInSlot.length - 1}',
-                  style: const TextStyle(fontSize: 9, color: Colors.white70),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getClassColor(ClassItem classItem) {
-    final hash = classItem.className.hashCode;
-    final hueSteps = 18;
-    final hue = (hash.abs() % hueSteps) * (360.0 / hueSteps);
-    const saturation = 0.667;
-    const value = 0.75;
-    return HSVColor.fromAHSV(1.0, hue, saturation, value).toColor();
-  }
-
-  void _showClassDetails(ClassItem classItem) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(classItem.className),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('教师: ${classItem.teacherName}'),
-            Text('地点: ${classItem.locationName}'),
-            Text('周次: ${classItem.weeksText}'),
-            Text('节次: 第${classItem.period}大节'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 构建设置抽屉
   Widget _buildSettingsDrawer() {
     return Drawer(
       child: Column(
         children: [
-          // 抽屉头部
           DrawerHeader(
             child: const Row(
               children: [
@@ -995,12 +689,10 @@ class _CurriculumPageState extends State<CurriculumPage>
               ],
             ),
           ),
-          // 学期信息
           if (_curriculumData != null) ...[
             _buildCurriculumInfo(),
             const Divider(),
           ],
-          // 设置项
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -1082,7 +774,6 @@ class _CurriculumPageState extends State<CurriculumPage>
     }
   }
 
-  // 构建周末显示设置
   Widget _buildWeekendDisplaySetting() {
     return Card(
       child: Padding(
@@ -1123,7 +814,6 @@ class _CurriculumPageState extends State<CurriculumPage>
     );
   }
 
-  // 构建表格尺寸设置
   Widget _buildTableSizeSetting() {
     return Card(
       child: Padding(
