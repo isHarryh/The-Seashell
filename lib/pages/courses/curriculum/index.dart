@@ -81,6 +81,7 @@ class _CurriculumPageState extends State<CurriculumPage>
     final newSettings = CurriculumSettings(
       weekendMode: settings.weekendMode,
       tableSize: settings.tableSize,
+      animationMode: settings.animationMode,
       activated: activated,
     );
     saveSettings(newSettings);
@@ -405,10 +406,9 @@ class _CurriculumPageState extends State<CurriculumPage>
     }
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         children: [
-          const SizedBox(height: 8),
           _buildWeekSelector(),
           const SizedBox(height: 16),
           Expanded(
@@ -428,15 +428,7 @@ class _CurriculumPageState extends State<CurriculumPage>
                   }
                 }
               },
-              child: AnimatedBuilder(
-                animation: _fadeAnimationController,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: _buildCurriculumTable(),
-                  );
-                },
-              ),
+              child: _buildCurriculumTableWithAnimation(),
             ),
           ),
         ],
@@ -605,6 +597,25 @@ class _CurriculumPageState extends State<CurriculumPage>
     return weekDays;
   }
 
+  Widget _buildCurriculumTableWithAnimation() {
+    final settings = getSettings();
+    final useAnimation = settings.animationMode == AnimationMode.fade;
+
+    if (useAnimation) {
+      return AnimatedBuilder(
+        animation: _fadeAnimationController,
+        builder: (context, child) {
+          return FadeTransition(
+            opacity: _fadeAnimation,
+            child: _buildCurriculumTable(),
+          );
+        },
+      );
+    } else {
+      return _buildCurriculumTable();
+    }
+  }
+
   Widget _buildCurriculumTable() {
     if (_curriculumData == null || _curriculumData!.allPeriods.isEmpty) {
       return Center(
@@ -700,6 +711,8 @@ class _CurriculumPageState extends State<CurriculumPage>
                 _buildWeekendDisplaySetting(),
                 const SizedBox(height: 8),
                 _buildTableSizeSetting(),
+                const SizedBox(height: 8),
+                _buildAnimationModeSetting(),
               ],
             ),
           ),
@@ -843,6 +856,46 @@ class _CurriculumPageState extends State<CurriculumPage>
                   if (newSize != null) {
                     final currentSettings = getSettings();
                     saveSettings(currentSettings..tableSize = newSize);
+                    setState(() {});
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimationModeSetting() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '动画效果',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 100,
+              child: DropdownButtonFormField<AnimationMode>(
+                initialValue: getSettings().animationMode,
+                items: AnimationMode.values.map((mode) {
+                  return DropdownMenuItem(
+                    value: mode,
+                    child: Text(mode.displayName),
+                  );
+                }).toList(),
+                onChanged: (AnimationMode? newMode) {
+                  if (newMode != null) {
+                    final currentSettings = getSettings();
+                    saveSettings(currentSettings..animationMode = newMode);
                     setState(() {});
                   }
                 },

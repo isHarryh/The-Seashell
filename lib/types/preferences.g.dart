@@ -13,6 +13,7 @@ CurriculumSettings _$CurriculumSettingsFromJson(Map<String, dynamic> json) =>
         json['weekendMode'],
       ),
       tableSize: $enumDecode(_$TableSizeEnumMap, json['tableSize']),
+      animationMode: $enumDecode(_$AnimationModeEnumMap, json['animationMode']),
       activated: json['activated'] as bool? ?? true,
     );
 
@@ -20,6 +21,7 @@ Map<String, dynamic> _$CurriculumSettingsToJson(CurriculumSettings instance) =>
     <String, dynamic>{
       'weekendMode': _$WeekendDisplayModeEnumMap[instance.weekendMode]!,
       'tableSize': _$TableSizeEnumMap[instance.tableSize]!,
+      'animationMode': _$AnimationModeEnumMap[instance.animationMode]!,
       'activated': instance.activated,
     };
 
@@ -33,4 +35,9 @@ const _$TableSizeEnumMap = {
   TableSize.small: 'small',
   TableSize.medium: 'medium',
   TableSize.large: 'large',
+};
+
+const _$AnimationModeEnumMap = {
+  AnimationMode.none: 'none',
+  AnimationMode.fade: 'fade',
 };

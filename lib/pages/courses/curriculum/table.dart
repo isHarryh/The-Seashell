@@ -337,6 +337,7 @@ class CurriculumTable extends StatelessWidget {
   ) {
     final maxLines = settings.tableSize.height >= 100 ? 3 : 2;
     final firstClass = classesInSlot.first;
+    final useAnimation = settings.animationMode == AnimationMode.fade;
 
     return Material(
       color: Colors.transparent,
@@ -345,50 +346,70 @@ class CurriculumTable extends StatelessWidget {
         splashColor: Colors.white.withOpacity(0.3),
         highlightColor: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(2),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(2.0),
-          width: double.infinity,
-          height: double.infinity,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Center(
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    child: Text(
-                      firstClass.className,
-                      textAlign: TextAlign.center,
-                      maxLines: maxLines,
-                      overflow: TextOverflow.fade,
-                    ),
-                  ),
+        child: useAnimation
+            ? AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(2.0),
+                width: double.infinity,
+                height: double.infinity,
+                child: _buildClassContentInner(
+                  firstClass,
+                  classesInSlot,
+                  maxLines,
+                ),
+              )
+            : Container(
+                padding: const EdgeInsets.all(2.0),
+                width: double.infinity,
+                height: double.infinity,
+                child: _buildClassContentInner(
+                  firstClass,
+                  classesInSlot,
+                  maxLines,
                 ),
               ),
-              if (firstClass.locationName.isNotEmpty)
-                Text(
-                  firstClass.locationName,
-                  style: const TextStyle(fontSize: 10, color: Colors.white70),
-                  textAlign: TextAlign.center,
-                  maxLines: maxLines,
-                  overflow: TextOverflow.fade,
-                ),
-              if (classesInSlot.length > 1)
-                Text(
-                  '+${classesInSlot.length - 1}',
-                  style: const TextStyle(fontSize: 9, color: Colors.white70),
-                ),
-            ],
+      ),
+    );
+  }
+
+  Widget _buildClassContentInner(
+    ClassItem firstClass,
+    List<ClassItem> classesInSlot,
+    int maxLines,
+  ) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Center(
+            child: Text(
+              firstClass.className,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: maxLines,
+              overflow: TextOverflow.fade,
+            ),
           ),
         ),
-      ),
+        if (firstClass.locationName.isNotEmpty)
+          Text(
+            firstClass.locationName,
+            style: const TextStyle(fontSize: 10, color: Colors.white70),
+            textAlign: TextAlign.center,
+            maxLines: maxLines,
+            overflow: TextOverflow.fade,
+          ),
+        if (classesInSlot.length > 1)
+          Text(
+            '+${classesInSlot.length - 1}',
+            style: const TextStyle(fontSize: 9, color: Colors.white70),
+          ),
+      ],
     );
   }
 

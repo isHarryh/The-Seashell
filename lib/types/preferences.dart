@@ -15,6 +15,11 @@ enum TableSize {
   large, // 超大尺寸 (h=120)
 }
 
+enum AnimationMode {
+  none, // 无动画
+  fade, // 渐变动画
+}
+
 extension WeekendDisplayModeExtension on WeekendDisplayMode {
   String get displayName {
     switch (this) {
@@ -63,21 +68,44 @@ extension TableSizeExtension on TableSize {
   }
 }
 
+extension AnimationModeExtension on AnimationMode {
+  String get displayName {
+    switch (this) {
+      case AnimationMode.none:
+        return '无';
+      case AnimationMode.fade:
+        return '渐变';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case AnimationMode.none:
+        return '无动画效果';
+      case AnimationMode.fade:
+        return '渐变动画效果';
+    }
+  }
+}
+
 @JsonSerializable()
 class CurriculumSettings extends Serializable {
   WeekendDisplayMode weekendMode;
   TableSize tableSize;
+  AnimationMode animationMode;
   bool activated;
 
   CurriculumSettings({
-    required this.weekendMode, 
+    required this.weekendMode,
     required this.tableSize,
+    required this.animationMode,
     this.activated = true,
   });
 
   static final CurriculumSettings defaultSettings = CurriculumSettings(
     weekendMode: WeekendDisplayMode.auto,
     tableSize: TableSize.small,
+    animationMode: AnimationMode.fade,
     activated: true,
   );
 
