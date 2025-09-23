@@ -183,6 +183,31 @@ class _AccountPageState extends State<AccountPage> {
   }
 
   Future<void> _handleLogout() async {
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('确认登出'),
+          content: const Text('是否确认登出此账户？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('确认'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true) {
+      return;
+    }
+
     try {
       if (mounted) {
         setState(() {
@@ -193,9 +218,36 @@ class _AccountPageState extends State<AccountPage> {
 
       await _serviceProvider.logoutFromCoursesService();
 
+      // Clear user cache data but preserve lastSmsPhone
+      final existingData = _serviceProvider.storeService
+          .getCache<UserLoginIntegratedData>(
+            "course_account_data",
+            UserLoginIntegratedData.fromJson,
+          );
+
+      if (existingData.isNotEmpty && existingData.value?.lastSmsPhone != null) {
+        // Preserve only the lastSmsPhone
+        final preservedData = UserLoginIntegratedData(
+          user: null,
+          method: null,
+          cookie: null,
+          lastSmsPhone: existingData.value!.lastSmsPhone,
+        );
+        _serviceProvider.storeService.putCache<UserLoginIntegratedData>(
+          "course_account_data",
+          preservedData,
+        );
+      } else {
+        // No existing data or no lastSmsPhone, remove cache completely
+        _serviceProvider.storeService.removeCache("course_account_data");
+      }
+
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _userInfo = null;
+          _currentLoginMethod = null;
+          _currentLoginCookie = null;
         });
       }
     } catch (e) {
