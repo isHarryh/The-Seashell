@@ -28,8 +28,7 @@ class _AccountPageState extends State<AccountPage> {
     super.initState();
     _serviceProvider.addListener(_onServiceStatusChanged);
 
-    _tryRestoreLoginFromCache();
-
+    // Check current service status and load user info if already online
     final service = _serviceProvider.coursesService;
     _showLoginButton = !service.isOnline;
 
@@ -63,52 +62,6 @@ class _AccountPageState extends State<AccountPage> {
           _loadUserInfoIfOnlineSilently();
         }
       });
-    }
-  }
-
-  Future<void> _tryRestoreLoginFromCache() async {
-    try {
-      final cachedData = _serviceProvider.storeService
-          .getCache<UserLoginIntegratedData>(
-            "course_account_data",
-            UserLoginIntegratedData.fromJson,
-          );
-
-      if (cachedData.isEmpty) return;
-
-      final data = cachedData.value!;
-      final method = data.method;
-
-      if (method == "mock") {
-        _serviceProvider.switchToMockService();
-        await _serviceProvider.loginToCoursesService();
-        if (mounted) {
-          setState(() {
-            _userInfo = data.user;
-          });
-        }
-      } else if (method == "cookie" || method == "sso") {
-        if (data.cookie != null && data.user != null) {
-          _serviceProvider.switchToProductionService();
-          await _serviceProvider.loginToCoursesServiceWithCookie(data.cookie!);
-          // Get new user info and assert consistency
-          final newUserInfo = await _serviceProvider.coursesService
-              .getUserInfo();
-          assert(
-            newUserInfo == data.user,
-            "User info mismatch after login with cached cookie",
-          );
-          // Set user info
-          if (mounted) {
-            setState(() {
-              _userInfo = newUserInfo;
-            });
-          }
-        }
-      }
-      // Other methods: do nothing, remain logged out
-    } catch (e) {
-      // On any exception, remain logged out
     }
   }
 
