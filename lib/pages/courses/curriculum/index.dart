@@ -35,8 +35,6 @@ class _CurriculumPageState extends State<CurriculumPage>
   late AnimationController _fadeAnimationController;
   late Animation<double> _fadeAnimation;
 
-  static const int maxWeeks = 50;
-
   @override
   void initState() {
     super.initState();
@@ -420,10 +418,10 @@ class _CurriculumPageState extends State<CurriculumPage>
                   if (details.velocity.pixelsPerSecond.dx.abs() > 400) {
                     if (details.velocity.pixelsPerSecond.dx > 0) {
                       // Slide from left
-                      gotoWeekSafe(_currentWeek - 1);
+                      _gotoWeekSafe(_currentWeek - 1);
                     } else {
                       // Slide from right
-                      gotoWeekSafe(_currentWeek + 1);
+                      _gotoWeekSafe(_currentWeek + 1);
                     }
                   }
                 },
@@ -455,7 +453,7 @@ class _CurriculumPageState extends State<CurriculumPage>
     return Row(
       children: [
         IconButton(
-          onPressed: () => gotoWeekSafe(_currentWeek - 1),
+          onPressed: () => _gotoWeekSafe(_currentWeek - 1),
           icon: const Icon(Icons.chevron_left),
         ),
         Expanded(
@@ -482,9 +480,11 @@ class _CurriculumPageState extends State<CurriculumPage>
           ),
         ),
         Tooltip(
-          message: _currentWeek >= _getMaxValidWeek() ? '已经到最大周次了~' : '',
+          message: _currentWeek >= _curriculumData!.getMaxValidWeekIndex()
+              ? '已经到最大周次了~'
+              : '',
           child: IconButton(
-            onPressed: () => gotoWeekSafe(_currentWeek + 1),
+            onPressed: () => _gotoWeekSafe(_currentWeek + 1),
             icon: const Icon(Icons.chevron_right),
           ),
         ),
@@ -492,20 +492,9 @@ class _CurriculumPageState extends State<CurriculumPage>
     );
   }
 
-  void gotoWeekSafe(int newWeek) {
-    newWeek = newWeek.clamp(1, _getMaxValidWeek());
-
-    if (newWeek == _currentWeek) return;
-
-    setState(() {
-      _previousWeek = _currentWeek;
-      _currentWeek = newWeek;
-    });
-  }
-
   void _showWeekJumper() {
-    final maxValidWeek = _getMaxValidWeek();
-    final todayWeek = _getCurrentDateWeek();
+    final maxValidWeek = _curriculumData!.getMaxValidWeekIndex();
+    final todayWeek = _curriculumData!.getWeekIndexToday();
 
     showDialog(
       context: context,
@@ -555,7 +544,7 @@ class _CurriculumPageState extends State<CurriculumPage>
                     selected: false,
                     onSelected: (selected) {
                       Navigator.of(context).pop();
-                      gotoWeekSafe(week);
+                      _gotoWeekSafe(week);
                     },
                     backgroundColor: isCurrentWeek
                         ? Theme.of(
@@ -572,91 +561,27 @@ class _CurriculumPageState extends State<CurriculumPage>
     );
   }
 
+  void _gotoWeekSafe(int newWeek) {
+    newWeek = newWeek.clamp(1, _curriculumData!.getMaxValidWeekIndex());
+
+    if (newWeek == _currentWeek) return;
+
+    setState(() {
+      _previousWeek = _currentWeek;
+      _currentWeek = newWeek;
+    });
+  }
+
   void _gotoCurrentDateWeek() {
-    final maxValidWeek = _getMaxValidWeek();
+    final maxValidWeek = _curriculumData!.getMaxValidWeekIndex();
     if (_currentWeek > maxValidWeek) {
       _currentWeek = maxValidWeek;
     }
 
-    final todayWeek = _getCurrentDateWeek();
+    final todayWeek = _curriculumData!.getWeekIndexToday();
     if (todayWeek != null && todayWeek >= 1 && todayWeek <= maxValidWeek) {
       _currentWeek = todayWeek;
     }
-  }
-
-  int? _getCurrentDateWeek() {
-    if (_curriculumData?.calendarDays == null ||
-        _curriculumData!.calendarDays!.isEmpty) {
-      return null;
-    }
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    for (final calendarDay in _curriculumData!.calendarDays!) {
-      final dayDate = DateTime(
-        calendarDay.year,
-        calendarDay.month,
-        calendarDay.day,
-      );
-      if (dayDate.year == today.year &&
-          dayDate.month == today.month &&
-          dayDate.day == today.day) {
-        return calendarDay.weekIndex;
-      }
-    }
-    return null;
-  }
-
-  int _getMaxValidWeek() {
-    int maxWeekWithClasses = 0;
-
-    if (_curriculumData != null && _curriculumData!.allClasses.isNotEmpty) {
-      for (final classItem in _curriculumData!.allClasses) {
-        if (classItem.weeks.isNotEmpty) {
-          final maxWeekInClass = classItem.weeks.reduce(
-            (a, b) => a > b ? a : b,
-          );
-          if (maxWeekInClass > maxWeekWithClasses) {
-            maxWeekWithClasses = maxWeekInClass;
-          }
-        }
-      }
-    }
-
-    int maxWeekFromCalendar = 0;
-    if (_curriculumData?.calendarDays != null &&
-        _curriculumData!.calendarDays!.isNotEmpty) {
-      for (final calendarDay in _curriculumData!.calendarDays!) {
-        if (calendarDay.weekIndex > 0 && calendarDay.weekIndex < 99) {
-          if (calendarDay.weekIndex > maxWeekFromCalendar) {
-            maxWeekFromCalendar = calendarDay.weekIndex;
-          }
-        }
-      }
-    }
-
-    final combinedMax = maxWeekWithClasses > maxWeekFromCalendar
-        ? maxWeekWithClasses
-        : maxWeekFromCalendar;
-
-    final validMax = combinedMax > 0 ? combinedMax : 1;
-    return validMax > maxWeeks ? maxWeeks : validMax;
-  }
-
-  Map<int, int> _getWeekDates() {
-    if (_curriculumData?.calendarDays == null ||
-        _curriculumData!.calendarDays!.isEmpty) {
-      return {};
-    }
-
-    final weekDays = <int, int>{};
-    for (final calendarDay in _curriculumData!.calendarDays!) {
-      if (calendarDay.weekIndex == _currentWeek) {
-        weekDays[calendarDay.weekday] = calendarDay.day;
-      }
-    }
-    return weekDays;
   }
 
   Widget _buildCurriculumTableWithAnimation() {
@@ -746,7 +671,7 @@ class _CurriculumPageState extends State<CurriculumPage>
       builder: (context, constraints) {
         try {
           final settings = getSettings();
-          final weekDates = _getWeekDates();
+          final weekDates = _curriculumData!.getWeekdayDaysOf(_currentWeek);
 
           return SingleChildScrollView(
             scrollDirection: Axis.vertical,

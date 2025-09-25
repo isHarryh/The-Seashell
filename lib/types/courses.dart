@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter/material.dart';
 import 'base.dart';
 
 part 'courses.g.dart';
@@ -144,6 +146,48 @@ class ClassItem extends BaseDataClass {
     this.colorId,
   });
 
+  TimeOfDay? getMinStartTime(List<ClassPeriod> referPeriods) {
+    final periods = referPeriods
+        .where((p) => p.majorId == period)
+        .where((p) => p.startTime != null);
+    if (periods.length > 1) {
+      return periods
+          .reduce(
+            (a, b) =>
+                a.startTime!.hour < b.startTime!.hour ||
+                    (a.startTime!.hour == b.startTime!.hour &&
+                        a.startTime!.minute < b.startTime!.minute)
+                ? a
+                : b,
+          )
+          .startTime;
+    } else if (periods.length == 1) {
+      return periods.first.startTime;
+    }
+    return null;
+  }
+
+  TimeOfDay? getMaxEndTime(List<ClassPeriod> referPeriods) {
+    final periods = referPeriods
+        .where((p) => p.majorId == period)
+        .where((p) => p.endTime != null);
+    if (periods.length > 1) {
+      return periods
+          .reduce(
+            (a, b) =>
+                a.endTime!.hour < b.endTime!.hour ||
+                    (a.endTime!.hour == b.endTime!.hour &&
+                        a.endTime!.minute < b.endTime!.minute)
+                ? b
+                : a,
+          )
+          .endTime;
+    } else if (periods.length == 1) {
+      return periods.first.endTime;
+    }
+    return null;
+  }
+
   @override
   Map<String, dynamic> getEssentials() {
     return {
@@ -185,12 +229,30 @@ class ClassPeriod extends BaseDataClass {
     required this.minorEndTime,
   });
 
+  String get timeRange => '$minorStartTime-$minorEndTime';
+
+  TimeOfDay? get startTime => _parseTimeString(minorStartTime);
+
+  TimeOfDay? get endTime => _parseTimeString(minorEndTime);
+
+  TimeOfDay? _parseTimeString(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    } catch (e) {
+      // Parse error, return null
+    }
+    return null;
+  }
+
   @override
   Map<String, dynamic> getEssentials() {
     return {'termYear': termYear, 'termSeason': termSeason, 'minorId': minorId};
   }
-
-  String get timeRange => '$minorStartTime-$minorEndTime';
 
   factory ClassPeriod.fromJson(Map<String, dynamic> json) =>
       _$ClassPeriodFromJson(json);
@@ -272,6 +334,125 @@ class CurriculumIntegratedData extends BaseDataClass {
   factory CurriculumIntegratedData.fromJson(Map<String, dynamic> json) =>
       _$CurriculumIntegratedDataFromJson(json);
   Map<String, dynamic> toJson() => _$CurriculumIntegratedDataToJson(this);
+
+  int getMaxValidWeekIndex({int maxWeeks = 50}) {
+    int maxWeekAmongClasses = 0;
+    for (final classItem in allClasses) {
+      if (classItem.weeks.isNotEmpty) {
+        final maxWeekOfThisClass = classItem.weeks.reduce(
+          (a, b) => a > b ? a : b,
+        );
+        maxWeekAmongClasses = max(maxWeekOfThisClass, maxWeekAmongClasses);
+      }
+    }
+
+    int maxWeekFromCalendar = 0;
+    if (calendarDays != null) {
+      for (final calendarDay in calendarDays!) {
+        if (calendarDay.weekIndex > 0 && calendarDay.weekIndex < 99) {
+          maxWeekFromCalendar = max(calendarDay.weekIndex, maxWeekFromCalendar);
+        }
+      }
+    }
+
+    final combinedMax = max(maxWeekAmongClasses, maxWeekFromCalendar);
+    return combinedMax.clamp(1, maxWeeks);
+  }
+
+  int? getWeekIndexToday() {
+    if (calendarDays == null || calendarDays!.isEmpty) {
+      return null;
+    }
+
+    final now = DateTime.now();
+
+    for (final calendarDay in calendarDays!) {
+      if (calendarDay.year == now.year &&
+          calendarDay.month == now.month &&
+          calendarDay.day == now.day) {
+        return calendarDay.weekIndex;
+      }
+    }
+    return null;
+  }
+
+  Map<int, int> getWeekdayDaysOf(int week) {
+    if (calendarDays == null || calendarDays!.isEmpty) {
+      return {};
+    }
+
+    final weekday2Day = <int, int>{};
+    for (final calendarDay in calendarDays!) {
+      if (calendarDay.weekIndex == week) {
+        weekday2Day[calendarDay.weekday] = calendarDay.day;
+      }
+    }
+    return weekday2Day;
+  }
+
+  List<ClassItem> getClassesOfWeek(int week) {
+    return allClasses
+        .where((classItem) => classItem.weeks.contains(week))
+        .toList();
+  }
+
+  List<ClassItem> getClassesToday() {
+    final currentWeek = getWeekIndexToday();
+    if (currentWeek == null) return [];
+
+    final now = DateTime.now();
+
+    return getClassesOfWeek(
+      currentWeek,
+    ).where((classItem) => classItem.day == now.weekday).toList();
+  }
+
+  ClassItem? getClassOngoing() {
+    final currentWeek = getWeekIndexToday();
+    if (currentWeek == null) return null;
+
+    final nowTime = TimeOfDay.fromDateTime(DateTime.now());
+
+    for (final classItem in getClassesToday()) {
+      final startTime = classItem.getMinStartTime(allPeriods);
+      final endTime = classItem.getMaxEndTime(allPeriods);
+      if (startTime != null && endTime != null) {
+        if (_deltaTime(nowTime, startTime) > 0 &&
+            _deltaTime(nowTime, endTime) < 0) {
+          return classItem;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  ClassItem? getClassUpcoming() {
+    final currentWeek = getWeekIndexToday();
+    if (currentWeek == null) return null;
+
+    final nowTime = TimeOfDay.fromDateTime(DateTime.now());
+    int minDelta = 0;
+    ClassItem? result;
+
+    for (final classItem in getClassesToday()) {
+      final startTime = classItem.getMinStartTime(allPeriods);
+      final endTime = classItem.getMaxEndTime(allPeriods);
+      if (startTime != null && endTime != null) {
+        final delta = _deltaTime(nowTime, startTime);
+        if (delta < minDelta) {
+          minDelta = delta;
+          result = classItem;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  int _deltaTime(TimeOfDay a, TimeOfDay b) {
+    return a.hour * 60 + a.minute - b.hour * 60 - b.minute;
+  }
 }
 
 @JsonSerializable()

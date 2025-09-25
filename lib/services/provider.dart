@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '/services/courses/base.dart';
 import '/services/courses/ustb_byyt_mock.dart';
 import '/services/courses/ustb_byyt_prod.dart';
+import '/services/courses/exceptions.dart';
 import '/services/store/base.dart';
 import '/services/store/general.dart';
 import '/types/courses.dart';
@@ -32,14 +33,6 @@ class ServiceProvider extends ChangeNotifier {
     _initializeServices();
   }
 
-  /// Initialize services and try auto-login
-  Future<void> _initializeServices() async {
-    await _storeService.initialize();
-
-    // Try to restore login from cache after store service is initialized
-    await _tryAutoLogin();
-  }
-
   BaseCoursesService get coursesService => _coursesService;
 
   BaseStoreService get storeService => _storeService;
@@ -62,6 +55,107 @@ class ServiceProvider extends ChangeNotifier {
       _currentServiceType = ServiceType.production;
       notifyListeners();
     }
+  }
+
+  Future<void> _initializeServices() async {
+    await _storeService.initialize();
+
+    // Try to restore login from cache after store service is initialized
+    await _tryAutoLogin();
+
+    // Try to load curriculum data after login
+    if (coursesService.isOnline) {
+      await _loadCurriculumData();
+    }
+  }
+
+  Future<void> _loadCurriculumData() async {
+    try {
+      // Check cache
+      final cachedData = storeService.getCache<CurriculumIntegratedData>(
+        "curriculum_data",
+        CurriculumIntegratedData.fromJson,
+      );
+
+      if (cachedData.isEmpty) {
+        // Load fresh curriculum data
+        await getCurriculumData();
+      }
+    } catch (e) {
+      // Ignore errors during background loading
+    }
+  }
+
+  Future<CurriculumIntegratedData?> getCurriculumData([
+    TermInfo? termInfo,
+  ]) async {
+    if (!coursesService.isOnline) {
+      return null;
+    }
+
+    final cachedData = storeService.getCache<CurriculumIntegratedData>(
+      "curriculum_data",
+      CurriculumIntegratedData.fromJson,
+    );
+
+    if (cachedData.isNotEmpty) {
+      return cachedData.value;
+    }
+
+    if (termInfo != null) {
+      try {
+        return await loadCurriculumForTerm(termInfo);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Try to get current term data
+    try {
+      final terms = await coursesService.getTerms();
+      if (terms.isNotEmpty) {
+        return await loadCurriculumForTerm(terms.first);
+      }
+    } catch (e) {
+      return null;
+    }
+
+    return null;
+  }
+
+  Future<CurriculumIntegratedData> loadCurriculumForTerm(
+    TermInfo termInfo,
+  ) async {
+    if (!coursesService.isOnline) {
+      throw const CourseServiceOffline();
+    }
+
+    final futures = await Future.wait([
+      coursesService.getCurriculum(termInfo),
+      coursesService.getCoursePeriods(termInfo),
+      coursesService
+          .getCalendarDays(termInfo)
+          .catchError((e) => <CalendarDay>[]),
+    ]);
+
+    final classes = futures[0] as List<ClassItem>;
+    final periods = futures[1] as List<ClassPeriod>;
+    final calendarDays = futures[2] as List<CalendarDay>;
+
+    final integratedData = CurriculumIntegratedData(
+      currentTerm: termInfo,
+      allClasses: classes,
+      allPeriods: periods,
+      calendarDays: calendarDays.isEmpty ? null : calendarDays,
+    );
+
+    // Cache the data
+    storeService.putCache<CurriculumIntegratedData>(
+      "curriculum_data",
+      integratedData,
+    );
+
+    return integratedData;
   }
 
   //
