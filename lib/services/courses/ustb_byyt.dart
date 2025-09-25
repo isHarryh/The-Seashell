@@ -40,7 +40,7 @@ extension ClassItemUstbByytExtension on ClassItem {
     try {
       final key = data['key'] as String?;
       final kbxx = data['kbxx'] as String?;
-      final kbxxEn = data['kbxx_en'] as String?;
+      // final kbxxEn = data['kbxx_en'] as String?; // 当前暂不支持英文版解析
 
       if (key == null || kbxx == null || key == 'bz') {
         // 跳过非正常课程格式或不排课课程
@@ -62,24 +62,30 @@ extension ClassItemUstbByytExtension on ClassItem {
         return null;
       }
 
-      final className = lines[0];
-      final teacherName = lines[1];
-      final weeksText = lines[2];
-      final locationName = lines.length > 3 ? lines[3] : '';
-      final periodName = lines.length > 4 ? lines[4] : '';
+      String className = '';
+      String teacherName = '';
+      String weeksText = '';
+      String locationName = '';
+      String periodName = '';
 
-      // 解析英文版本
-      String? classNameAlt;
-      String? teacherNameAlt;
-      String? locationNameAlt;
-      String? periodNameAlt;
-
-      if (kbxxEn != null) {
-        final enLines = kbxxEn.split('\n');
-        if (enLines.isNotEmpty) classNameAlt = enLines[0];
-        if (enLines.length > 1) teacherNameAlt = enLines[1];
-        if (enLines.length > 3) locationNameAlt = enLines[3];
-        if (enLines.length > 4) periodNameAlt = enLines[4];
+      if (3 <= lines.length && lines.length <= 4) {
+        className = lines[0];
+        teacherName = lines[1];
+        weeksText = lines[2];
+      } else if (lines.length == 5) {
+        className = lines[0];
+        teacherName = lines[1];
+        weeksText = lines[2];
+        locationName = lines[3];
+        periodName = lines[4];
+      } else if (lines.length == 6) {
+        className = "${lines[0]}\n${lines[1]}";
+        teacherName = lines[2];
+        weeksText = lines[3];
+        locationName = lines[4];
+        periodName = lines[5];
+      } else {
+        return null;
       }
 
       // 解析周次
@@ -94,13 +100,13 @@ extension ClassItemUstbByytExtension on ClassItem {
         weeks: weeks,
         weeksText: weeksText,
         className: className,
-        classNameAlt: classNameAlt,
+        classNameAlt: '',
         teacherName: teacherName,
-        teacherNameAlt: teacherNameAlt,
+        teacherNameAlt: '',
         locationName: locationName,
-        locationNameAlt: locationNameAlt,
+        locationNameAlt: '',
         periodName: periodName,
-        periodNameAlt: periodNameAlt,
+        periodNameAlt: '',
         colorId: colorId,
       );
     } catch (e) {
