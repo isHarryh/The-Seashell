@@ -20,24 +20,31 @@ class ServiceProvider extends ChangeNotifier {
   late BaseStoreService _storeService;
 
   // Singleton
-  static final ServiceProvider _instance = ServiceProvider();
+  static final ServiceProvider _instance = ServiceProvider._internal();
   static ServiceProvider get instance => _instance;
 
-  ServiceProvider() {
+  ServiceProvider._internal() {
     _coursesService = _currentServiceType == ServiceType.mock
         ? UstbByytMockService()
         : UstbByytProdService();
     _storeService = GeneralStoreService();
-
-    // Initialize services asynchronously
-    _initializeServices();
   }
 
   BaseCoursesService get coursesService => _coursesService;
 
   BaseStoreService get storeService => _storeService;
 
-  ServiceType get currentServiceType => _currentServiceType;
+  Future<void> initializeServices() async {
+    await _storeService.initialize();
+
+    // Try to restore login from cache after store service is initialized
+    await _tryAutoLogin();
+
+    // Try to load curriculum data after login
+    if (coursesService.isOnline) {
+      await _loadCurriculumData();
+    }
+  }
 
   void switchToMockService() {
     if (_currentServiceType != ServiceType.mock) {
@@ -54,18 +61,6 @@ class ServiceProvider extends ChangeNotifier {
       _coursesService = UstbByytProdService();
       _currentServiceType = ServiceType.production;
       notifyListeners();
-    }
-  }
-
-  Future<void> _initializeServices() async {
-    await _storeService.initialize();
-
-    // Try to restore login from cache after store service is initialized
-    await _tryAutoLogin();
-
-    // Try to load curriculum data after login
-    if (coursesService.isOnline) {
-      await _loadCurriculumData();
     }
   }
 

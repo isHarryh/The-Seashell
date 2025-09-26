@@ -8,6 +8,7 @@ import 'pages/courses/selection/index.dart';
 import 'pages/courses/curriculum/index.dart';
 import 'pages/courses/grade/index.dart';
 import 'pages/courses/account/index.dart';
+import 'pages/settings/index.dart';
 
 // App constants
 class _AppConstants {
@@ -92,6 +93,11 @@ class AppRouter {
         name: 'GradeRoute',
         path: '/courses/grade',
         builder: (context, data) => const MainLayout(child: GradePage()),
+      ),
+      NamedRouteDef(
+        name: 'SettingsRoute',
+        path: '/settings',
+        builder: (context, data) => const MainLayout(child: SettingsPage()),
       ),
     ],
   );
@@ -271,6 +277,15 @@ class _SideNavigation extends StatelessWidget {
               children: _buildNavigationItems(context),
             ),
           ),
+          const Divider(),
+          _buildNavItem(
+            context: context,
+            icon: Icons.settings,
+            title: '设置',
+            isSelected: currentPath == '/settings',
+            onTap: () => onNavigate('/settings'),
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );

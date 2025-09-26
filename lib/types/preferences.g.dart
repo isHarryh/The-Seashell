@@ -42,3 +42,15 @@ const _$AnimationModeEnumMap = {
   AnimationMode.fade: 'fade',
   AnimationMode.slide: 'slide',
 };
+
+AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) =>
+    AppSettings(themeMode: $enumDecode(_$ThemeModeEnumMap, json['themeMode']));
+
+Map<String, dynamic> _$AppSettingsToJson(AppSettings instance) =>
+    <String, dynamic>{'themeMode': _$ThemeModeEnumMap[instance.themeMode]!};
+
+const _$ThemeModeEnumMap = {
+  ThemeMode.system: 'system',
+  ThemeMode.light: 'light',
+  ThemeMode.dark: 'dark',
+};

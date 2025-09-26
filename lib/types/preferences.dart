@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter/material.dart';
 import 'base.dart';
 
 part 'preferences.g.dart';
@@ -93,6 +94,19 @@ extension AnimationModeExtension on AnimationMode {
   }
 }
 
+extension ThemeModeExtension on ThemeMode {
+  String get displayName {
+    switch (this) {
+      case ThemeMode.system:
+        return '跟随系统';
+      case ThemeMode.light:
+        return '亮色';
+      case ThemeMode.dark:
+        return '暗色';
+    }
+  }
+}
+
 @JsonSerializable()
 class CurriculumSettings extends Serializable {
   WeekendDisplayMode weekendMode;
@@ -148,4 +162,19 @@ class CurriculumSettings extends Serializable {
   Map<String, dynamic> toJson() => _$CurriculumSettingsToJson(this);
   factory CurriculumSettings.fromJson(Map<String, dynamic> json) =>
       _$CurriculumSettingsFromJson(json);
+}
+
+@JsonSerializable()
+class AppSettings extends Serializable {
+  ThemeMode themeMode;
+
+  AppSettings({required this.themeMode});
+
+  static final AppSettings defaultSettings = AppSettings(
+    themeMode: ThemeMode.system,
+  );
+
+  Map<String, dynamic> toJson() => _$AppSettingsToJson(this);
+  factory AppSettings.fromJson(Map<String, dynamic> json) =>
+      _$AppSettingsFromJson(json);
 }
