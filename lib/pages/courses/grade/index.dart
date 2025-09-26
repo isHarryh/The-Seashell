@@ -40,7 +40,7 @@ class _GradePageState extends State<GradePage> {
   }
 
   void _onServiceStatusChanged() {
-    if (mounted) {
+    if (mounted && _serviceProvider.coursesService.isOnline) {
       setState(() {
         _loadGrades();
       });
@@ -50,43 +50,41 @@ class _GradePageState extends State<GradePage> {
   Future<void> _loadGrades() async {
     final service = _serviceProvider.coursesService;
 
-    if (!service.isOnline) {
-      if (mounted) {
-        setState(() {
-          _allGrades = null;
-          _filteredGrades = null;
-          _errorMessage = null;
-          _isLoading = false;
-        });
-      }
+    if (mounted && _allGrades != null) {
+      setState(() {
+        _allGrades = null;
+        _filteredGrades = null;
+        _errorMessage = null;
+        _isLoading = false;
+      });
       return;
     }
 
-    if (mounted) {
+    if (mounted && service.isOnline) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
-    }
 
-    try {
-      final grades = await service.getGrades();
-      if (mounted) {
-        setState(() {
-          _allGrades = grades;
-          _filteredGrades = grades;
-          _isLoading = false;
-          if (_currentSearchQuery.isNotEmpty) {
-            _performSearch(_currentSearchQuery);
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
+      try {
+        final grades = await service.getGrades();
+        if (mounted) {
+          setState(() {
+            _allGrades = grades;
+            _filteredGrades = grades;
+            _isLoading = false;
+            if (_currentSearchQuery.isNotEmpty) {
+              _performSearch(_currentSearchQuery);
+            }
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = e.toString();
+            _isLoading = false;
+          });
+        }
       }
     }
   }

@@ -87,7 +87,7 @@ class _CurriculumPageState extends State<CurriculumPage>
   }
 
   void _onServiceStatusChanged() {
-    if (mounted) {
+    if (mounted && _serviceProvider.coursesService.isOnline) {
       setState(() {
         _loadCurriculumFromCacheOrService();
       });

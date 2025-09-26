@@ -84,10 +84,6 @@ class ServiceProvider extends ChangeNotifier {
   Future<CurriculumIntegratedData?> getCurriculumData([
     TermInfo? termInfo,
   ]) async {
-    if (!coursesService.isOnline) {
-      return null;
-    }
-
     final cachedData = storeService.getCache<CurriculumIntegratedData>(
       "curriculum_data",
       CurriculumIntegratedData.fromJson,
@@ -97,22 +93,16 @@ class ServiceProvider extends ChangeNotifier {
       return cachedData.value;
     }
 
+    if (!coursesService.isOnline) {
+      return null;
+    }
+
     if (termInfo != null) {
       try {
         return await loadCurriculumForTerm(termInfo);
       } catch (e) {
         return null;
       }
-    }
-
-    // Try to get current term data
-    try {
-      final terms = await coursesService.getTerms();
-      if (terms.isNotEmpty) {
-        return await loadCurriculumForTerm(terms.first);
-      }
-    } catch (e) {
-      return null;
     }
 
     return null;

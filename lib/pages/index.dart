@@ -84,19 +84,6 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _loadCurriculumData() async {
-    final service = serviceProvider.coursesService;
-
-    if (!service.isOnline) {
-      if (mounted) {
-        setState(() {
-          _curriculumData = null;
-          _ongoingClass = null;
-          _upcomingClass = null;
-        });
-      }
-      return;
-    }
-
     try {
       final curriculumData = await serviceProvider.getCurriculumData();
 

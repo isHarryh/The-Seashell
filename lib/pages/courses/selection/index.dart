@@ -35,7 +35,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
   }
 
   void _onServiceStatusChanged() {
-    if (mounted) {
+    if (mounted && _serviceProvider.coursesService.isOnline) {
       setState(() {
         _loadTerms();
       });
@@ -43,14 +43,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
   }
 
   Future<void> _loadTerms() async {
-    if (!mounted) return;
-
-    if (!_serviceProvider.coursesService.isOnline) {
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
+    if (!mounted || !_serviceProvider.coursesService.isOnline) return;
 
     setState(() {
       _isLoading = true;
