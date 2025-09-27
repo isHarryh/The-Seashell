@@ -736,12 +736,12 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
                 minimumSize: const Size(double.infinity, 52),
               ),
               child: isBusy
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     )
                   : Row(
@@ -829,12 +829,12 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
                 minimumSize: const Size(double.infinity, 52),
               ),
               child: (_currentState == UstbSsoState.authFinishing)
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     )
                   : Row(
@@ -861,7 +861,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(

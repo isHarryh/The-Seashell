@@ -6,11 +6,15 @@ Future<bool?> alertWarning(BuildContext context, String content, String tip) {
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning, color: Colors.deepOrange, size: 24),
-            SizedBox(width: 8),
-            Text('选课警告'),
+            Icon(
+              Icons.warning,
+              color: Theme.of(context).colorScheme.error,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text('选课警告'),
           ],
         ),
         content: Column(
@@ -22,7 +26,10 @@ Future<bool?> alertWarning(BuildContext context, String content, String tip) {
               const SizedBox(height: 8),
               Text(
                 tip,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ],
@@ -95,7 +102,7 @@ Widget _buildStepItem(
           decoration: BoxDecoration(
             color: isActive
                 ? Theme.of(context).colorScheme.primary
-                : Colors.grey.shade300,
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Center(

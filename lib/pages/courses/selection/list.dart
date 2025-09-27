@@ -435,25 +435,29 @@ class _CourseListPageState extends State<CourseListPage> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Card(
-          color: Colors.red.shade50,
+          color: Theme.of(context).colorScheme.errorContainer,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 48,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   '加载失败',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.red,
+                    color: Theme.of(context).colorScheme.error,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -757,7 +761,7 @@ class _CourseListPageState extends State<CourseListPage> {
             ],
           ),
           child: Material(
-            color: Colors.red.shade50,
+            color: Theme.of(context).colorScheme.errorContainer,
             borderRadius: BorderRadius.circular(28),
             child: InkWell(
               borderRadius: BorderRadius.circular(28),
@@ -775,7 +779,11 @@ class _CourseListPageState extends State<CourseListPage> {
                   });
                 }
               },
-              child: const Icon(Icons.clear, color: Colors.red, size: 16),
+              child: Icon(
+                Icons.clear,
+                color: Theme.of(context).colorScheme.error,
+                size: 16,
+              ),
             ),
           ),
         ),
@@ -1176,7 +1184,10 @@ class _CourseTableRowState extends State<_CourseTableRow>
           if (nameAlt?.isNotEmpty == true)
             Text(
               nameAlt!,
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
         ],

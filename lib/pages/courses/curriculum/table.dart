@@ -243,8 +243,10 @@ class CurriculumTable extends StatelessWidget {
     return Container(
       height: cellHeight,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        color: Colors.grey.shade50,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+        ),
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
       ),
       child: Stack(
         children: [
@@ -254,21 +256,27 @@ class CurriculumTable extends StatelessWidget {
               children: [
                 Text(
                   majorPeriod.startTime,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${majorPeriod.id}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   majorPeriod.endTime,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -314,9 +322,12 @@ class CurriculumTable extends StatelessWidget {
       height: cellHeight,
       decoration: BoxDecoration(
         color: classesInSlot.isEmpty
-            ? Colors.white
+            ? Theme.of(context).colorScheme.surface
             : _getClassColor(classesInSlot.first),
-        border: Border.all(color: Colors.grey.shade300, width: 0.5),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          width: 0.5,
+        ),
       ),
       child: Stack(
         children: [
@@ -343,8 +354,8 @@ class CurriculumTable extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _showClassDetails(context, firstClass),
-        splashColor: Colors.white.withOpacity(0.3),
-        highlightColor: Colors.white.withOpacity(0.1),
+        splashColor: Theme.of(context).colorScheme.surface.withOpacity(0.3),
+        highlightColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
         borderRadius: BorderRadius.circular(2),
         child: useAnimation
             ? AnimatedContainer(

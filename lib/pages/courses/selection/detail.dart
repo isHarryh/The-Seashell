@@ -492,7 +492,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
@@ -986,7 +986,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.green.shade50,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.green.shade200, width: 1),
             boxShadow: [
@@ -1091,9 +1091,10 @@ class _CourseInfoChip extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1101,7 +1102,7 @@ class _CourseInfoChip extends StatelessWidget {
                 Text(
                   valueAlt!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
                   overflow: TextOverflow.ellipsis,
                 ),
             ],
