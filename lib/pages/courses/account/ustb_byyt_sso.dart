@@ -37,7 +37,7 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
     _serviceProvider.addListener(_onServiceStatusChanged);
 
     // Switch to production service when opening dialog
-    _serviceProvider.switchToProductionService();
+    _serviceProvider.switchCoursesService(ServiceType.production);
   }
 
   @override
@@ -72,7 +72,7 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
       }
 
       // Login with extracted cookie
-      await _serviceProvider.loginToCoursesServiceWithCookie(cookie);
+      await _serviceProvider.loginToCoursesService(cookie: cookie);
 
       // Notify success with method and cookie
       widget.onLoginSuccess?.call("sso", cookie);

@@ -94,16 +94,12 @@ class _CourseSelectionSharedParams {
 
 class UstbByytProdService extends BaseCoursesService {
   String? _cookie;
-  DateTime? _lastHeartbeatTime;
   CourseSelectionState _selectionState = const CourseSelectionState();
 
   static const String _baseUrl = 'https://byyt.ustb.edu.cn';
 
   @override
-  Future<void> login() async {
-    // Default login method - not implemented for prod service
-    throw Exception('Use loginWithCookie() method for production service');
-  }
+  Future<void> doLogin() async {}
 
   Future<void> loginWithCookie(String cookie) async {
     try {
@@ -112,6 +108,8 @@ class UstbByytProdService extends BaseCoursesService {
 
       // Validate cookie by trying to get user info
       await getUserInfo();
+
+      await doLogin();
 
       setOnline();
     } catch (e) {
@@ -144,11 +142,40 @@ class UstbByytProdService extends BaseCoursesService {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> doLogout() async {
     _cookie = null;
-    _lastHeartbeatTime = null;
     _selectionState = const CourseSelectionState();
     setOffline();
+  }
+
+  @override
+  Future<bool> doSendHeartbeat() async {
+    if (status == ServiceStatus.offline || _cookie == null) {
+      return false;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/component/online'),
+        headers: _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        final success = data['code'] == 0;
+
+        if (!success) {
+          setAuthError('Heartbeat failed: ${data['msg'] ?? 'No msg'}');
+        }
+
+        return success;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
@@ -409,43 +436,6 @@ class UstbByytProdService extends BaseCoursesService {
         e,
       );
     }
-  }
-
-  @override
-  Future<bool> sendHeartbeat() async {
-    if (status == ServiceStatus.offline || _cookie == null) {
-      return false;
-    }
-
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/component/online'),
-        headers: _getHeaders(),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        final success = data['code'] == 0;
-
-        if (success) {
-          _lastHeartbeatTime = DateTime.now();
-        } else {
-          setAuthError('Heartbeat failed: ${data['msg'] ?? 'No msg'}');
-        }
-
-        return success;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
-
-  @override
-  DateTime? getLastHeartbeatTime() {
-    return _lastHeartbeatTime;
   }
 
   @override

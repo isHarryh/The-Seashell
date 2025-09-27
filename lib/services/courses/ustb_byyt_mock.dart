@@ -8,8 +8,54 @@ import '/services/courses/exceptions.dart';
 import '/services/courses/ustb_byyt.dart';
 
 class UstbByytMockService extends BaseCoursesService {
-  DateTime? _lastHeartbeatTime;
   CourseSelectionState _selectionState = const CourseSelectionState();
+
+  @override
+  Future<void> doLogin() async {
+    try {
+      setPending();
+      await Future.delayed(Duration(seconds: 1));
+      setOnline();
+    } catch (e) {
+      if (e.toString().contains('Auth error')) {
+        setAuthError('Failed to login: $e');
+      } else if (e.toString().contains('Network error')) {
+        setNetworkError('Failed to login: $e');
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> doLogout() async {
+    setPending();
+    await Future.delayed(Duration(milliseconds: 500));
+    setOffline();
+  }
+
+  @override
+  Future<bool> doSendHeartbeat() async {
+    try {
+      if (status == ServiceStatus.offline) {
+        return false;
+      }
+
+      await Future.delayed(Duration(milliseconds: 500));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/heartbeatSuccess.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      if (jsonData['code'] == 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
 
   @override
   Future<UserInfo> getUserInfo() async {
@@ -160,68 +206,6 @@ class UstbByytMockService extends BaseCoursesService {
         e,
       );
     }
-  }
-
-  @override
-  Future<void> login() async {
-    try {
-      setPending();
-      await Future.delayed(Duration(seconds: 2));
-      final rand = DateTime.now().microsecond;
-      if (rand < 100) {
-        setAuthError('Auth error occurred');
-        throw Exception('Auth error occurred');
-      } else if (rand < 200) {
-        setNetworkError('Network error occurred');
-        throw Exception('Network error occurred');
-      }
-      setOnline();
-    } catch (e) {
-      if (e.toString().contains('Auth error')) {
-        setAuthError('Failed to login: $e');
-      } else if (e.toString().contains('Network error')) {
-        setNetworkError('Failed to login: $e');
-      }
-      rethrow;
-    }
-  }
-
-  @override
-  Future<void> logout() async {
-    setPending();
-    await Future.delayed(Duration(milliseconds: 500));
-    setOffline();
-    _lastHeartbeatTime = null;
-  }
-
-  @override
-  Future<bool> sendHeartbeat() async {
-    try {
-      if (status == ServiceStatus.offline) {
-        return false;
-      }
-
-      await Future.delayed(Duration(milliseconds: 500));
-
-      final String jsonString = await rootBundle.loadString(
-        'assets/mock/ustb_byyt/heartbeatSuccess.json',
-      );
-      final Map<String, dynamic> jsonData = json.decode(jsonString);
-
-      if (jsonData['code'] == 0) {
-        _lastHeartbeatTime = DateTime.now();
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
-
-  @override
-  DateTime? getLastHeartbeatTime() {
-    return _lastHeartbeatTime;
   }
 
   @override

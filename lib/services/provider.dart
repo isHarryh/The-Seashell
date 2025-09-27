@@ -13,7 +13,6 @@ enum ServiceType { mock, production }
 class ServiceProvider extends ChangeNotifier {
   // Course Service
   late BaseCoursesService _coursesService;
-  Timer? _heartbeatTimer;
   ServiceType _currentServiceType = ServiceType.mock;
 
   // Store Service
@@ -46,22 +45,18 @@ class ServiceProvider extends ChangeNotifier {
     }
   }
 
-  void switchToMockService() {
-    if (_currentServiceType != ServiceType.mock) {
-      _stopHeartbeat();
-      _coursesService = UstbByytMockService();
-      _currentServiceType = ServiceType.mock;
-      notifyListeners();
-    }
+  /// Switch the courses service to the specified type.
+  /// This method provides a unified way to switch between mock and production services.
+  void switchCoursesService(ServiceType type) {
+    _switchCoursesService(type);
   }
 
-  void switchToProductionService() {
-    if (_currentServiceType != ServiceType.production) {
-      _stopHeartbeat();
-      _coursesService = UstbByytProdService();
-      _currentServiceType = ServiceType.production;
-      notifyListeners();
-    }
+  void _switchCoursesService(ServiceType type) {
+    if (_currentServiceType == type) return;
+
+    _coursesService = UstbByytProdService();
+    _currentServiceType = type;
+    notifyListeners();
   }
 
   Future<void> _loadCurriculumData() async {
@@ -145,68 +140,27 @@ class ServiceProvider extends ChangeNotifier {
 
   //
 
-  Future<void> loginToCoursesService() async {
-    await coursesService.login();
-
-    if (coursesService.isOnline) {
-      _startHeartbeat();
-    }
-
-    notifyListeners();
-  }
-
-  Future<void> loginToCoursesServiceWithCookie(String cookie) async {
+  Future<void> loginToCoursesService({String? cookie}) async {
     if (_currentServiceType == ServiceType.production) {
+      if (cookie == null) {
+        throw Exception('Cookie is required for production service login');
+      }
       final prodService = coursesService as UstbByytProdService;
       await prodService.loginWithCookie(cookie);
-
-      if (coursesService.isOnline) {
-        _startHeartbeat();
-      }
-
+      await prodService.login();
       notifyListeners();
     } else {
-      throw Exception('Cookie login is only available for production service');
+      await coursesService.login();
+      notifyListeners();
     }
   }
 
   Future<void> logoutFromCoursesService() async {
-    _stopHeartbeat();
     await coursesService.logout();
     notifyListeners();
   }
 
   //
-
-  void _startHeartbeat() {
-    _stopHeartbeat();
-    _sendHeartbeat();
-
-    _heartbeatTimer = Timer.periodic(
-      Duration(seconds: BaseCoursesService.heartbeatInterval),
-      (timer) => _sendHeartbeat(),
-    );
-  }
-
-  void _stopHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-  }
-
-  Future<void> _sendHeartbeat() async {
-    try {
-      if (coursesService.isOnline) {
-        final success = await coursesService.sendHeartbeat();
-        if (kDebugMode) {
-          print('Heartbeat ${success ? 'success' : 'failed'}');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Heartbeat error: $e');
-      }
-    }
-  }
 
   /// Try to restore login from cache on app startup
   Future<void> _tryAutoLogin() async {
@@ -222,12 +176,12 @@ class ServiceProvider extends ChangeNotifier {
       final method = data.method;
 
       if (method == "mock") {
-        switchToMockService();
+        switchCoursesService(ServiceType.mock);
         await loginToCoursesService();
       } else if (method == "cookie" || method == "sso") {
         if (data.cookie != null && data.user != null) {
-          switchToProductionService();
-          await loginToCoursesServiceWithCookie(data.cookie!);
+          switchCoursesService(ServiceType.production);
+          await loginToCoursesService(cookie: data.cookie!);
           // Get new user info and verify consistency
           final newUserInfo = await coursesService.getUserInfo();
           assert(
@@ -243,11 +197,5 @@ class ServiceProvider extends ChangeNotifier {
         print('Auto-login failed: $e');
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _stopHeartbeat();
-    super.dispose();
   }
 }

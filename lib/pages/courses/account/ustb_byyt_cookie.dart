@@ -36,7 +36,7 @@ class _CookieLoginDialogState extends State<_CookieLoginDialog> {
     _serviceProvider.addListener(_onServiceStatusChanged);
 
     // Switch to production service when entering this page
-    _serviceProvider.switchToProductionService();
+    _serviceProvider.switchCoursesService(ServiceType.production);
   }
 
   @override
@@ -71,7 +71,7 @@ class _CookieLoginDialogState extends State<_CookieLoginDialog> {
         _errorMessage = null;
       });
 
-      await _serviceProvider.loginToCoursesServiceWithCookie(cookie);
+      await _serviceProvider.loginToCoursesService(cookie: cookie);
 
       // Notify success
       widget.onLoginSuccess?.call("cookie", cookie);
