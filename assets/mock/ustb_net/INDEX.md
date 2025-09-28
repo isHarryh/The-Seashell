@@ -1,0 +1,17 @@
+- drcom.html:
+  - GET http://zifuwu.ustb.edu.cn:8080/LogoutAction.action
+- drcomChangePswd.html
+  - POST http://zifuwu.ustb.edu.cn:8080/ChangePswAction.action
+  - data: `user.flduserpassword={old_pswd}&user.fldmd5hehai={new_pswd}&user.fldextend={new_pswd}&Submit=Submit`
+- drcomCheckcode.png
+  - GET http://{checkcode_server_ip}:8080/RandomCodeAction.action?randomNum={rand_float}
+- drcomLogin[Success/Failure].html
+  - POST http://zifuwu.ustb.edu.cn:8080/LoginAction.action
+  - data: `account={user_id}&password={password_md5}&code=&checkcode={4_number}&Submit=Login`
+- drcomMac.html
+  - GET http://zifuwu.ustb.edu.cn:8080/nav_unBandMacJsp
+- drcomMacUnbound.html
+  - POST http://zifuwu.ustb.edu.cn:8080/nav_unbindMACAction.action
+- drcomUser.json
+  - GET http://zifuwu.ustb.edu.cn:8080/refreshaccount?t={rand_float}
+  - data: `macStr={mac_address}&Submit=解绑`
