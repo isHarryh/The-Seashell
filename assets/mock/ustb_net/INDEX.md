@@ -12,6 +12,9 @@
   - GET http://zifuwu.ustb.edu.cn:8080/nav_unBandMacJsp
 - drcomMacUnbound.html
   - POST http://zifuwu.ustb.edu.cn:8080/nav_unbindMACAction.action
+  - data: `macStr={mac_address}&Submit=解绑`
+- drcomMonthlyBill.html
+  - POST http://zifuwu.ustb.edu.cn:8080/MonthPayAction.action
+  - data: `type=1&year=2025`
 - drcomUser.json
   - GET http://zifuwu.ustb.edu.cn:8080/refreshaccount?t={rand_float}
-  - data: `macStr={mac_address}&Submit=解绑`
