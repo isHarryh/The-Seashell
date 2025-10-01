@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '/services/courses/base.dart';
 import '/services/courses/ustb_byyt_mock.dart';
@@ -6,14 +5,23 @@ import '/services/courses/ustb_byyt_prod.dart';
 import '/services/courses/exceptions.dart';
 import '/services/store/base.dart';
 import '/services/store/general.dart';
+import '/services/net/base.dart';
+import '/services/net/drcom_net_mock.dart';
+import '/services/net/drcom_net_prod.dart';
 import '/types/courses.dart';
 
 enum ServiceType { mock, production }
+
+enum NetServiceType { mock, production }
 
 class ServiceProvider extends ChangeNotifier {
   // Course Service
   late BaseCoursesService _coursesService;
   ServiceType _currentServiceType = ServiceType.mock;
+
+  // Net Service
+  late BaseNetService _netService;
+  NetServiceType _currentNetServiceType = NetServiceType.mock;
 
   // Store Service
   late BaseStoreService _storeService;
@@ -26,10 +34,17 @@ class ServiceProvider extends ChangeNotifier {
     _coursesService = _currentServiceType == ServiceType.mock
         ? UstbByytMockService()
         : UstbByytProdService();
+    _netService = _currentNetServiceType == NetServiceType.mock
+        ? DrcomNetMockService()
+        : DrcomNetProdService();
     _storeService = GeneralStoreService();
   }
 
   BaseCoursesService get coursesService => _coursesService;
+
+  BaseNetService get netService => _netService;
+
+  NetServiceType get currentNetServiceType => _currentNetServiceType;
 
   BaseStoreService get storeService => _storeService;
 
@@ -54,9 +69,32 @@ class ServiceProvider extends ChangeNotifier {
   void _switchCoursesService(ServiceType type) {
     if (_currentServiceType == type) return;
 
-    _coursesService = UstbByytProdService();
+    _coursesService = type == ServiceType.mock
+        ? UstbByytMockService()
+        : UstbByytProdService();
     _currentServiceType = type;
     notifyListeners();
+  }
+
+  void switchNetService(NetServiceType type) {
+    _switchNetService(type);
+  }
+
+  void _switchNetService(NetServiceType type) {
+    if (_currentNetServiceType == type) return;
+
+    _disposeNetService();
+    _netService = type == NetServiceType.mock
+        ? DrcomNetMockService()
+        : DrcomNetProdService();
+    _currentNetServiceType = type;
+    notifyListeners();
+  }
+
+  void _disposeNetService() {
+    if (_netService is DrcomNetProdService) {
+      (_netService as DrcomNetProdService).dispose();
+    }
   }
 
   Future<void> _loadCurriculumData() async {
@@ -162,6 +200,26 @@ class ServiceProvider extends ChangeNotifier {
 
   //
 
+  Future<void> loginToNetService(
+    String username,
+    String password, {
+    String? checkcode,
+  }) async {
+    await netService.loginWithPassword(
+      username,
+      password,
+      checkcode: checkcode,
+    );
+    notifyListeners();
+  }
+
+  Future<void> logoutFromNetService() async {
+    await netService.logout();
+    notifyListeners();
+  }
+
+  //
+
   /// Try to restore login from cache on app startup
   Future<void> _tryAutoLogin() async {
     try {
@@ -197,5 +255,11 @@ class ServiceProvider extends ChangeNotifier {
         print('Auto-login failed: $e');
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _disposeNetService();
+    super.dispose();
   }
 }

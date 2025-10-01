@@ -1,0 +1,75 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'net.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+LoginRequirements _$LoginRequirementsFromJson(Map<String, dynamic> json) =>
+    LoginRequirements(
+      defaultCheckcode: json['defaultCheckcode'] as String,
+      tryTimes: (json['tryTimes'] as num).toInt(),
+      tryTimesThreshold: (json['tryTimesThreshold'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$LoginRequirementsToJson(LoginRequirements instance) =>
+    <String, dynamic>{
+      'defaultCheckcode': instance.defaultCheckcode,
+      'tryTimes': instance.tryTimes,
+      'tryTimesThreshold': instance.tryTimesThreshold,
+    };
+
+NetUserInfo _$NetUserInfoFromJson(Map<String, dynamic> json) => NetUserInfo(
+  account: json['account'] as String,
+  subscription: json['subscription'] as String,
+  status: json['status'] as String,
+  leftFlow: json['leftFlow'] as String?,
+  leftTime: json['leftTime'] as String?,
+  leftMoney: json['leftMoney'] as String?,
+  overDate: json['overDate'] as String?,
+  onlineState: json['onlineState'] as String?,
+);
+
+Map<String, dynamic> _$NetUserInfoToJson(NetUserInfo instance) =>
+    <String, dynamic>{
+      'account': instance.account,
+      'subscription': instance.subscription,
+      'status': instance.status,
+      'leftFlow': instance.leftFlow,
+      'leftTime': instance.leftTime,
+      'leftMoney': instance.leftMoney,
+      'overDate': instance.overDate,
+      'onlineState': instance.onlineState,
+    };
+
+MacDevice _$MacDeviceFromJson(Map<String, dynamic> json) =>
+    MacDevice(name: json['name'] as String, mac: json['mac'] as String);
+
+Map<String, dynamic> _$MacDeviceToJson(MacDevice instance) => <String, dynamic>{
+  'name': instance.name,
+  'mac': instance.mac,
+};
+
+MonthlyBill _$MonthlyBillFromJson(Map<String, dynamic> json) => MonthlyBill(
+  startDate: DateTime.parse(json['startDate'] as String),
+  endDate: DateTime.parse(json['endDate'] as String),
+  packageName: json['packageName'] as String,
+  monthlyFee: (json['monthlyFee'] as num).toDouble(),
+  usageFee: (json['usageFee'] as num).toDouble(),
+  usageDurationMinutes: (json['usageDurationMinutes'] as num).toDouble(),
+  usageFlowMb: (json['usageFlowMb'] as num).toDouble(),
+  createTime: DateTime.parse(json['createTime'] as String),
+);
+
+Map<String, dynamic> _$MonthlyBillToJson(MonthlyBill instance) =>
+    <String, dynamic>{
+      'startDate': instance.startDate.toIso8601String(),
+      'endDate': instance.endDate.toIso8601String(),
+      'packageName': instance.packageName,
+      'monthlyFee': instance.monthlyFee,
+      'usageFee': instance.usageFee,
+      'usageDurationMinutes': instance.usageDurationMinutes,
+      'usageFlowMb': instance.usageFlowMb,
+      'createTime': instance.createTime.toIso8601String(),
+    };
