@@ -203,12 +203,12 @@ class ServiceProvider extends ChangeNotifier {
   Future<void> loginToNetService(
     String username,
     String password, {
-    String? checkcode,
+    String? extraCode,
   }) async {
     await netService.loginWithPassword(
       username,
       password,
-      checkcode: checkcode,
+      extraCode: extraCode,
     );
     notifyListeners();
   }

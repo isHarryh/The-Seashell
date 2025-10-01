@@ -5,22 +5,22 @@ part 'net.g.dart';
 
 @JsonSerializable()
 class LoginRequirements extends BaseDataClass {
-  final String defaultCheckcode;
+  final String checkCode;
   final int tryTimes;
   final int tryTimesThreshold;
 
   const LoginRequirements({
-    required this.defaultCheckcode,
+    required this.checkCode,
     required this.tryTimes,
     required this.tryTimesThreshold,
   });
 
-  bool get isNeedExtraCheckcode => tryTimes >= tryTimesThreshold;
+  bool get isNeedExtraCode => tryTimes >= tryTimesThreshold;
 
   @override
   Map<String, dynamic> getEssentials() {
     return {
-      'defaultCheckcode': defaultCheckcode,
+      'checkCode': checkCode,
       'tryTimes': tryTimes,
       'tryTimesThreshold': tryTimesThreshold,
     };

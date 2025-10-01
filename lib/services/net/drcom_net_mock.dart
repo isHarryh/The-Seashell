@@ -21,7 +21,8 @@ class DrcomNetMockService extends BaseNetService {
   Future<void> doLogin({
     required String username,
     required String passwordMd5,
-    required String checkcode,
+    required String checkCode,
+    String? extraCode,
   }) async {
     if (username.isEmpty || passwordMd5.isEmpty) {
       throw const NetServiceException('Missing credentials');
@@ -37,7 +38,7 @@ class DrcomNetMockService extends BaseNetService {
   }
 
   @override
-  Future<Uint8List> getCheckcodeImage() async {
+  Future<Uint8List> getCodeImage() async {
     await Future.delayed(const Duration(milliseconds: 200));
     final data = await rootBundle.load('${_assetPrefix}drcomCheckcode.png');
     return data.buffer.asUint8List();

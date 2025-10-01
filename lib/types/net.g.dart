@@ -8,14 +8,14 @@ part of 'net.dart';
 
 LoginRequirements _$LoginRequirementsFromJson(Map<String, dynamic> json) =>
     LoginRequirements(
-      defaultCheckcode: json['defaultCheckcode'] as String,
+      checkCode: json['checkCode'] as String,
       tryTimes: (json['tryTimes'] as num).toInt(),
       tryTimesThreshold: (json['tryTimesThreshold'] as num).toInt(),
     );
 
 Map<String, dynamic> _$LoginRequirementsToJson(LoginRequirements instance) =>
     <String, dynamic>{
-      'defaultCheckcode': instance.defaultCheckcode,
+      'checkCode': instance.checkCode,
       'tryTimes': instance.tryTimes,
       'tryTimesThreshold': instance.tryTimesThreshold,
     };

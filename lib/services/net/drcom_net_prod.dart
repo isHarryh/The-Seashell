@@ -56,7 +56,8 @@ class DrcomNetProdService extends BaseNetService {
   Future<void> doLogin({
     required String username,
     required String passwordMd5,
-    required String checkcode,
+    required String checkCode,
+    String? extraCode,
   }) async {
     final response = await _client.post(
       _buildUri('LoginAction.action'),
@@ -64,8 +65,8 @@ class DrcomNetProdService extends BaseNetService {
       body: {
         'account': username,
         'password': passwordMd5,
-        'code': '',
-        'checkcode': checkcode,
+        'code': extraCode ?? '',
+        'checkcode': checkCode,
         'Submit': 'Login',
       },
     );
@@ -91,8 +92,8 @@ class DrcomNetProdService extends BaseNetService {
   }
 
   @override
-  Future<Uint8List> getCheckcodeImage() async {
-    final randomNum = Random().nextDouble().toStringAsFixed(6);
+  Future<Uint8List> getCodeImage() async {
+    final randomNum = Random().nextDouble().toString();
     final response = await _client.get(
       _buildUri('RandomCodeAction.action', {'randomNum': randomNum}),
       headers: _buildHeaders(),

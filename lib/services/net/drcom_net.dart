@@ -3,7 +3,7 @@ import 'package:the_seashell/services/net/exceptions.dart';
 import '/types/net.dart';
 
 extension LoginRequirementsExtension on LoginRequirements {
-  static final RegExp checkcodeRegex = RegExp(
+  static final RegExp checkCodeRegex = RegExp(
     r'var\s*checkcode\s*=\s*"(\w+)"',
     caseSensitive: false,
   );
@@ -17,14 +17,14 @@ extension LoginRequirementsExtension on LoginRequirements {
   );
 
   static LoginRequirements parse(String html) {
-    final defaultCheckcodeMatch = checkcodeRegex.firstMatch(html);
+    final checkCodeMatch = checkCodeRegex.firstMatch(html);
     final tryTimesMatch = tryTimesRegex.firstMatch(html);
     final tryTimesThresholdMatch = tryTimesThresholdRegex.firstMatch(html);
 
-    final defaultCheckcode = defaultCheckcodeMatch?.group(1)?.trim();
+    final checkCode = checkCodeMatch?.group(1)?.trim();
 
-    if (defaultCheckcode == null || defaultCheckcode.isEmpty) {
-      throw const NetServiceException('Failed to parse default checkcode');
+    if (checkCode == null || checkCode.isEmpty) {
+      throw const NetServiceException('Failed to parse default check code');
     }
 
     final tryTimesStr = tryTimesMatch?.group(1)?.trim() ?? '0';
@@ -35,7 +35,7 @@ extension LoginRequirementsExtension on LoginRequirements {
     final tryTimesThreshold = int.tryParse(tryTimesThresholdStr) ?? 3;
 
     return LoginRequirements(
-      defaultCheckcode: defaultCheckcode,
+      checkCode: checkCode,
       tryTimes: tryTimes,
       tryTimesThreshold: tryTimesThreshold,
     );

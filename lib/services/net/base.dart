@@ -14,12 +14,13 @@ abstract class BaseNetService extends BaseService {
   Future<void> doLogin({
     required String username,
     required String passwordMd5,
-    required String checkcode,
+    required String checkCode,
+    String? extraCode,
   });
 
   Future<void> doLogout();
 
-  Future<Uint8List> getCheckcodeImage();
+  Future<Uint8List> getCodeImage();
 
   Future<NetUserInfo> getUser();
 
@@ -30,10 +31,6 @@ abstract class BaseNetService extends BaseService {
   Future<List<MonthlyBill>> getMonthlyBill({required int year});
 
   Future<LoginRequirements> getLoginRequirements() async {
-    if (_cachedLoginRequirements != null) {
-      return _cachedLoginRequirements!;
-    }
-
     try {
       final requirements = await doGetLoginRequirements();
       _cachedLoginRequirements = requirements;
@@ -48,7 +45,7 @@ abstract class BaseNetService extends BaseService {
   Future<void> loginWithPassword(
     String username,
     String password, {
-    String? checkcode,
+    String? extraCode,
   }) async {
     try {
       setPending();
@@ -58,21 +55,20 @@ abstract class BaseNetService extends BaseService {
       if (password.isEmpty) {
         throw const NetServiceException('Missing password');
       }
-
-      var effectiveCheckcode = checkcode;
-      if (effectiveCheckcode == null || effectiveCheckcode.isEmpty) {
-        if (_cachedLoginRequirements == null ||
-            _cachedLoginRequirements!.isNeedExtraCheckcode) {
-          throw const NetServiceException('Missing extra checkcode');
-        }
-        effectiveCheckcode = _cachedLoginRequirements!.defaultCheckcode;
+      if (_cachedLoginRequirements == null) {
+        throw const NetServiceException('Login requirements not initialized');
+      }
+      if (_cachedLoginRequirements!.isNeedExtraCode &&
+          (extraCode == null || extraCode.isEmpty)) {
+        throw const NetServiceException('Missing extra code');
       }
 
       final passwordMd5 = md5.convert(utf8.encode(password)).toString();
       await doLogin(
         username: username,
         passwordMd5: passwordMd5,
-        checkcode: effectiveCheckcode,
+        checkCode: _cachedLoginRequirements!.checkCode,
+        extraCode: extraCode,
       );
       setOnline();
     } on NetServiceException {
