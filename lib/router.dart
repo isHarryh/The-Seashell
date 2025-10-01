@@ -9,6 +9,7 @@ import 'pages/courses/curriculum/index.dart';
 import 'pages/courses/grade/index.dart';
 import 'pages/courses/account/index.dart';
 import 'pages/settings/index.dart';
+import 'pages/net/dashboard/index.dart';
 
 // App constants
 class _AppConstants {
@@ -45,6 +46,12 @@ class _AppConstants {
       title: '成绩',
       path: '/courses/grade',
       category: '本研一体教务管理系统',
+    ),
+    _NavigationItem(
+      icon: Icons.wifi,
+      title: '自助服务',
+      path: '/net/dashboard',
+      category: '校园网',
     ),
   ];
 }
@@ -93,6 +100,11 @@ class AppRouter {
         name: 'GradeRoute',
         path: '/courses/grade',
         builder: (context, data) => const MainLayout(child: GradePage()),
+      ),
+      NamedRouteDef(
+        name: 'NetDashboardRoute',
+        path: '/net/dashboard',
+        builder: (context, data) => const MainLayout(child: NetDashboardPage()),
       ),
       NamedRouteDef(
         name: 'SettingsRoute',
