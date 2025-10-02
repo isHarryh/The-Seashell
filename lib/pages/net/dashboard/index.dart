@@ -71,7 +71,7 @@ class _NetDashboardPageState extends State<NetDashboardPage>
       final macDevices = results[1] as List<MacDevice>;
       final monthlyBills = results[2] as List<MonthlyBill>;
       final sortedBills = List<MonthlyBill>.from(monthlyBills)
-        ..sort((a, b) => b.startDate.compareTo(a.startDate));
+        ..sort((a, b) => a.createTime.compareTo(b.createTime));
       if (!mounted) return;
       setState(() {
         _userInfo = info;
@@ -136,7 +136,7 @@ class _NetDashboardPageState extends State<NetDashboardPage>
         year: _selectedYear,
       );
       final sortedBills = List<MonthlyBill>.from(monthlyBills)
-        ..sort((a, b) => b.startDate.compareTo(a.startDate));
+        ..sort((a, b) => a.createTime.compareTo(b.createTime));
       if (!mounted) return;
       setState(() => _monthlyBills = sortedBills);
     } catch (e) {
