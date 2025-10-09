@@ -1,11 +1,12 @@
 import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
 import '/services/provider.dart';
 
 class NetLoginDialog extends StatefulWidget {
-  const NetLoginDialog({super.key});
+  const NetLoginDialog({super.key, required this.serviceType});
+
+  final NetServiceType serviceType;
 
   @override
   State<NetLoginDialog> createState() => _NetLoginDialogState();
@@ -13,8 +14,6 @@ class NetLoginDialog extends StatefulWidget {
 
 class _NetLoginDialogState extends State<NetLoginDialog> {
   final ServiceProvider _serviceProvider = ServiceProvider.instance;
-
-  NetServiceType get _currentNetType => _serviceProvider.currentNetServiceType;
 
   late TextEditingController _usernameController;
   late TextEditingController _passwordController;
@@ -37,6 +36,9 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
   }
 
   Future<void> _refreshRequirement() async {
+    if (_serviceProvider.currentNetServiceType != widget.serviceType) {
+      _serviceProvider.switchNetService(widget.serviceType);
+    }
     try {
       final needExtraCodeNew =
           (await _serviceProvider.netService.getLoginRequirements())
@@ -96,27 +98,26 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
     super.dispose();
   }
 
-  Future<void> _switchNetType(NetServiceType type) async {
-    if (type == _currentNetType) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      _serviceProvider.switchNetService(type);
-      await _refreshRequirement();
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+  Future<void> _handleLogin() async {
+    // Switch to the appropriate service type
+    final targetType = widget.serviceType;
+    if (_serviceProvider.currentNetServiceType != targetType) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      try {
+        _serviceProvider.switchNetService(targetType);
+        await _refreshRequirement();
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
-  }
 
-  Future<void> _handleLogin() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -160,6 +161,14 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    bool isLoginAllowed() {
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text;
+
+      return widget.serviceType == NetServiceType.mock ||
+          username.isNotEmpty && password.isNotEmpty;
+    }
+
     return AlertDialog(
       title: const Text('校园网登录'),
       content: SingleChildScrollView(
@@ -167,33 +176,19 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('请选择服务环境，然后输入校园网的账号和密码。', style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SegmentedButton<NetServiceType>(
-                    segments: const [
-                      ButtonSegment(
-                        value: NetServiceType.mock,
-                        label: Text('测试环境'),
-                        icon: Icon(Icons.science),
-                      ),
-                      ButtonSegment(
-                        value: NetServiceType.production,
-                        label: Text('正式环境'),
-                        icon: Icon(Icons.cloud_outlined),
-                      ),
-                    ],
-                    selected: {_currentNetType},
-                    onSelectionChanged: (selection) {
-                      final selectedType = selection.first;
-                      _switchNetType(selectedType);
-                    },
-                  ),
+            Text('请输入校园网的账号和密码。', style: theme.textTheme.bodySmall),
+            if (widget.serviceType == NetServiceType.mock) ...[
+              const SizedBox(height: 8),
+              Text(
+                '您正在使用 Mock 环境进行离线测试。'
+                '\n'
+                '您无需输入账号和密码。',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontSize: 12,
                 ),
-              ],
-            ),
+              ),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: _usernameController,
@@ -202,6 +197,9 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
                 hintText: '学工号',
               ),
               textInputAction: TextInputAction.next,
+              onChanged: (_) => setState(() {
+                // Trigger rebuild for login button state
+              }),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -209,6 +207,9 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
               decoration: const InputDecoration(labelText: '密码'),
               obscureText: true,
               textInputAction: TextInputAction.next,
+              onChanged: (_) => setState(() {
+                // Trigger rebuild for login button state
+              }),
             ),
             if (_isNeedExtraCode) ...[
               const SizedBox(height: 12),
@@ -273,7 +274,7 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
           child: const Text('取消'),
         ),
         FilledButton(
-          onPressed: _isLoading ? null : _handleLogin,
+          onPressed: (_isLoading || !isLoginAllowed()) ? null : _handleLogin,
           child: _isLoading
               ? const SizedBox(
                   height: 20,

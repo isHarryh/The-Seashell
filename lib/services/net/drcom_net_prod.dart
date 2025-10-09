@@ -12,6 +12,8 @@ class DrcomNetProdService extends BaseNetService {
     : _client = client ?? http.Client();
 
   static const String _baseUrl = 'http://zifuwu.ustb.edu.cn:8080';
+  // static const String _baseUrl =
+  //     'https://vpn.ustb.edu.cn/http-8080/77726476706e69737468656265737421a2a713d275603c1e2858c7fb';
   final http.Client _client;
   String? _cookie;
 
@@ -59,6 +61,13 @@ class DrcomNetProdService extends BaseNetService {
     required String checkCode,
     String? extraCode,
   }) async {
+    if (username.isEmpty) {
+      throw const NetServiceException('Missing username');
+    }
+    if (passwordMd5.isEmpty) {
+      throw const NetServiceException('Missing password');
+    }
+
     final response = await _client.post(
       _buildUri('LoginAction.action'),
       headers: _buildHeaders(includeFormContentType: true),

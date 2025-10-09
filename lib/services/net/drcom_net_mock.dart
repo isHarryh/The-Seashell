@@ -24,10 +24,6 @@ class DrcomNetMockService extends BaseNetService {
     required String checkCode,
     String? extraCode,
   }) async {
-    if (username.isEmpty || passwordMd5.isEmpty) {
-      throw const NetServiceException('Missing credentials');
-    }
-
     await Future.delayed(const Duration(milliseconds: 200));
     await rootBundle.loadString('${_assetPrefix}drcomLoginSuccess.html');
   }

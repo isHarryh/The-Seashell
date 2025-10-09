@@ -49,12 +49,6 @@ abstract class BaseNetService extends BaseService {
   }) async {
     try {
       setPending();
-      if (username.isEmpty) {
-        throw const NetServiceException('Missing username');
-      }
-      if (password.isEmpty) {
-        throw const NetServiceException('Missing password');
-      }
       if (_cachedLoginRequirements == null) {
         throw const NetServiceException('Login requirements not initialized');
       }

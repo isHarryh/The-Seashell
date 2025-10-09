@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '/services/provider.dart';
 import '/types/net.dart';
 import '/utils/app_bar.dart';
 import '/utils/page_mixins.dart';
@@ -147,12 +149,12 @@ class _NetDashboardPageState extends State<NetDashboardPage>
     }
   }
 
-  Future<void> _showLoginDialog() async {
+  Future<void> _showLoginDialog(NetServiceType serviceType) async {
     setState(() => _isLoadingLogin = true);
     try {
       final result = await showDialog<bool>(
         context: context,
-        builder: (context) => const NetLoginDialog(),
+        builder: (context) => NetLoginDialog(serviceType: serviceType),
       );
 
       if (result == true) {
@@ -432,31 +434,51 @@ class _NetDashboardPageState extends State<NetDashboardPage>
                 Icon(
                   Icons.lock_open,
                   color: theme.colorScheme.primary,
-                  size: 32,
+                  size: 28,
                 ),
                 const SizedBox(width: 12),
-                Text('登录以管理校园网账户', style: theme.textTheme.titleLarge),
+                Text('管理校园网账户', style: theme.textTheme.titleLarge),
               ],
             ),
             const SizedBox(height: 16),
             Text(
-              '您可以在此查看账户余额、已绑定的设备和月度账单情况。',
+              '登录后，您可以在此查看校园网的账户余额、已绑定的设备和月度账单情况。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _isLoadingLogin ? null : _showLoginDialog,
-                icon: _isLoadingLogin
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.login),
-                label: const Text('登录'),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _isLoadingLogin
+                      ? null
+                      : () => _showLoginDialog(NetServiceType.production),
+                  icon: _isLoadingLogin
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.login),
+                  label: const Text('登录'),
+                ),
+                if (kDebugMode) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _isLoadingLogin
+                        ? null
+                        : () => _showLoginDialog(NetServiceType.mock),
+                    icon: _isLoadingLogin
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.build_circle_outlined),
+                    label: const Text('Mock 测试登录'),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
