@@ -51,6 +51,7 @@ class DrcomNetProdService extends BaseNetService {
     );
     NetServiceException.raiseForStatus(response.statusCode);
     _updateCookie(response);
+    await getCodeImage(); // This request is to make the session valid
     return LoginRequirementsExtension.parse(response.body);
   }
 
