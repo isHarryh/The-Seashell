@@ -256,6 +256,7 @@ class _NetDashboardPageState extends State<NetDashboardPage>
     }
   }
 
+  // ignore: unused_element
   Future<void> _showAddDeviceDialog() async {
     final macController = TextEditingController();
 
@@ -662,15 +663,15 @@ class _NetDashboardPageState extends State<NetDashboardPage>
                   return _buildMacListTile(theme, context, device);
                 },
               ),
-            const SizedBox(height: 16),
-            if (_macDevices != null && _macDevices!.length < 3)
-              Center(
-                child: OutlinedButton.icon(
-                  onPressed: _showAddDeviceDialog,
-                  icon: const Icon(Icons.add),
-                  label: const Text('手动添加设备'),
-                ),
-              ),
+            // const SizedBox(height: 16),
+            // if (_macDevices != null && _macDevices!.length < 3)
+            //   Center(
+            //     child: OutlinedButton.icon(
+            //       onPressed: _showAddDeviceDialog,
+            //       icon: const Icon(Icons.add),
+            //       label: const Text('手动添加设备'),
+            //     ),
+            //   ),
           ],
         ),
       ),
