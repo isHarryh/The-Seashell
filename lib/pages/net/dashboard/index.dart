@@ -550,32 +550,28 @@ class _NetDashboardPageState extends State<NetDashboardPage>
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    info.account,
-                    style: theme.textTheme.headlineSmall,
-                    maxLines: 2,
+                Text(
+                  info.account,
+                  style: theme.textTheme.headlineSmall,
+                  maxLines: 2,
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  iconSize: 20,
+                  padding: EdgeInsets.zero,
+                  color: theme.colorScheme.error,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
                   ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _isLoggingOut
-                      ? null
-                      : () => _showChangePasswordDialog(),
-                  icon: const Icon(Icons.lock),
-                  label: const Text('密码'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
                   onPressed: _isLoggingOut ? null : _showLogoutDialog,
                   icon: _isLoggingOut
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.swap_horiz),
-                  label: const Text('切换'),
+                      : const Icon(Icons.logout),
                 ),
               ],
             ),
@@ -584,19 +580,26 @@ class _NetDashboardPageState extends State<NetDashboardPage>
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildInfoChip(
+                _buildActionChip(
                   theme,
                   icon: Icons.account_balance_wallet,
                   label: '余额',
                   value: info.leftMoney ?? 'NaN',
                 ),
                 if (info.subscription.isNotEmpty)
-                  _buildInfoChip(
+                  _buildActionChip(
                     theme,
                     icon: Icons.wifi,
                     label: '套餐',
                     value: info.subscription,
                   ),
+                _buildActionChip(
+                  theme,
+                  icon: Icons.lock,
+                  label: '密码',
+                  value: '修改密码',
+                  onPressed: _isLoggingOut ? null : _showChangePasswordDialog,
+                ),
               ],
             ),
           ],
@@ -605,12 +608,42 @@ class _NetDashboardPageState extends State<NetDashboardPage>
     );
   }
 
-  Widget _buildInfoChip(
+  Widget _buildActionChip(
     ThemeData theme, {
     required IconData icon,
     required String label,
     required String value,
+    VoidCallback? onPressed,
   }) {
+    if (onPressed != null) {
+      return ActionChip(
+        avatar: Icon(icon, size: 18),
+        label: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        onPressed: onPressed,
+        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.5,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      );
+    }
+
     return Chip(
       avatar: Icon(icon, size: 18),
       label: Column(

@@ -131,61 +131,63 @@ class _NetMonthlyBillSectionState extends State<NetMonthlyBillSection> {
   }
 
   Widget _buildBillTable(ThemeData theme) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingTextStyle: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onSurface,
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+          columns: const [
+            DataColumn(label: Text('开始日期')),
+            DataColumn(label: Text('结束日期')),
+            DataColumn(label: Text('套餐类型')),
+            DataColumn(label: Text('基本月租')),
+            DataColumn(label: Text('时长/流量计费')),
+            DataColumn(label: Text('使用时长')),
+            DataColumn(label: Text('使用流量')),
+            DataColumn(label: Text('出账时间')),
+          ],
+          rows: widget.bills
+              .map(
+                (bill) => DataRow(
+                  cells: [
+                    DataCell(Text(_formatDate(bill.startDate))),
+                    DataCell(Text(_formatDate(bill.endDate))),
+                    DataCell(
+                      Text(bill.packageName.isEmpty ? '--' : bill.packageName),
+                    ),
+                    DataCell(
+                      Text(
+                        _formatCurrency(bill.monthlyFee),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        _formatCurrency(bill.usageFee),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        _formatDuration(bill.usageDurationMinutes),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        _formatDataSize(bill.usageFlowMb),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    DataCell(Text(_formatDateTime(bill.createTime))),
+                  ],
+                ),
+              )
+              .toList(),
         ),
-        columns: const [
-          DataColumn(label: Text('开始日期')),
-          DataColumn(label: Text('结束日期')),
-          DataColumn(label: Text('套餐类型')),
-          DataColumn(label: Text('基本月租')),
-          DataColumn(label: Text('时长/流量计费')),
-          DataColumn(label: Text('使用时长')),
-          DataColumn(label: Text('使用流量')),
-          DataColumn(label: Text('出账时间')),
-        ],
-        rows: widget.bills
-            .map(
-              (bill) => DataRow(
-                cells: [
-                  DataCell(Text(_formatDate(bill.startDate))),
-                  DataCell(Text(_formatDate(bill.endDate))),
-                  DataCell(
-                    Text(bill.packageName.isEmpty ? '--' : bill.packageName),
-                  ),
-                  DataCell(
-                    Text(
-                      _formatCurrency(bill.monthlyFee),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  DataCell(
-                    Text(
-                      _formatCurrency(bill.usageFee),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  DataCell(
-                    Text(
-                      _formatDuration(bill.usageDurationMinutes),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  DataCell(
-                    Text(
-                      _formatDataSize(bill.usageFlowMb),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  DataCell(Text(_formatDateTime(bill.createTime))),
-                ],
-              ),
-            )
-            .toList(),
       ),
     );
   }
@@ -252,87 +254,92 @@ class _NetMonthlyBillSectionState extends State<NetMonthlyBillSection> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 200,
-          child: BarChart(
-            BarChartData(
-              barGroups: monthlyData.entries.map((entry) {
-                return BarChartGroupData(
-                  x: entry.key,
-                  barRods: [
-                    BarChartRodData(
-                      toY: entry.value / chartConfig.unitDivisor,
-                      color: theme.colorScheme.primary,
-                      width: 10 + 60 / monthlyData.length,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ],
-                );
-              }).toList(),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        '${value.toInt()}',
-                        style: theme.textTheme.bodySmall,
-                      );
-                    },
-                    reservedSize: 30,
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        '${value.toStringAsFixed(chartConfig.decimalPlaces)}${chartConfig.unitSuffix}',
-                        style: theme.textTheme.bodySmall,
-                      );
-                    },
-                    reservedSize: 45,
-                  ),
-                ),
-                topTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: chartConfig.interval,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                    strokeWidth: 1,
-                  );
-                },
-              ),
-              barTouchData: BarTouchData(
-                enabled: true,
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipColor: (group) =>
-                      theme.colorScheme.surfaceContainerHighest,
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final originalValue = monthlyData[group.x] ?? 0;
-                    return BarTooltipItem(
-                      '${group.x}月\n${_formatDataSize(originalValue)}',
-                      theme.textTheme.bodySmall!.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
+        const SizedBox(height: 24),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  barGroups: monthlyData.entries.map((entry) {
+                    return BarChartGroupData(
+                      x: entry.key,
+                      barRods: [
+                        BarChartRodData(
+                          toY: entry.value / chartConfig.unitDivisor,
+                          color: theme.colorScheme.primary,
+                          width: 10 + 60 / monthlyData.length,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
                     );
-                  },
+                  }).toList(),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${value.toInt()}',
+                            style: theme.textTheme.bodySmall,
+                          );
+                        },
+                        reservedSize: 30,
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${value.toStringAsFixed(chartConfig.decimalPlaces)}${chartConfig.unitSuffix}',
+                            style: theme.textTheme.bodySmall,
+                          );
+                        },
+                        reservedSize: 45,
+                      ),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: chartConfig.interval,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (group) =>
+                          theme.colorScheme.surfaceContainerHighest,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final originalValue = monthlyData[group.x] ?? 0;
+                        return BarTooltipItem(
+                          '${group.x}月\n${_formatDataSize(originalValue)}',
+                          theme.textTheme.bodySmall!.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  maxY: chartConfig.maxY,
+                  minY: 0,
                 ),
               ),
-              maxY: chartConfig.maxY,
-              minY: 0,
             ),
           ),
         ),
