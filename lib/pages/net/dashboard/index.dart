@@ -152,12 +152,12 @@ class _NetDashboardPageState extends State<NetDashboardPage>
   Future<void> _showLoginDialog(NetServiceType serviceType) async {
     setState(() => _isLoadingLogin = true);
     try {
-      final result = await showDialog<bool>(
+      final result = await showDialog<NetUserIntegratedData>(
         context: context,
         builder: (context) => NetLoginDialog(serviceType: serviceType),
       );
 
-      if (result == true) {
+      if (result != null) {
         await _refreshData();
       }
     } finally {
@@ -193,6 +193,8 @@ class _NetDashboardPageState extends State<NetDashboardPage>
       if (confirm == true) {
         try {
           await serviceProvider.logoutFromNetService();
+          // Clear cached login data
+          serviceProvider.storeService.removeCache("net_account_data");
           if (mounted) {
             setState(() {
               _userInfo = null;

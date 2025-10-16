@@ -43,6 +43,20 @@ Map<String, dynamic> _$NetUserInfoToJson(NetUserInfo instance) =>
       'onlineState': instance.onlineState,
     };
 
+NetUserIntegratedData _$NetUserIntegratedDataFromJson(
+  Map<String, dynamic> json,
+) => NetUserIntegratedData(
+  account: json['account'] as String,
+  password: json['password'] as String,
+);
+
+Map<String, dynamic> _$NetUserIntegratedDataToJson(
+  NetUserIntegratedData instance,
+) => <String, dynamic>{
+  'account': instance.account,
+  'password': instance.password,
+};
+
 MacDevice _$MacDeviceFromJson(Map<String, dynamic> json) =>
     MacDevice(name: json['name'] as String, mac: json['mac'] as String);
 

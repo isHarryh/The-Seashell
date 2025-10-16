@@ -73,6 +73,23 @@ class NetUserInfo extends BaseDataClass {
 }
 
 @JsonSerializable()
+class NetUserIntegratedData extends BaseDataClass {
+  final String account;
+  final String password;
+
+  const NetUserIntegratedData({required this.account, required this.password});
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'account': account, 'password': password};
+  }
+
+  factory NetUserIntegratedData.fromJson(Map<String, dynamic> json) =>
+      _$NetUserIntegratedDataFromJson(json);
+  Map<String, dynamic> toJson() => _$NetUserIntegratedDataToJson(this);
+}
+
+@JsonSerializable()
 class MacDevice extends BaseDataClass {
   final String name;
   final String mac;

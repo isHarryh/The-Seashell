@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '/services/provider.dart';
+import '/types/net.dart';
 
 class NetLoginDialog extends StatefulWidget {
   const NetLoginDialog({super.key, required this.serviceType});
@@ -26,13 +27,42 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
   bool _isLoadingExtraCodeImage = false;
   Uint8List? _extraCodeImage;
 
+  bool _hasAutoFilled = false; // Track if credentials were auto-filled
+
   @override
   void initState() {
     super.initState();
     _usernameController = TextEditingController();
     _passwordController = TextEditingController();
     _extraCodeController = TextEditingController();
+    _loadCachedCredentials();
     _refreshRequirement();
+  }
+
+  Future<void> _loadCachedCredentials() async {
+    try {
+      final cachedNetData = _serviceProvider.storeService
+          .getCache<NetUserIntegratedData>(
+            "net_account_data",
+            NetUserIntegratedData.fromJson,
+          );
+
+      if (cachedNetData.isNotEmpty) {
+        final data = cachedNetData.value!;
+        if (mounted) {
+          setState(() {
+            _usernameController.text = data.account;
+            _passwordController.text = data.password;
+            _hasAutoFilled = true;
+          });
+        }
+      }
+    } catch (e) {
+      // Silently ignore errors loading cached credentials
+      if (kDebugMode) {
+        print('Failed to load cached credentials: $e');
+      }
+    }
   }
 
   Future<void> _refreshRequirement() async {
@@ -98,6 +128,25 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
     super.dispose();
   }
 
+  Future<void> _clearLoginHistory() async {
+    try {
+      _serviceProvider.storeService.removeCache("net_account_data");
+      if (mounted) {
+        setState(() {
+          _usernameController.clear();
+          _passwordController.clear();
+          _hasAutoFilled = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = '$e';
+        });
+      }
+    }
+  }
+
   Future<void> _handleLogin() async {
     // Switch to the appropriate service type
     final targetType = widget.serviceType;
@@ -121,6 +170,7 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _hasAutoFilled = false; // Hide clear history button when logging in
     });
 
     try {
@@ -134,7 +184,15 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
 
       // Login succeeded
       if (mounted) {
-        Navigator.of(context).pop(true);
+        final loginData = NetUserIntegratedData(
+          account: _usernameController.text.trim(),
+          password: _passwordController.text,
+        );
+        _serviceProvider.storeService.putCache<NetUserIntegratedData>(
+          "net_account_data",
+          loginData,
+        );
+        Navigator.of(context).pop(loginData);
       }
     } catch (e) {
       // Login failed
@@ -170,13 +228,13 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
     }
 
     return AlertDialog(
-      title: const Text('校园网登录'),
+      title: const Text('校园网自助服务登录'),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('请输入校园网的账号和密码。', style: theme.textTheme.bodySmall),
+            Text('请输入校园网的账号和密码，以登录管理面板。', style: theme.textTheme.bodySmall),
             if (widget.serviceType == NetServiceType.mock) ...[
               const SizedBox(height: 8),
               Text(
@@ -211,6 +269,17 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
                 // Trigger rebuild for login button state
               }),
             ),
+            if (_hasAutoFilled) ...[
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: _clearLoginHistory,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('清除登录历史'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
             if (_isNeedExtraCode) ...[
               const SizedBox(height: 12),
               Column(
@@ -270,7 +339,7 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('取消'),
         ),
         FilledButton(
