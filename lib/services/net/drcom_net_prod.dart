@@ -204,6 +204,36 @@ class DrcomNetProdService extends BaseNetService {
     }
   }
 
+  @override
+  Future<void> doChangePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    if (isOffline) {
+      throw const NetServiceOffline();
+    }
+
+    final response = await _client.post(
+      _buildUri('ChangePswAction.action'),
+      headers: _buildHeaders(includeFormContentType: true),
+      body: {
+        'user.flduserpassword': oldPassword,
+        'user.fldmd5hehai': newPassword,
+        'user.fldextend': newPassword,
+        'Submit': 'Submit',
+      },
+    );
+    NetServiceException.raiseForStatus(response.statusCode, setOffline);
+
+    final responseText = response.body.toLowerCase();
+    if (!responseText.contains('修改成功') &&
+        !responseText.contains('modified successfully')) {
+      throw const NetServiceBadResponse(
+        'Password changing response may failed',
+      );
+    }
+  }
+
   void dispose() {
     _client.close();
   }

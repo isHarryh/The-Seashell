@@ -9,6 +9,8 @@ import '/types/net.dart';
 abstract class BaseNetService extends BaseService {
   LoginRequirements? _cachedLoginRequirements;
 
+  // Methods need to be implemented:
+
   Future<LoginRequirements> doGetLoginRequirements();
 
   Future<void> doLogin({
@@ -29,6 +31,13 @@ abstract class BaseNetService extends BaseService {
   Future<List<MacDevice>> getBoundedMac();
 
   Future<List<MonthlyBill>> getMonthlyBill({required int year});
+
+  Future<void> doChangePassword({
+    required String oldPassword,
+    required String newPassword,
+  });
+
+  // Methods that already implemented:
 
   Future<LoginRequirements> getLoginRequirements() async {
     try {
@@ -90,6 +99,26 @@ abstract class BaseNetService extends BaseService {
     } finally {
       _cachedLoginRequirements = null;
       setOffline();
+    }
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    if (isOffline) {
+      throw const NetServiceOffline();
+    }
+
+    try {
+      await doChangePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+    } on NetServiceException {
+      rethrow;
+    } catch (e) {
+      throw NetServiceNetworkError('Failed to change password', e);
     }
   }
 

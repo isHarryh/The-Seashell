@@ -99,4 +99,13 @@ class DrcomNetMockService extends BaseNetService {
       throw NetServiceNetworkError('Failed to load net monthly bill', e);
     }
   }
+
+  @override
+  Future<void> doChangePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    // Mock implementation: always succeeds
+  }
 }

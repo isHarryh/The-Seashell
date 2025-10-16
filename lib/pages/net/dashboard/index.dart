@@ -6,6 +6,7 @@ import '/types/net.dart';
 import '/utils/app_bar.dart';
 import '/utils/page_mixins.dart';
 import 'bill.dart';
+import 'change_pswd.dart';
 import 'login.dart';
 
 class NetDashboardPage extends StatefulWidget {
@@ -162,6 +163,29 @@ class _NetDashboardPageState extends State<NetDashboardPage>
       }
     } finally {
       if (mounted) setState(() => _isLoadingLogin = false);
+    }
+  }
+
+  Future<void> _showChangePasswordDialog() async {
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => NetChangePasswordDialog(),
+      );
+
+      if (result == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('更改校园网密码成功')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('更改校园网密码失败：$e')));
+      }
     }
   }
 
@@ -532,6 +556,14 @@ class _NetDashboardPageState extends State<NetDashboardPage>
                     style: theme.textTheme.headlineSmall,
                     maxLines: 2,
                   ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _isLoggingOut
+                      ? null
+                      : () => _showChangePasswordDialog(),
+                  icon: const Icon(Icons.lock),
+                  label: const Text('密码'),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
