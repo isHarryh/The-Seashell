@@ -18,3 +18,6 @@
   - data: `type=1&year=2025`
 - drcomUser.json
   - GET http://zifuwu.ustb.edu.cn:8080/refreshaccount?t={rand_float}
+- netRealtimeUsage.js:
+  - GET http://202.204.48.82:801/eportal/portal/visitor/loadUserFlow?callback=dr1003&account={userId}&jsVersion=4.1&v={rand_int}&lang=zh
+  - GET https://elib.ustb.edu.cn/http-801/77726476706e69737468656265737421a2a713d275603c1e2a50c7face/eportal/portal/visitor/loadUserFlow?callback=dr1003&account={userId}&jsVersion=4.1&v={rand_int}&lang=zh
