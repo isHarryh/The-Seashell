@@ -3,7 +3,6 @@
 #include <cstring>
 
 int main(int argc, char** argv) {
-  // High DPI support configuration (based on working run_hidpi.sh script)
   // Set GDK_BACKEND to prefer Wayland, with X11 fallback
   const char* session_type = getenv("XDG_SESSION_TYPE");
   
@@ -13,7 +12,6 @@ int main(int argc, char** argv) {
   }
   
   // Disable GTK scaling - let Flutter handle DPI internally
-  // These settings match the working run_hidpi.sh script
   setenv("GDK_SCALE", "1", 1);
   setenv("GDK_DPI_SCALE", "1", 1);
   
