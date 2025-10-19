@@ -1,7 +1,44 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter/material.dart';
 import '/types/base.dart';
 
 part 'net.g.dart';
+
+/// Network connectivity status for topology display
+enum NetworkStatus {
+  /// No data available
+  noData,
+
+  /// Connected (has recent records within 2x request interval)
+  connected,
+
+  /// Disconnected (no recent records)
+  disconnected,
+}
+
+extension NetworkStatusExtension on NetworkStatus {
+  Color get color {
+    switch (this) {
+      case NetworkStatus.noData:
+        return Colors.grey;
+      case NetworkStatus.connected:
+        return Colors.green;
+      case NetworkStatus.disconnected:
+        return Colors.red;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case NetworkStatus.noData:
+        return '无数据';
+      case NetworkStatus.connected:
+        return '连通';
+      case NetworkStatus.disconnected:
+        return '不连通';
+    }
+  }
+}
 
 @JsonSerializable()
 class LoginRequirements extends BaseDataClass {
@@ -145,4 +182,22 @@ class MonthlyBill extends BaseDataClass {
   factory MonthlyBill.fromJson(Map<String, dynamic> json) =>
       _$MonthlyBillFromJson(json);
   Map<String, dynamic> toJson() => _$MonthlyBillToJson(this);
+}
+
+@JsonSerializable()
+class RealtimeUsage extends BaseDataClass {
+  final double v4;
+  final double v6;
+  final DateTime time;
+
+  const RealtimeUsage({required this.v4, required this.v6, required this.time});
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {'v4': v4, 'v6': v6, 'time': time.toIso8601String()};
+  }
+
+  factory RealtimeUsage.fromJson(Map<String, dynamic> json) =>
+      _$RealtimeUsageFromJson(json);
+  Map<String, dynamic> toJson() => _$RealtimeUsageToJson(this);
 }

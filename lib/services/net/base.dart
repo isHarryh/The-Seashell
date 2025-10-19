@@ -37,6 +37,11 @@ abstract class BaseNetService extends BaseService {
     required String newPassword,
   });
 
+  Future<RealtimeUsage> getRealtimeUsage(
+    String username, {
+    required bool viaVpn,
+  });
+
   // Methods that already implemented:
 
   Future<LoginRequirements> getLoginRequirements() async {

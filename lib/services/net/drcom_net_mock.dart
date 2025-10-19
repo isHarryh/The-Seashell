@@ -108,4 +108,22 @@ class DrcomNetMockService extends BaseNetService {
     await Future.delayed(const Duration(milliseconds: 200));
     // Mock implementation: always succeeds
   }
+
+  @override
+  Future<RealtimeUsage> getRealtimeUsage(
+    String username, {
+    required bool viaVpn,
+  }) async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 200));
+      final jsStr = await rootBundle.loadString(
+        '${_assetPrefix}netRealtimeUsage.js',
+      );
+      return RealtimeUsageExtension.parse(jsStr);
+    } on NetServiceException {
+      rethrow;
+    } catch (e) {
+      throw NetServiceNetworkError('Failed to load realtime usage', e);
+    }
+  }
 }

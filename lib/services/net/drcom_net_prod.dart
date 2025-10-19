@@ -234,6 +234,37 @@ class DrcomNetProdService extends BaseNetService {
     }
   }
 
+  @override
+  @override
+  Future<RealtimeUsage> getRealtimeUsage(
+    String username, {
+    required bool viaVpn,
+  }) async {
+    try {
+      const usageServerUrl = 'http://202.204.48.82:801';
+      const usageServerElib =
+          'https://elib.ustb.edu.cn/http-801/77726476706e69737468656265737421a2a713d275603c1e2a50c7face';
+      final randomNum = Random().nextInt(1000000).toString();
+      final base = viaVpn ? usageServerElib : usageServerUrl;
+      final uri = Uri.parse(
+        '$base/eportal/portal/visitor/loadUserFlow'
+        '?callback=dr1003'
+        '&account=$username'
+        '&jsVersion=4.1'
+        '&v=$randomNum'
+        '&lang=zh',
+      );
+
+      final response = await _client.get(uri, headers: _buildHeaders());
+      NetServiceException.raiseForStatus(response.statusCode);
+      return RealtimeUsageExtension.parse(response.body);
+    } on NetServiceException {
+      rethrow;
+    } catch (e) {
+      throw NetServiceNetworkError('Failed to load realtime usage', e);
+    }
+  }
+
   void dispose() {
     _client.close();
   }

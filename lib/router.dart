@@ -10,6 +10,7 @@ import 'pages/courses/grade/index.dart';
 import 'pages/courses/account/index.dart';
 import 'pages/settings/index.dart';
 import 'pages/net/dashboard/index.dart';
+import 'pages/net/monitor/index.dart';
 
 // App constants
 class _AppConstants {
@@ -51,6 +52,12 @@ class _AppConstants {
       icon: Icons.wifi,
       title: '自助服务',
       path: '/net/dashboard',
+      category: '校园网',
+    ),
+    _NavigationItem(
+      icon: Icons.swap_vert,
+      title: '流量监视',
+      path: '/net/monitor',
       category: '校园网',
     ),
   ];
@@ -105,6 +112,11 @@ class AppRouter {
         name: 'NetDashboardRoute',
         path: '/net/dashboard',
         builder: (context, data) => const MainLayout(child: NetDashboardPage()),
+      ),
+      NamedRouteDef(
+        name: 'NetMonitorRoute',
+        path: '/net/monitor',
+        builder: (context, data) => const MainLayout(child: NetMonitorPage()),
       ),
       NamedRouteDef(
         name: 'SettingsRoute',
