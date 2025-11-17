@@ -277,7 +277,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
                                   Theme.of(context).primaryColor,
                                   Theme.of(
                                     context,
-                                  ).primaryColor.withOpacity(0.8),
+                                  ).primaryColor.withValues(alpha: 0.8),
                                 ],
                               )
                             : null,
@@ -287,7 +287,7 @@ class _CourseSelectionPageState extends State<CourseSelectionPage> {
                                 BoxShadow(
                                   color: Theme.of(
                                     context,
-                                  ).primaryColor.withOpacity(0.3),
+                                  ).primaryColor.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),

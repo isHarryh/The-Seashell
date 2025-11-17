@@ -494,7 +494,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
                 width: 120,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(2),
                 ),
                 child: FractionallySizedBox(
@@ -555,9 +555,8 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
                   width: 200,
                   height: 200,
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceVariant.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -565,7 +564,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
                     size: 100,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                 ),
         ),
@@ -865,7 +864,7 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -910,7 +909,9 @@ class _UstbSsoAuthWidgetState extends State<UstbSsoAuthWidget>
             decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),

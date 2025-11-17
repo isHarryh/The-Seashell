@@ -233,7 +233,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
           dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
           ),
         ),
         // IPv6 line (purple)
@@ -246,7 +246,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
           dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
-            color: Colors.purple.withOpacity(0.1),
+            color: Colors.purple.withValues(alpha: 0.1),
           ),
         ),
       ],
@@ -600,7 +600,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 28),

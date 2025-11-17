@@ -69,7 +69,9 @@ class LoginDialog extends StatelessWidget {
                         Text(
                           description,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: effectiveOnHeaderColor.withOpacity(0.8),
+                            color: effectiveOnHeaderColor.withValues(
+                              alpha: 0.8,
+                            ),
                           ),
                         ),
                       ],

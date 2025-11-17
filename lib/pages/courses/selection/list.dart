@@ -485,7 +485,7 @@ class _CourseListPageState extends State<CourseListPage> {
             color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -524,7 +524,7 @@ class _CourseListPageState extends State<CourseListPage> {
                     },
                     selectedColor: Theme.of(
                       context,
-                    ).primaryColor.withOpacity(0.2),
+                    ).primaryColor.withValues(alpha: 0.2),
                     checkmarkColor: Theme.of(context).primaryColor,
                   ),
                 );
@@ -618,7 +618,7 @@ class _CourseListPageState extends State<CourseListPage> {
             Icon(
               Icons.question_mark_rounded,
               size: 80,
-              color: Theme.of(context).primaryColor.withOpacity(0.4),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -754,7 +754,7 @@ class _CourseListPageState extends State<CourseListPage> {
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -799,7 +799,7 @@ class _CourseListPageState extends State<CourseListPage> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -835,7 +835,7 @@ class _CourseListPageState extends State<CourseListPage> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -1035,10 +1035,12 @@ class _CourseTableRowState extends State<_CourseTableRow>
       children: [
         InkWell(
           onTap: widget.onToggle,
-          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          splashColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.1),
           highlightColor: Theme.of(
             context,
-          ).colorScheme.primary.withOpacity(0.05),
+          ).colorScheme.primary.withValues(alpha: 0.05),
           borderRadius: widget.isExpanded
               ? const BorderRadius.only(
                   topLeft: Radius.circular(8),
@@ -1051,7 +1053,7 @@ class _CourseTableRowState extends State<_CourseTableRow>
               color: widget.isExpanded
                   ? Theme.of(
                       context,
-                    ).colorScheme.primaryContainer.withOpacity(0.4)
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.4)
                   : null,
               borderRadius: widget.isExpanded
                   ? const BorderRadius.only(
@@ -1063,7 +1065,9 @@ class _CourseTableRowState extends State<_CourseTableRow>
                   ? null
                   : Border(
                       bottom: BorderSide(
-                        color: Theme.of(context).dividerColor.withOpacity(0.4),
+                        color: Theme.of(
+                          context,
+                        ).dividerColor.withValues(alpha: 0.4),
                         width: 0.5,
                       ),
                     ),

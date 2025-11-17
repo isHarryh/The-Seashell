@@ -552,7 +552,7 @@ class _CurriculumPageState extends State<CurriculumPage>
                     backgroundColor: isCurrentWeek
                         ? Theme.of(
                             context,
-                          ).colorScheme.primaryContainer.withOpacity(0.6)
+                          ).colorScheme.primaryContainer.withValues(alpha: 0.6)
                         : null,
                   );
                 }),

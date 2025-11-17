@@ -592,13 +592,15 @@ class _GradePageState extends State<GradePage> {
           Container(
             height: 60.0,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
               border: Border(
                 top: BorderSide(
-                  color: Theme.of(context).dividerColor.withOpacity(0.6),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
                 ),
                 bottom: BorderSide(
-                  color: Theme.of(context).dividerColor.withOpacity(0.6),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -646,7 +648,9 @@ class _GradePageState extends State<GradePage> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: Theme.of(context).dividerColor.withOpacity(0.6),
+                      color: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.6),
                       width: 0.5,
                     ),
                   ),

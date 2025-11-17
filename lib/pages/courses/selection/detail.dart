@@ -220,14 +220,16 @@ class _CourseDetailCardState extends State<CourseDetailCard>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+        color: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withValues(alpha: 0.4),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -281,7 +283,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -497,7 +499,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
         border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -527,12 +529,12 @@ class _CourseDetailCardState extends State<CourseDetailCard>
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(
                               context,
-                            ).colorScheme.primary.withOpacity(0.1),
+                            ).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.3),
+                        ).colorScheme.primary.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -746,8 +748,8 @@ class _CourseDetailCardState extends State<CourseDetailCard>
     final hasMore = items.length > maxVisibleItems;
     final remainingCount = items.length - maxVisibleItems;
 
-    final chipColor = baseColor.withOpacity(0.1);
-    final chipBorderColor = baseColor.withOpacity(0.4);
+    final chipColor = baseColor.withValues(alpha: 0.1);
+    final chipBorderColor = baseColor.withValues(alpha: 0.4);
     final chipTextColor = baseColor;
 
     return Column(
@@ -991,7 +993,7 @@ class _CourseDetailCardState extends State<CourseDetailCard>
             border: Border.all(color: Colors.green.shade200, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),

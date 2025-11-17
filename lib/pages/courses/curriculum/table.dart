@@ -217,10 +217,12 @@ class CurriculumTable extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontSize: 11,
                   color: isToday
-                      ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.8)
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onPrimary.withValues(alpha: 0.8)
                       : Theme.of(
                           context,
-                        ).colorScheme.onPrimaryContainer.withOpacity(0.6),
+                        ).colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -244,7 +246,7 @@ class CurriculumTable extends StatelessWidget {
       height: cellHeight,
       decoration: BoxDecoration(
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
         ),
         color: Theme.of(context).colorScheme.surfaceContainerLowest,
       ),
@@ -290,7 +292,7 @@ class CurriculumTable extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Theme.of(
                     context,
-                  ).colorScheme.primaryContainer.withOpacity(0.6),
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(
@@ -325,7 +327,7 @@ class CurriculumTable extends StatelessWidget {
             ? Theme.of(context).colorScheme.surface
             : _getClassColor(classesInSlot.first),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           width: 0.5,
         ),
       ),
@@ -354,8 +356,12 @@ class CurriculumTable extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _showClassDetails(context, firstClass),
-        splashColor: Theme.of(context).colorScheme.surface.withOpacity(0.3),
-        highlightColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+        splashColor: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: 0.3),
+        highlightColor: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(2),
         child: useAnimation
             ? AnimatedContainer(

@@ -72,7 +72,7 @@ Widget buildStepIndicator(BuildContext context, int currentStep) {
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(
-        color: Theme.of(context).dividerColor.withOpacity(0.2),
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
       ),
     ),
     child: Row(
@@ -136,7 +136,7 @@ Widget _buildStepConnector(BuildContext context) {
   return Container(
     height: 2,
     width: 20,
-    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
   );
 }
 
@@ -149,13 +149,15 @@ Widget buildTermInfoDisplay(BuildContext context, TermInfo termInfo) {
         Icon(
           Icons.calendar_today,
           size: 14,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         const SizedBox(width: 2),
         Text(
           '${termInfo.year}-${termInfo.season}',
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.8),
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
