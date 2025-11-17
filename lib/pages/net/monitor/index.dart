@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:the_seashell/services/provider.dart';
 import '/types/net.dart';
 import '/utils/app_bar.dart';
 import '/utils/page_mixins.dart';
@@ -25,6 +26,10 @@ class _NetMonitorPageState extends State<NetMonitorPage>
   bool _isRefreshing = false;
 
   NetworkStatus _gatewayStatus = NetworkStatus.noData;
+  String? _cachedUsername;
+
+  double? _peakV4Speed;
+  double? _peakV6Speed;
 
   RealtimeUsage? get _currentUsage =>
       _usageHistory.isNotEmpty ? _usageHistory.last : null;
@@ -83,11 +88,14 @@ class _NetMonitorPageState extends State<NetMonitorPage>
         clearError();
         setState(() {
           _usageHistory.clear();
+          _cachedUsername = null;
         });
         return;
       }
 
       final username = cachedNetData.value!.account;
+      _cachedUsername = username;
+
       // by default do not use VPN route
       final usage = await serviceProvider.netService.getRealtimeUsage(
         username,
@@ -158,6 +166,17 @@ class _NetMonitorPageState extends State<NetMonitorPage>
     return speed > 0 ? speed : 0;
   }
 
+  String _getNormalizedSpeedString(double? mb) {
+    if (mb == null) return '--';
+
+    if (mb < 1) {
+      final kb = mb * 1024;
+      return '${kb.toStringAsFixed(1)} KB/s';
+    } else {
+      return '${mb.toStringAsFixed(1)} MB/s';
+    }
+  }
+
   LineChartData _buildChartData() {
     if (_usageHistory.isEmpty) {
       return LineChartData(lineBarsData: []);
@@ -211,9 +230,9 @@ class _NetMonitorPageState extends State<NetMonitorPage>
     // Calculate max Y value for chart
     final allY = [...v4Spots.map((e) => e.y), ...v6Spots.map((e) => e.y)];
     final maxY = allY.isEmpty
-        ? 1.0
+        ? 0.1
         : (allY.reduce((a, b) => a > b ? a : b) * 1.1).clamp(
-            1.0,
+            0.1,
             double.infinity,
           );
 
@@ -278,7 +297,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
             return touchedSpots.map((spot) {
               String label = spot.barIndex == 0 ? 'IPv4' : 'IPv6';
               return LineTooltipItem(
-                '$label: ${spot.y.toStringAsFixed(2)} MB/s',
+                '$label: ${_getNormalizedSpeedString(spot.y)}',
                 TextStyle(
                   color: spot.barIndex == 0 ? Colors.blue : Colors.purple,
                   fontWeight: FontWeight.bold,
@@ -308,11 +327,17 @@ class _NetMonitorPageState extends State<NetMonitorPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('网络状态', style: Theme.of(context).textTheme.titleLarge),
+            Text('概览', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             _buildNetworkStatusCard(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             _buildRealtimeUsageCard(),
+            if (_usageHistory.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text('实时图表', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              _buildHistoryChart(),
+            ],
           ],
         ),
       ),
@@ -323,20 +348,28 @@ class _NetMonitorPageState extends State<NetMonitorPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('流量情况', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 16),
+        // Show cached username above the usage card only when available
+        if (_cachedUsername != null && _cachedUsername!.isNotEmpty) ...[
+          Center(
+            child: Tooltip(
+              message: '如需切换账号，请在自助服务面板中重新登录',
+              verticalOffset: 8,
+              child: Text(
+                serviceProvider.currentNetServiceType == NetServiceType.mock
+                    ? '当前正使用 Mock 测试数据'
+                    : '当前监测账号：${_cachedUsername!}',
+                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (_currentUsage == null && _isRefreshing)
           buildLoadingIndicator()
         else if (_currentUsage != null)
           _buildUsageContent()
         else
           _buildNoCredentialsWidget(),
-        if (_usageHistory.isNotEmpty) ...[
-          const SizedBox(height: 32),
-          Text('流量图表', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          _buildHistoryChart(),
-        ],
       ],
     );
   }
@@ -396,7 +429,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
             Icon(Icons.vpn_key_off, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              '未检测到校园网账户',
+              '尚未添加校园网账户',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -405,7 +438,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
             ),
             const SizedBox(height: 8),
             Text(
-              '请前往"自助服务"页面登录校园网账户',
+              '请先添加一个校园网账户以供监测',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
@@ -432,6 +465,14 @@ class _NetMonitorPageState extends State<NetMonitorPage>
     final v4Speed = _getV4Speed();
     final v6Speed = _getV6Speed();
 
+    // Update peak speeds
+    if (v4Speed != null) {
+      _peakV4Speed = (_peakV4Speed ?? 0) > v4Speed ? _peakV4Speed : v4Speed;
+    }
+    if (v6Speed != null) {
+      _peakV6Speed = (_peakV6Speed ?? 0) > v6Speed ? _peakV6Speed : v6Speed;
+    }
+
     if (isWideScreen) {
       // Wide screen: horizontal layout
       return Row(
@@ -444,6 +485,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
               icon: Icons.public,
               color: Colors.blue,
               speed: v4Speed,
+              peakSpeed: _peakV4Speed,
             ),
           ),
           const SizedBox(width: 12),
@@ -455,6 +497,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
               icon: Icons.public,
               color: Colors.purple,
               speed: v6Speed,
+              peakSpeed: _peakV6Speed,
             ),
           ),
         ],
@@ -469,6 +512,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
             icon: Icons.public,
             color: Colors.blue,
             speed: v4Speed,
+            peakSpeed: _peakV4Speed,
           ),
           const SizedBox(height: 12),
           _buildUsageItem(
@@ -477,6 +521,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
             icon: Icons.public,
             color: Colors.purple,
             speed: v6Speed,
+            peakSpeed: _peakV6Speed,
           ),
         ],
       );
@@ -527,29 +572,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: status.color,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: status.color,
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -586,10 +609,11 @@ class _NetMonitorPageState extends State<NetMonitorPage>
     required IconData icon,
     required Color color,
     double? speed,
+    double? peakSpeed,
   }) {
     final valueMB = value.toStringAsFixed(1);
-    final valueGB = (value / 1024).toStringAsFixed(1);
-    final speedStr = speed != null ? speed.toStringAsFixed(2) : '--';
+    final valueGB = (value / 1024).toStringAsFixed(2);
+    final speedStr = _getNormalizedSpeedString(speed);
 
     return Card(
       child: Padding(
@@ -643,11 +667,13 @@ class _NetMonitorPageState extends State<NetMonitorPage>
                     color: color,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'MB/s',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                ),
+                if (peakSpeed != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '峰值 ${_getNormalizedSpeedString(peakSpeed)}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+                ],
               ],
             ),
           ],

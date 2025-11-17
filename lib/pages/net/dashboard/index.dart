@@ -473,10 +473,9 @@ class _NetDashboardPageState extends State<NetDashboardPage>
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                OutlinedButton.icon(
+                FilledButton.icon(
                   onPressed: _isLoadingLogin
                       ? null
                       : () => _showLoginDialog(NetServiceType.production),
@@ -490,7 +489,7 @@ class _NetDashboardPageState extends State<NetDashboardPage>
                   label: const Text('登录'),
                 ),
                 if (kDebugMode) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(width: 12),
                   OutlinedButton.icon(
                     onPressed: _isLoadingLogin
                         ? null
@@ -502,7 +501,7 @@ class _NetDashboardPageState extends State<NetDashboardPage>
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.build_circle_outlined),
-                    label: const Text('Mock 测试登录'),
+                    label: const Text('Mock 登录'),
                   ),
                 ],
               ],
