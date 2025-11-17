@@ -28,36 +28,36 @@ class _AppConstants {
       icon: Icons.account_circle,
       title: '教务账户',
       path: '/courses/account',
-      category: '本研一体教务管理系统',
-    ),
-    _NavigationItem(
-      icon: Icons.school,
-      title: '选课',
-      path: '/courses/selection',
-      category: '本研一体教务管理系统',
+      category: '教务',
     ),
     _NavigationItem(
       icon: Icons.calendar_today,
       title: '课表',
       path: '/courses/curriculum',
-      category: '本研一体教务管理系统',
+      category: '教务',
+    ),
+    _NavigationItem(
+      icon: Icons.school,
+      title: '选课',
+      path: '/courses/selection',
+      category: '教务',
     ),
     _NavigationItem(
       icon: Icons.assessment,
       title: '成绩',
       path: '/courses/grade',
-      category: '本研一体教务管理系统',
-    ),
-    _NavigationItem(
-      icon: Icons.wifi,
-      title: '自助服务',
-      path: '/net/dashboard',
-      category: '校园网',
+      category: '教务',
     ),
     _NavigationItem(
       icon: Icons.swap_vert,
       title: '流量监视',
       path: '/net/monitor',
+      category: '校园网',
+    ),
+    _NavigationItem(
+      icon: Icons.wifi,
+      title: '自助服务',
+      path: '/net/dashboard',
       category: '校园网',
     ),
   ];
@@ -88,9 +88,14 @@ class AppRouter {
         builder: (context, data) => const MainLayout(child: HomePage()),
       ),
       NamedRouteDef(
-        name: 'AccountRoute',
+        name: 'CourseAccountRoute',
         path: '/courses/account',
         builder: (context, data) => const MainLayout(child: AccountPage()),
+      ),
+      NamedRouteDef(
+        name: 'CurriculumRoute',
+        path: '/courses/curriculum',
+        builder: (context, data) => const MainLayout(child: CurriculumPage()),
       ),
       NamedRouteDef(
         name: 'CourseSelectionRoute',
@@ -99,24 +104,19 @@ class AppRouter {
             const MainLayout(child: CourseSelectionPage()),
       ),
       NamedRouteDef(
-        name: 'CurriculumRoute',
-        path: '/courses/curriculum',
-        builder: (context, data) => const MainLayout(child: CurriculumPage()),
-      ),
-      NamedRouteDef(
         name: 'GradeRoute',
         path: '/courses/grade',
         builder: (context, data) => const MainLayout(child: GradePage()),
       ),
       NamedRouteDef(
-        name: 'NetDashboardRoute',
-        path: '/net/dashboard',
-        builder: (context, data) => const MainLayout(child: NetDashboardPage()),
-      ),
-      NamedRouteDef(
         name: 'NetMonitorRoute',
         path: '/net/monitor',
         builder: (context, data) => const MainLayout(child: NetMonitorPage()),
+      ),
+      NamedRouteDef(
+        name: 'NetDashboardRoute',
+        path: '/net/dashboard',
+        builder: (context, data) => const MainLayout(child: NetDashboardPage()),
       ),
       NamedRouteDef(
         name: 'SettingsRoute',

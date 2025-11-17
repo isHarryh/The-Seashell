@@ -133,6 +133,8 @@ class _HomePageState extends State<HomePage>
             const SizedBox(height: 32),
             _buildFeatureGrid(),
             const SizedBox(height: 32),
+            _buildNetFeatureGrid(),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -222,7 +224,7 @@ class _HomePageState extends State<HomePage>
             '成绩',
             '查看考试成绩',
             Icons.assessment,
-            Colors.orange,
+            Colors.blueAccent,
             () => context.router.pushPath('/courses/grade'),
           ),
         ),
@@ -261,7 +263,7 @@ class _HomePageState extends State<HomePage>
                   '成绩',
                   '查看考试成绩',
                   Icons.assessment,
-                  Colors.orange,
+                  Colors.blueAccent,
                   () => context.router.pushPath('/courses/grade'),
                 ),
               ),
@@ -525,6 +527,121 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  Widget _buildNetFeatureGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isNarrowScreen = constraints.maxWidth < 600;
+        final theme = Theme.of(context);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainer.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.wifi,
+                    color: theme.colorScheme.onPrimaryContainer,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '校园网',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "校园网自助服务与流量监控",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (isNarrowScreen) ...[
+                _buildNetNarrowLayout(),
+              ] else ...[
+                _buildNetWideLayout(),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNetNarrowLayout() {
+    return Column(
+      children: [
+        SizedBox(
+          height: 100,
+          child: _buildFeatureCard(
+            context,
+            '流量监视',
+            '实时监控网络流量',
+            Icons.network_check,
+            Colors.green,
+            () => context.router.pushPath('/net/monitor'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 100,
+          child: _buildFeatureCard(
+            context,
+            '自助服务',
+            '账户管理和账单查询',
+            Icons.settings,
+            Colors.teal,
+            () => context.router.pushPath('/net/dashboard'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNetWideLayout() {
+    return SizedBox(
+      height: 120,
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildFeatureCard(
+              context,
+              '流量监视',
+              '实时监控网络流量',
+              Icons.swap_vert,
+              Colors.green,
+              () => context.router.pushPath('/net/monitor'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildFeatureCard(
+              context,
+              '自助服务',
+              '账户管理和账单查询',
+              Icons.wifi,
+              Colors.teal,
+              () => context.router.pushPath('/net/dashboard'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAccountCard(BuildContext context) {
     return Card(
       elevation: 2,
@@ -539,7 +656,7 @@ class _HomePageState extends State<HomePage>
             children: [
               Row(
                 children: [
-                  Icon(Icons.account_circle, size: 32, color: Colors.purple),
+                  Icon(Icons.account_circle, size: 32, color: Colors.lightBlue),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
