@@ -267,7 +267,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
         enabled: true,
         touchTooltipData: LineTouchTooltipData(
           tooltipBorder: BorderSide(color: Colors.grey[400]!, width: 0.5),
-          tooltipRoundedRadius: 8,
+          tooltipBorderRadius: BorderRadius.all(Radius.circular(8)),
           tooltipPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 8,
