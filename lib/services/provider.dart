@@ -10,18 +10,22 @@ import '/services/net/drcom_net_mock.dart';
 import '/services/net/drcom_net_prod.dart';
 import '/types/courses.dart';
 
-enum ServiceType { mock, production }
+enum CoursesServiceType { mock, production }
 
 enum NetServiceType { mock, production }
 
 class ServiceProvider extends ChangeNotifier {
   // Course Service
   late BaseCoursesService _coursesService;
-  ServiceType _currentServiceType = ServiceType.mock;
+  CoursesServiceType _currentServiceType = kDebugMode
+      ? CoursesServiceType.mock
+      : CoursesServiceType.production;
 
   // Net Service
   late BaseNetService _netService;
-  NetServiceType _currentNetServiceType = NetServiceType.mock;
+  NetServiceType _currentNetServiceType = kDebugMode
+      ? NetServiceType.mock
+      : NetServiceType.production;
 
   // Store Service
   late BaseStoreService _storeService;
@@ -31,7 +35,7 @@ class ServiceProvider extends ChangeNotifier {
   static ServiceProvider get instance => _instance;
 
   ServiceProvider._internal() {
-    _coursesService = _currentServiceType == ServiceType.mock
+    _coursesService = _currentServiceType == CoursesServiceType.mock
         ? UstbByytMockService()
         : UstbByytProdService();
     _netService = _currentNetServiceType == NetServiceType.mock
@@ -62,14 +66,14 @@ class ServiceProvider extends ChangeNotifier {
 
   /// Switch the courses service to the specified type.
   /// This method provides a unified way to switch between mock and production services.
-  void switchCoursesService(ServiceType type) {
+  void switchCoursesService(CoursesServiceType type) {
     _switchCoursesService(type);
   }
 
-  void _switchCoursesService(ServiceType type) {
+  void _switchCoursesService(CoursesServiceType type) {
     if (_currentServiceType == type) return;
 
-    _coursesService = type == ServiceType.mock
+    _coursesService = type == CoursesServiceType.mock
         ? UstbByytMockService()
         : UstbByytProdService();
     _currentServiceType = type;
@@ -179,7 +183,7 @@ class ServiceProvider extends ChangeNotifier {
   //
 
   Future<void> loginToCoursesService({String? cookie}) async {
-    if (_currentServiceType == ServiceType.production) {
+    if (_currentServiceType == CoursesServiceType.production) {
       if (cookie == null) {
         throw Exception('Cookie is required for production service login');
       }
@@ -234,11 +238,11 @@ class ServiceProvider extends ChangeNotifier {
       final method = data.method;
 
       if (method == "mock") {
-        switchCoursesService(ServiceType.mock);
+        switchCoursesService(CoursesServiceType.mock);
         await loginToCoursesService();
       } else if (method == "cookie" || method == "sso") {
         if (data.cookie != null && data.user != null) {
-          switchCoursesService(ServiceType.production);
+          switchCoursesService(CoursesServiceType.production);
           await loginToCoursesService(cookie: data.cookie!);
           // Get new user info and verify consistency
           final newUserInfo = await coursesService.getUserInfo();

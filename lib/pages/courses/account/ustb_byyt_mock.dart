@@ -35,7 +35,7 @@ class _MockLoginDialogState extends State<_MockLoginDialog> {
     _serviceProvider.addListener(_onServiceStatusChanged);
 
     // Switch to mock service when entering this page
-    _serviceProvider.switchCoursesService(ServiceType.mock);
+    _serviceProvider.switchCoursesService(CoursesServiceType.mock);
   }
 
   @override

@@ -36,7 +36,7 @@ class _CookieLoginDialogState extends State<_CookieLoginDialog> {
     _serviceProvider.addListener(_onServiceStatusChanged);
 
     // Switch to production service when entering this page
-    _serviceProvider.switchCoursesService(ServiceType.production);
+    _serviceProvider.switchCoursesService(CoursesServiceType.production);
   }
 
   @override
