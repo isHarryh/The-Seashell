@@ -8,6 +8,7 @@ import 'package:the_seashell/services/provider.dart';
 import '/types/net.dart';
 import '/utils/app_bar.dart';
 import '/utils/page_mixins.dart';
+import 'dial.dart';
 
 class NetMonitorPage extends StatefulWidget {
   const NetMonitorPage({super.key});
@@ -18,6 +19,7 @@ class NetMonitorPage extends StatefulWidget {
 
 class _NetMonitorPageState extends State<NetMonitorPage>
     with PageStateMixin, LoadingStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final List<RealtimeUsage> _usageHistory = [];
   static const int _maxHistorySize = 60;
   static const Duration _requestInterval = Duration(seconds: 2);
@@ -49,6 +51,8 @@ class _NetMonitorPageState extends State<NetMonitorPage>
       } else {
         setState(() {
           _usageHistory.clear();
+          _peakV4Speed = null;
+          _peakV6Speed = null;
         });
       }
     });
@@ -89,6 +93,8 @@ class _NetMonitorPageState extends State<NetMonitorPage>
         setState(() {
           _usageHistory.clear();
           _cachedUsername = null;
+          _peakV4Speed = null;
+          _peakV6Speed = null;
         });
         return;
       }
@@ -108,6 +114,8 @@ class _NetMonitorPageState extends State<NetMonitorPage>
         if (usage.v4 < _currentUsage!.v4 || usage.v6 < _currentUsage!.v6) {
           // Billing cycle reset detected, clear all history
           _usageHistory.clear();
+          _peakV4Speed = null;
+          _peakV6Speed = null;
         }
       }
 
@@ -321,7 +329,18 @@ class _NetMonitorPageState extends State<NetMonitorPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const PageAppBar(title: '流量监视'),
+      key: _scaffoldKey,
+      appBar: PageAppBar(
+        title: '流量监视',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.speed),
+            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            tooltip: '网络拨测',
+          ),
+        ],
+      ),
+      endDrawer: const Drawer(child: NetDialDrawer()),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
