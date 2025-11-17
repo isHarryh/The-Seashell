@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:the_seashell/types/caching.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
 import '/types/preferences.dart';
@@ -275,7 +276,9 @@ class _CurriculumPageState extends State<CurriculumPage>
     }
   }
 
-  Widget _buildSelectionView(cachedData) {
+  Widget _buildSelectionView(
+    CacheHolder<CurriculumIntegratedData>? cachedData,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: LayoutBuilder(

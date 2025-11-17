@@ -724,7 +724,7 @@ class _NetDashboardPageState extends State<NetDashboardPage>
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _macDevices!.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final device = _macDevices![index];
                   return _buildMacListTile(theme, context, device);
