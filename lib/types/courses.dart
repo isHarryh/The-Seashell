@@ -432,7 +432,7 @@ class CurriculumIntegratedData extends BaseDataClass {
     if (currentWeek == null) return null;
 
     final nowTime = TimeOfDay.fromDateTime(DateTime.now());
-    int minDelta = 0;
+    int? minDelta;
     ClassItem? result;
 
     for (final classItem in getClassesToday()) {
@@ -440,8 +440,8 @@ class CurriculumIntegratedData extends BaseDataClass {
       final endTime = classItem.getMaxEndTime(allPeriods);
       if (startTime != null && endTime != null) {
         final delta = _deltaTime(nowTime, startTime);
-        if (delta < minDelta) {
-          minDelta = delta;
+        if (delta < 0 && (minDelta == null || delta.abs() < minDelta)) {
+          minDelta = delta.abs();
           result = classItem;
         }
       }
