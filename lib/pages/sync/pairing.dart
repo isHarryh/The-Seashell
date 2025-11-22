@@ -3,18 +3,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import '/services/provider.dart';
-import '/services/sync/exceptions.dart';
 import '/types/sync.dart';
 import '/types/courses.dart';
 
 class SyncPairingCard extends StatefulWidget {
   final ServiceProvider serviceProvider;
   final ValueChanged<SyncDeviceData> onSyncDataChanged;
+  final VoidCallback onSuccess;
+  final ValueChanged<dynamic> onError;
 
   const SyncPairingCard({
     super.key,
     required this.serviceProvider,
     required this.onSyncDataChanged,
+    required this.onSuccess,
+    required this.onError,
   });
 
   @override
@@ -23,7 +26,6 @@ class SyncPairingCard extends StatefulWidget {
 
 class _SyncPairingCardState extends State<SyncPairingCard> {
   bool _isLoading = false;
-  String? _errorMessage;
 
   String? _pairCode;
   DateTime? _pairCodeExpiry;
@@ -47,6 +49,12 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
   }
 
   @override
+  void didUpdateWidget(SyncPairingCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _initializeDevice();
+  }
+
+  @override
   void dispose() {
     _joinCodeController.dispose();
     _refreshTimer?.cancel();
@@ -63,8 +71,25 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
       SyncDeviceData.fromJson,
     );
 
+    // Check if group state changed
+    final oldGroupId = _syncData?.groupId;
+    final newGroupId = cache.value?.groupId;
+    final groupChanged = oldGroupId != newGroupId;
+
     if (mounted) {
-      setState(() => _syncData = cache.value);
+      setState(() {
+        _syncData = cache.value;
+        // If group was reset or changed, clear pairing-related state
+        if (groupChanged && newGroupId == null) {
+          _pairCode = null;
+          _pairCodeExpiry = null;
+          _devices = null;
+          _showJoinInput = false;
+          _joinCodeController.clear();
+          _lastClosedPairCode = null;
+          _refreshTimer?.cancel();
+        }
+      });
     }
 
     if (_syncData?.groupId != null) {
@@ -90,16 +115,6 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
       default:
         return '💻';
     }
-  }
-
-  String _getErrorMessage(dynamic error) {
-    if (error is SyncServiceException) {
-      if (error.errorCode != null) {
-        return getSyncErrorMessage(error.errorCode);
-      }
-      return error.message;
-    }
-    return error.toString();
   }
 
   Future<void> _saveSyncData(SyncDeviceData data) async {
@@ -196,7 +211,6 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -212,12 +226,13 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
           context,
         ).showSnackBar(const SnackBar(content: Text('同步组创建成功')));
       }
+      widget.onSuccess();
 
       await _refreshDeviceList();
 
       await _openPairing();
     } catch (e) {
-      setState(() => _errorMessage = '创建同步组失败: ${_getErrorMessage(e)}');
+      widget.onError(e);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -253,11 +268,10 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
         // Switch to fast refresh mode
         _startPeriodicRefresh();
         _startPairCodeExpiryPolling();
+        widget.onSuccess();
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _errorMessage = '开启配对失败: ${_getErrorMessage(e)}');
-      }
+      widget.onError(e);
     }
   }
 
@@ -298,13 +312,12 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
     final pairCode = _joinCodeController.text.trim();
 
     if (pairCode.isEmpty) {
-      setState(() => _errorMessage = '请输入配对码');
+      widget.onError('请输入配对码');
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -331,8 +344,9 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
           context,
         ).showSnackBar(const SnackBar(content: Text('成功加入同步组')));
       }
+      widget.onSuccess();
     } catch (e) {
-      setState(() => _errorMessage = '加入同步组失败: ${_getErrorMessage(e)}');
+      widget.onError(e);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -398,6 +412,7 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
             context,
           ).showSnackBar(const SnackBar(content: Text('已退出当前同步组')));
         }
+        widget.onSuccess();
       } else {
         await _refreshDeviceList();
 
@@ -406,9 +421,10 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
             context,
           ).showSnackBar(SnackBar(content: Text('已移除所选设备')));
         }
+        widget.onSuccess();
       }
     } catch (e) {
-      setState(() => _errorMessage = '操作失败: ${_getErrorMessage(e)}');
+      widget.onError(e);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -421,21 +437,6 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_errorMessage != null) ...[
-          Card(
-            color: Theme.of(context).colorScheme.errorContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                _errorMessage!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
         if (_isLoading)
           const Card(
             child: Padding(

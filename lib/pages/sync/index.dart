@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '/services/provider.dart';
@@ -19,6 +20,7 @@ class _SyncPageState extends State<SyncPage> {
 
   SyncDeviceData? _syncData;
   String? _errorMessage;
+  ButtonStyleButton? _errorAction;
 
   @override
   void initState() {
@@ -39,12 +41,105 @@ class _SyncPageState extends State<SyncPage> {
         if (mounted) {
           setState(() {
             _errorMessage = null;
+            _errorAction = null;
             _syncData = null;
           });
           _ensureRegisterDevice();
         }
       });
     }
+  }
+
+  void _handleError(dynamic error) {
+    if (!mounted) return;
+
+    String message;
+    ButtonStyleButton? action;
+
+    if (error is SyncServiceException) {
+      if (error.errorCode != null) {
+        message = getSyncErrorMessage(error.errorCode);
+        final code = error.errorCode!;
+
+        if (code >= 10101 && code <= 10104) {
+          // Reset device ID
+          action = _createErrorActionButton(
+            label: '重置设备',
+            onPressed: () async {
+              final isMock =
+                  _serviceProvider.currentSyncServiceType ==
+                  SyncServiceType.mock;
+              final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
+              _serviceProvider.storeService.removeCache(cacheKey);
+              await _ensureRegisterDevice();
+
+              setState(() {
+                _errorMessage = null;
+                _errorAction = null;
+                _syncData = null;
+              });
+            },
+          );
+        } else if (code >= 10111 && code <= 10115 || code == 10117) {
+          // Reset group ID
+          action = _createErrorActionButton(
+            label: '重置同步组',
+            onPressed: () async {
+              if (_syncData != null) {
+                final resetData = SyncDeviceData(
+                  deviceId: _syncData!.deviceId,
+                  deviceOs: _syncData!.deviceOs,
+                  deviceName: _syncData!.deviceName,
+                  groupId: null,
+                );
+                await _saveSyncData(resetData);
+
+                setState(() {
+                  _errorMessage = null;
+                  _errorAction = null;
+                });
+              }
+            },
+          );
+        } else if (code == 10202) {
+          // Retry login
+          action = _createErrorActionButton(
+            label: '重新登录',
+            onPressed: () {
+              setState(() {
+                _errorMessage = null;
+                _errorAction = null;
+              });
+              context.router.pushPath('/courses/account');
+            },
+          );
+        }
+      } else {
+        message = error.message;
+      }
+    } else {
+      message = error.toString();
+    }
+
+    setState(() {
+      _errorMessage = message;
+      _errorAction = action;
+    });
+  }
+
+  ButtonStyleButton _createErrorActionButton({
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return FilledButton.icon(
+      onPressed: onPressed,
+      icon: Icon(Icons.build_outlined, size: 16),
+      label: Text(label),
+      style: FilledButton.styleFrom(
+        backgroundColor: Theme.of(context).colorScheme.error,
+        foregroundColor: Theme.of(context).colorScheme.onError,
+      ),
+    );
   }
 
   Future<void> _saveSyncData(SyncDeviceData data) async {
@@ -95,9 +190,7 @@ class _SyncPageState extends State<SyncPage> {
 
       await _saveSyncData(deviceData);
     } catch (e) {
-      if (mounted) {
-        setState(() => _errorMessage = '设备注册失败: ${_getErrorMessage(e)}');
-      }
+      _handleError(e);
     }
   }
 
@@ -114,16 +207,6 @@ class _SyncPageState extends State<SyncPage> {
     // Simple device name, can be enhanced later
     final os = _getCurrentDeviceOs();
     return '$os-device-${DateTime.now().millisecondsSinceEpoch % 10000}';
-  }
-
-  String _getErrorMessage(dynamic error) {
-    if (error is SyncServiceException) {
-      if (error.errorCode != null) {
-        return getSyncErrorMessage(error.errorCode);
-      }
-      return error.message;
-    }
-    return error.toString();
   }
 
   String _getDeviceOsIcon(String os) {
@@ -158,18 +241,7 @@ class _SyncPageState extends State<SyncPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_errorMessage != null) ...[
-            Card(
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onErrorContainer,
-                  ),
-                ),
-              ),
-            ),
+            _buildErrorCard(),
             const SizedBox(height: 16),
           ],
           if (_syncData?.deviceId != null) ...[
@@ -200,9 +272,131 @@ class _SyncPageState extends State<SyncPage> {
             SyncPairingCard(
               serviceProvider: _serviceProvider,
               onSyncDataChanged: _saveSyncData,
+              onSuccess: () => {
+                if (mounted)
+                  setState(() {
+                    _errorMessage = null;
+                    _errorAction = null;
+                  }),
+              },
+              onError: _handleError,
             ),
           ],
           if (kDebugMode) ...[const SizedBox(height: 16), _buildDebugSection()],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return AnimatedOpacity(
+      opacity: _errorMessage != null ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 300),
+      child: AnimatedSlide(
+        offset: _errorMessage != null ? Offset.zero : const Offset(0, -0.1),
+        duration: const Duration(milliseconds: 300),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.errorContainer.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(
+                  context,
+                ).colorScheme.error.withValues(alpha: 0.15),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      color: Theme.of(context).colorScheme.error,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '出现错误',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _errorMessage!,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer
+                                      .withValues(alpha: 0.9),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (_errorAction != null) ...[
+                  const SizedBox(height: 16),
+                  _buildErrorActionButton(),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorActionButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onError.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              '找到了一个也许可以修复此问题的办法：',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onErrorContainer.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _errorAction!,
         ],
       ),
     );

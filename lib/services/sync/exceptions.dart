@@ -38,27 +38,27 @@ class SyncServiceBadRequest extends SyncServiceException {
 String getSyncErrorMessage(int? errorCode) {
   switch (errorCode) {
     case 10101:
-      return '设备ID未找到';
+      return '此设备ID未被注册';
     case 10102:
-      return '设备ID已删除';
+      return '此设备ID已被删除';
     case 10103:
-      return '设备ID已封禁';
+      return '此设备ID已被禁用';
     case 10104:
-      return '设备ID已归档';
+      return '此设备ID已被封存';
     case 10111:
-      return '同步组ID未找到';
+      return '此同步组ID未被注册';
     case 10112:
-      return '同步组ID已删除';
+      return '此同步组ID已被删除';
     case 10113:
-      return '同步组ID已封禁';
+      return '此同步组ID已被禁用';
     case 10114:
-      return '同步组ID已归档';
+      return '此同步组ID已被封存';
     case 10115:
-      return '此设备已在同步组中';
+      return '此设备已在指定的同步组中';
     case 10116:
       return '同步组已满员';
     case 10117:
-      return '此设备不在同步组中';
+      return '此设备不在指定的同步组中';
     case 10201:
       return '配对码无效或已过期';
     case 10202:
