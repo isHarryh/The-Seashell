@@ -8,11 +8,16 @@ import '/services/store/general.dart';
 import '/services/net/base.dart';
 import '/services/net/drcom_net_mock.dart';
 import '/services/net/drcom_net_prod.dart';
+import '/services/sync/base.dart';
+import '/services/sync/mock.dart';
+import '/services/sync/prod.dart';
 import '/types/courses.dart';
 
 enum CoursesServiceType { mock, production }
 
 enum NetServiceType { mock, production }
+
+enum SyncServiceType { mock, production }
 
 class ServiceProvider extends ChangeNotifier {
   // Course Service
@@ -26,6 +31,12 @@ class ServiceProvider extends ChangeNotifier {
   NetServiceType _currentNetServiceType = kDebugMode
       ? NetServiceType.mock
       : NetServiceType.production;
+
+  // Sync Service
+  late BaseSyncService _syncService;
+  SyncServiceType _currentSyncServiceType = kDebugMode
+      ? SyncServiceType.mock
+      : SyncServiceType.production;
 
   // Store Service
   late BaseStoreService _storeService;
@@ -41,6 +52,9 @@ class ServiceProvider extends ChangeNotifier {
     _netService = _currentNetServiceType == NetServiceType.mock
         ? DrcomNetMockService()
         : DrcomNetProdService();
+    _syncService = _currentSyncServiceType == SyncServiceType.mock
+        ? SyncServiceMock()
+        : SyncServiceProd();
     _storeService = GeneralStoreService();
   }
 
@@ -49,6 +63,10 @@ class ServiceProvider extends ChangeNotifier {
   BaseNetService get netService => _netService;
 
   NetServiceType get currentNetServiceType => _currentNetServiceType;
+
+  BaseSyncService get syncService => _syncService;
+
+  SyncServiceType get currentSyncServiceType => _currentSyncServiceType;
 
   BaseStoreService get storeService => _storeService;
 
@@ -92,6 +110,20 @@ class ServiceProvider extends ChangeNotifier {
         ? DrcomNetMockService()
         : DrcomNetProdService();
     _currentNetServiceType = type;
+    notifyListeners();
+  }
+
+  void switchSyncService(SyncServiceType type) {
+    _switchSyncService(type);
+  }
+
+  void _switchSyncService(SyncServiceType type) {
+    if (_currentSyncServiceType == type) return;
+
+    _syncService = type == SyncServiceType.mock
+        ? SyncServiceMock()
+        : SyncServiceProd();
+    _currentSyncServiceType = type;
     notifyListeners();
   }
 
