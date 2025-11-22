@@ -11,6 +11,7 @@ import 'pages/courses/account/index.dart';
 import 'pages/settings/index.dart';
 import 'pages/net/dashboard/index.dart';
 import 'pages/net/monitor/index.dart';
+import 'pages/sync/index.dart';
 
 // App constants
 class _AppConstants {
@@ -59,6 +60,12 @@ class _AppConstants {
       title: '自助服务',
       path: '/net/dashboard',
       category: '校园网',
+    ),
+    _NavigationItem(
+      icon: Icons.sync,
+      title: '跨设备同步',
+      path: '/sync',
+      category: '同步',
     ),
   ];
 }
@@ -123,6 +130,11 @@ class AppRouter {
         path: '/settings',
         builder: (context, data) => const MainLayout(child: SettingsPage()),
       ),
+      NamedRouteDef(
+        name: 'SyncRoute',
+        path: '/sync',
+        builder: (context, data) => const MainLayout(child: SyncPage()),
+      ),
     ],
   );
 }
@@ -139,6 +151,11 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   bool _isWideScreen = false;
   Widget? _cachedChild;
+
+  // GlobalKey to maintain page state during screen size transitions
+  // Using an instance key instead of a static map prevents duplicate key errors
+  // when the same page is pushed multiple times in the navigation stack.
+  final GlobalKey _contentKey = GlobalKey();
 
   @override
   void didChangeDependencies() {
@@ -207,10 +224,7 @@ class _MainLayoutState extends State<MainLayout> {
               transitionBuilder: (child, animation) {
                 return FadeTransition(opacity: animation, child: child);
               },
-              child: KeyedSubtree(
-                key: ValueKey(_currentPath),
-                child: _cachedChild!,
-              ),
+              child: KeyedSubtree(key: _contentKey, child: _cachedChild!),
             ),
           ),
         ],
@@ -228,7 +242,7 @@ class _MainLayoutState extends State<MainLayout> {
           onNavigate: (path) => _navigateToPage(path, isDrawer: true),
         ),
       ),
-      body: _cachedChild!,
+      body: KeyedSubtree(key: _contentKey, child: _cachedChild!),
     );
   }
 }

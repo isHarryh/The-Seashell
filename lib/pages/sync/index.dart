@@ -1,0 +1,347 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import '/services/provider.dart';
+import '/services/sync/exceptions.dart';
+import '/types/sync.dart';
+import '/utils/app_bar.dart';
+import 'pairing.dart';
+
+class SyncPage extends StatefulWidget {
+  const SyncPage({super.key});
+
+  @override
+  State<SyncPage> createState() => _SyncPageState();
+}
+
+class _SyncPageState extends State<SyncPage> {
+  final ServiceProvider _serviceProvider = ServiceProvider.instance;
+
+  SyncDeviceData? _syncData;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _serviceProvider.addListener(_onServiceProviderChanged);
+    _ensureRegisterDevice();
+  }
+
+  @override
+  void dispose() {
+    _serviceProvider.removeListener(_onServiceProviderChanged);
+    super.dispose();
+  }
+
+  void _onServiceProviderChanged() {
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = null;
+            _syncData = null;
+          });
+          _ensureRegisterDevice();
+        }
+      });
+    }
+  }
+
+  Future<void> _saveSyncData(SyncDeviceData data) async {
+    final isMock =
+        _serviceProvider.currentSyncServiceType == SyncServiceType.mock;
+    final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
+
+    _serviceProvider.storeService.putCache<SyncDeviceData>(cacheKey, data);
+    if (mounted) {
+      setState(() => _syncData = data);
+    }
+  }
+
+  Future<void> _ensureRegisterDevice() async {
+    final isMock =
+        _serviceProvider.currentSyncServiceType == SyncServiceType.mock;
+    final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
+
+    // Check if device data exists in cache
+    final cachedData = _serviceProvider.storeService.getCache<SyncDeviceData>(
+      cacheKey,
+      SyncDeviceData.fromJson,
+    );
+
+    if (cachedData.value != null) {
+      // Device already registered, load the data
+      if (mounted) {
+        setState(() => _syncData = cachedData.value);
+      }
+      return;
+    }
+
+    // Device not registered, register automatically
+    try {
+      final deviceOs = _getCurrentDeviceOs();
+      final deviceName = await _getDeviceName();
+
+      final deviceId = await _serviceProvider.syncService.registerDevice(
+        deviceOs: deviceOs,
+        deviceName: deviceName,
+      );
+
+      final deviceData = SyncDeviceData(
+        deviceId: deviceId,
+        deviceOs: deviceOs,
+        deviceName: deviceName,
+      );
+
+      await _saveSyncData(deviceData);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = '设备注册失败: ${_getErrorMessage(e)}');
+      }
+    }
+  }
+
+  String _getCurrentDeviceOs() {
+    if (Platform.isWindows) return 'windows';
+    if (Platform.isMacOS) return 'mac';
+    if (Platform.isLinux) return 'linux';
+    if (Platform.isIOS) return 'ios';
+    if (Platform.isAndroid) return 'android';
+    return 'unknown';
+  }
+
+  Future<String> _getDeviceName() async {
+    // Simple device name, can be enhanced later
+    final os = _getCurrentDeviceOs();
+    return '$os-device-${DateTime.now().millisecondsSinceEpoch % 10000}';
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error is SyncServiceException) {
+      if (error.errorCode != null) {
+        return getSyncErrorMessage(error.errorCode);
+      }
+      return error.message;
+    }
+    return error.toString();
+  }
+
+  String _getDeviceOsIcon(String os) {
+    switch (os.toLowerCase()) {
+      case 'windows':
+        return '🪟';
+      case 'mac':
+        return '🍎';
+      case 'linux':
+        return '🐧';
+      case 'ios':
+        return '📱';
+      case 'android':
+        return '🤖';
+      default:
+        return '💻';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const PageAppBar(title: '跨设备同步'),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_errorMessage != null) ...[
+            Card(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (_syncData?.deviceId != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '将你的多个设备加入到一个同步组内，即可跨设备同步账号和数据，省去繁琐重复的操作！',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            SyncPairingCard(
+              serviceProvider: _serviceProvider,
+              onSyncDataChanged: _saveSyncData,
+            ),
+          ],
+          if (kDebugMode) ...[const SizedBox(height: 16), _buildDebugSection()],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDebugSection() {
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.bug_report,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '调试信息',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24, color: null),
+            Row(
+              children: [
+                Text(
+                  '服务环境',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SegmentedButton<SyncServiceType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: SyncServiceType.mock,
+                        label: Text('Mock'),
+                        icon: Icon(Icons.code, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: SyncServiceType.production,
+                        label: Text('Production'),
+                        icon: Icon(Icons.cloud, size: 16),
+                      ),
+                    ],
+                    selected: {_serviceProvider.currentSyncServiceType},
+                    onSelectionChanged: (Set<SyncServiceType> selected) {
+                      _serviceProvider.switchSyncService(selected.first);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (_syncData?.deviceId != null) ...[
+              const SizedBox(height: 16),
+              _buildDebugInfoRow(
+                '设备类型',
+                '${_getDeviceOsIcon(_syncData!.deviceOs!)} ${_syncData!.deviceOs}',
+                icon: Icons.computer,
+              ),
+              _buildDebugInfoRow(
+                '设备名称',
+                _syncData!.deviceName ?? '未知',
+                icon: Icons.label,
+              ),
+              _buildDebugInfoRow(
+                '设备ID',
+                _syncData!.deviceId!,
+                icon: Icons.fingerprint,
+                monospace: true,
+              ),
+            ],
+            if (_syncData?.groupId != null) ...[
+              _buildDebugInfoRow(
+                '组ID',
+                _syncData!.groupId!,
+                icon: Icons.groups,
+                monospace: true,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugInfoRow(
+    String label,
+    String value, {
+    IconData? icon,
+    bool monospace = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 14,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSecondaryContainer.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: 8),
+          ],
+          SizedBox(
+            width: icon != null ? 60 : 70,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSecondaryContainer.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontFamily: monospace ? 'monospace' : null,
+                fontSize: monospace ? 11 : null,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
