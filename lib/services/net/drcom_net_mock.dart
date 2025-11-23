@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:the_seashell/services/net/drcom_net.dart';
+import '/services/net/drcom_net.dart';
 import '/services/net/base.dart';
 import '/services/net/exceptions.dart';
 import '/types/net.dart';

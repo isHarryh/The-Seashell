@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:the_seashell/services/net/drcom_net.dart';
-import 'package:the_seashell/types/net.dart';
+import '/services/net/drcom_net.dart';
+import '/types/net.dart';
 import '/services/net/base.dart';
 import '/services/net/exceptions.dart';
 

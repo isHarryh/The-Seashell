@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:the_seashell/services/net/exceptions.dart';
+import '/services/net/exceptions.dart';
 import '/types/net.dart';
 
 extension LoginRequirementsExtension on LoginRequirements {

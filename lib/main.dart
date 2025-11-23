@@ -66,7 +66,7 @@ class _MainState extends State<Main> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'The Seashell',
+      title: 'The Beike',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromRGBO(0, 91, 148, 1.0),
