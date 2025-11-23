@@ -15,10 +15,11 @@ CurriculumSettings _$CurriculumSettingsFromJson(Map<String, dynamic> json) =>
       tableSize: $enumDecode(_$TableSizeEnumMap, json['tableSize']),
       animationMode: $enumDecode(_$AnimationModeEnumMap, json['animationMode']),
       activated: json['activated'] as bool? ?? true,
-    );
+    )..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$CurriculumSettingsToJson(CurriculumSettings instance) =>
     <String, dynamic>{
+      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
       'weekendMode': _$WeekendDisplayModeEnumMap[instance.weekendMode]!,
       'tableSize': _$TableSizeEnumMap[instance.tableSize]!,
       'animationMode': _$AnimationModeEnumMap[instance.animationMode]!,
@@ -44,10 +45,14 @@ const _$AnimationModeEnumMap = {
 };
 
 AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) =>
-    AppSettings(themeMode: $enumDecode(_$ThemeModeEnumMap, json['themeMode']));
+    AppSettings(themeMode: $enumDecode(_$ThemeModeEnumMap, json['themeMode']))
+      ..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$AppSettingsToJson(AppSettings instance) =>
-    <String, dynamic>{'themeMode': _$ThemeModeEnumMap[instance.themeMode]!};
+    <String, dynamic>{
+      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      'themeMode': _$ThemeModeEnumMap[instance.themeMode]!,
+    };
 
 const _$ThemeModeEnumMap = {
   ThemeMode.system: 'system',

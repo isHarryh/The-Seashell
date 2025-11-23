@@ -96,9 +96,9 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
           UserLoginIntegratedData.fromJson,
         );
     final updatedData = UserLoginIntegratedData(
-      user: existingData.value?.user,
-      method: existingData.value?.method,
-      cookie: existingData.value?.cookie,
+      user: existingData?.user,
+      method: existingData?.method,
+      cookie: existingData?.cookie,
       lastSmsPhone: phoneNumber,
     );
     serviceProvider.storeService.putCache<UserLoginIntegratedData>(
@@ -142,9 +142,7 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
           "course_account_data",
           UserLoginIntegratedData.fromJson,
         );
-    final defaultSmsPhone = cachedData.isNotEmpty
-        ? cachedData.value!.lastSmsPhone
-        : null;
+    final defaultSmsPhone = cachedData?.lastSmsPhone;
 
     return LoginDialog(
       title: '统一身份认证',

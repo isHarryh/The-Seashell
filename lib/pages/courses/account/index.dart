@@ -80,7 +80,7 @@ class _AccountPageState extends State<AccountPage> {
       user: _userInfo,
       method: method,
       cookie: cookie,
-      lastSmsPhone: existingData.value?.lastSmsPhone,
+      lastSmsPhone: existingData?.lastSmsPhone,
     );
 
     _serviceProvider.storeService.putCache<UserLoginIntegratedData>(
@@ -178,13 +178,13 @@ class _AccountPageState extends State<AccountPage> {
             UserLoginIntegratedData.fromJson,
           );
 
-      if (existingData.isNotEmpty && existingData.value?.lastSmsPhone != null) {
+      if (existingData != null && existingData.lastSmsPhone != null) {
         // Preserve only the lastSmsPhone
         final preservedData = UserLoginIntegratedData(
           user: null,
           method: null,
           cookie: null,
-          lastSmsPhone: existingData.value!.lastSmsPhone,
+          lastSmsPhone: existingData.lastSmsPhone,
         );
         _serviceProvider.storeService.putCache<UserLoginIntegratedData>(
           "course_account_data",

@@ -46,7 +46,7 @@ class LoginRequirements extends BaseDataClass {
   final int tryTimes;
   final int tryTimesThreshold;
 
-  const LoginRequirements({
+  LoginRequirements({
     required this.checkCode,
     required this.tryTimes,
     required this.tryTimesThreshold,
@@ -79,7 +79,7 @@ class NetUserInfo extends BaseDataClass {
   final String? overDate;
   final String? onlineState;
 
-  const NetUserInfo({
+  NetUserInfo({
     required this.account,
     required this.subscription,
     required this.status,
@@ -114,7 +114,7 @@ class NetUserIntegratedData extends BaseDataClass {
   final String account;
   final String password;
 
-  const NetUserIntegratedData({required this.account, required this.password});
+  NetUserIntegratedData({required this.account, required this.password});
 
   @override
   Map<String, dynamic> getEssentials() {
@@ -131,7 +131,7 @@ class MacDevice extends BaseDataClass {
   final String name;
   final String mac;
 
-  const MacDevice({required this.name, required this.mac});
+  MacDevice({required this.name, required this.mac});
 
   @override
   Map<String, dynamic> getEssentials() {
@@ -154,7 +154,7 @@ class MonthlyBill extends BaseDataClass {
   final double usageFlowMb;
   final DateTime createTime;
 
-  const MonthlyBill({
+  MonthlyBill({
     required this.startDate,
     required this.endDate,
     required this.packageName,
@@ -190,7 +190,7 @@ class RealtimeUsage extends BaseDataClass {
   final double v6;
   final DateTime time;
 
-  const RealtimeUsage({required this.v4, required this.v6, required this.time});
+  RealtimeUsage({required this.v4, required this.v6, required this.time});
 
   @override
   Map<String, dynamic> getEssentials() {

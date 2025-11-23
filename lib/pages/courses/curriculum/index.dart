@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
-import 'package:the_seashell/types/caching.dart';
 import '/services/provider.dart';
 import '/types/courses.dart';
 import '/types/preferences.dart';
@@ -102,10 +101,10 @@ class _CurriculumPageState extends State<CurriculumPage>
           CurriculumIntegratedData.fromJson,
         );
 
-    if (cachedData.isNotEmpty) {
+    if (cachedData != null) {
       if (mounted) {
         setState(() {
-          _curriculumData = cachedData.value;
+          _curriculumData = cachedData;
           _errorMessage = null;
           _gotoCurrentDateWeek();
         });
@@ -232,8 +231,8 @@ class _CurriculumPageState extends State<CurriculumPage>
           CurriculumIntegratedData.fromJson,
         );
 
-    if (cachedData.isNotEmpty) {
-      final data = cachedData.value!;
+    if (cachedData != null) {
+      final data = cachedData;
       // Check activated status from settings
       if (isActivated) {
         if (mounted && _curriculumData != data) {
@@ -276,18 +275,14 @@ class _CurriculumPageState extends State<CurriculumPage>
     }
   }
 
-  Widget _buildSelectionView(
-    CacheHolder<CurriculumIntegratedData>? cachedData,
-  ) {
+  Widget _buildSelectionView(CurriculumIntegratedData? cachedData) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final bool shouldUseDoubleColumn = constraints.maxWidth > 1000;
 
-          if (shouldUseDoubleColumn &&
-              cachedData != null &&
-              cachedData.isNotEmpty) {
+          if (shouldUseDoubleColumn && cachedData != null) {
             // Two column layout
             return IntrinsicHeight(
               child: Row(
@@ -330,7 +325,7 @@ class _CurriculumPageState extends State<CurriculumPage>
                   onTermSelected: _loadCurriculumForTerm,
                   isLoading: _isLoading,
                 ),
-                if (cachedData != null && cachedData.isNotEmpty)
+                if (cachedData != null)
                   ChooseCacheCard(
                     cachedData: cachedData,
                     onSubmit: _activateAndViewCachedData,
@@ -357,8 +352,8 @@ class _CurriculumPageState extends State<CurriculumPage>
           CurriculumIntegratedData.fromJson,
         );
 
-    if (cachedData.isNotEmpty) {
-      final data = cachedData.value!;
+    if (cachedData != null) {
+      final data = cachedData;
 
       setActivated(true);
 
@@ -773,7 +768,7 @@ class _CurriculumPageState extends State<CurriculumPage>
             ],
           ),
           const SizedBox(height: 8),
-          if (cachedData.isNotEmpty)
+          if (cachedData != null)
             Text(
               '缓存时间：${formatCacheTime(cachedData)}',
               style: Theme.of(

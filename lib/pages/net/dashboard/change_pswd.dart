@@ -107,10 +107,10 @@ class _NetChangePasswordDialogState extends State<NetChangePasswordDialog> {
               "net_account_data",
               NetUserIntegratedData.fromJson,
             );
-        if (cachedData.isNotEmpty) {
+        if (cachedData != null) {
           // Clear only the password field
           final updatedLoginData = NetUserIntegratedData(
-            account: cachedData.value!.account,
+            account: cachedData.account,
             password: '',
           );
           _serviceProvider.storeService.putCache<NetUserIntegratedData>(

@@ -1,5 +1,4 @@
 import '/types/base.dart';
-import '/types/caching.dart';
 
 abstract class BaseStoreService {
   Future<void> initialize();
@@ -8,9 +7,9 @@ abstract class BaseStoreService {
 
   bool hasCacheKey(String key);
 
-  bool putCache<T extends Serializable>(String key, T value);
+  bool putCache<T extends BaseDataClass>(String key, T value);
 
-  CacheHolder<T> getCache<T extends Serializable>(
+  T? getCache<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
   );
@@ -21,9 +20,9 @@ abstract class BaseStoreService {
 
   bool hasPrefKey(String key);
 
-  bool putPref<T extends Serializable>(String key, T value);
+  bool putPref<T extends BaseDataClass>(String key, T value);
 
-  T? getPref<T extends Serializable>(
+  T? getPref<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
   );

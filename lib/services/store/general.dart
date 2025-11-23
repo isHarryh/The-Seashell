@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '/types/base.dart';
-import '/types/caching.dart';
 import 'base.dart';
 
 class GeneralStoreService extends BaseStoreService {
@@ -13,8 +12,8 @@ class GeneralStoreService extends BaseStoreService {
   late final Directory _cacheDirectory;
   late final Directory _prefDirectory;
 
-  final Map<String, CacheHolder> _memoryCache = {};
-  final Map<String, Serializable> _memoryPref = {};
+  final Map<String, BaseDataClass> _memoryCache = {};
+  final Map<String, BaseDataClass> _memoryPref = {};
 
   bool _initialized = false;
 
@@ -54,18 +53,17 @@ class GeneralStoreService extends BaseStoreService {
   }
 
   @override
-  bool putCache<T extends Serializable>(String key, T value) {
+  bool putCache<T extends BaseDataClass>(String key, T value) {
     ensureInitialized();
 
     try {
-      final cacheHolder = _memoryCache[key] ?? CacheHolder<T>();
-      cacheHolder.update(value);
+      value.updateLastUpdateTime();
 
-      final jsonData = cacheHolder.toJson();
+      final jsonData = value.toJson();
       final file = File(_getCacheFilePath(key));
       file.writeAsStringSync(json.encode(jsonData));
 
-      _memoryCache[key] = cacheHolder;
+      _memoryCache[key] = value;
       return true;
     } catch (e) {
       return false;
@@ -73,30 +71,30 @@ class GeneralStoreService extends BaseStoreService {
   }
 
   @override
-  CacheHolder<T> getCache<T extends Serializable>(
+  T? getCache<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
   ) {
     ensureInitialized();
 
     try {
-      if (_memoryCache.containsKey(key) && _memoryCache[key]!.isNotEmpty) {
-        return _memoryCache[key] as CacheHolder<T>;
+      if (_memoryCache.containsKey(key)) {
+        return _memoryCache[key] as T;
       }
 
       final file = File(_getCacheFilePath(key));
       if (!file.existsSync()) {
-        return CacheHolder<T>();
+        return null;
       }
 
       final content = file.readAsStringSync();
       final jsonData = json.decode(content) as Map<String, dynamic>;
-      final value = CacheHolder.fromJson(jsonData, factory);
+      final value = factory(jsonData);
 
       _memoryCache[key] = value;
-      return _memoryCache[key] as CacheHolder<T>;
+      return value;
     } catch (e) {
-      return CacheHolder<T>();
+      return null;
     }
   }
 
@@ -135,7 +133,7 @@ class GeneralStoreService extends BaseStoreService {
   }
 
   @override
-  bool putPref<T extends Serializable>(String key, T value) {
+  bool putPref<T extends BaseDataClass>(String key, T value) {
     ensureInitialized();
 
     try {
@@ -151,7 +149,7 @@ class GeneralStoreService extends BaseStoreService {
   }
 
   @override
-  T? getPref<T extends Serializable>(
+  T? getPref<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
   ) {
@@ -216,7 +214,7 @@ class GeneralStoreService extends BaseStoreService {
   bool hasCacheKey(String key) {
     ensureInitialized();
 
-    if (_memoryCache.containsKey(key) && _memoryCache[key]!.isNotEmpty) {
+    if (_memoryCache.containsKey(key)) {
       return true;
     }
 

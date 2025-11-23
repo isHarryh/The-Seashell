@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '/services/sync/base.dart';
 import '/services/sync/exceptions.dart';
+import '/services/sync/sync_service.dart';
 import '/types/sync.dart';
 
 class SyncServiceProd extends BaseSyncService {
@@ -104,7 +105,7 @@ class SyncServiceProd extends BaseSyncService {
       'groupId': groupId,
     });
 
-    return PairingInfo.fromJson(response!);
+    return PairingInfoExtension.parse(response!);
   }
 
   @override
@@ -131,7 +132,7 @@ class SyncServiceProd extends BaseSyncService {
 
     final devices = response!['devices'] as List<dynamic>;
     return devices
-        .map((d) => DeviceInfo.fromJson(d as Map<String, dynamic>))
+        .map((d) => DeviceInfoExtension.parse(d as Map<String, dynamic>))
         .toList();
   }
 
@@ -145,7 +146,7 @@ class SyncServiceProd extends BaseSyncService {
       'pairCode': pairCode,
     });
 
-    return JoinGroupResult.fromJson(response!);
+    return JoinGroupResultExtension.parse(response!);
   }
 
   @override

@@ -46,8 +46,8 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
             NetUserIntegratedData.fromJson,
           );
 
-      if (cachedNetData.isNotEmpty) {
-        final data = cachedNetData.value!;
+      if (cachedNetData != null) {
+        final data = cachedNetData;
         if (mounted) {
           setState(() {
             _usernameController.text = data.account;

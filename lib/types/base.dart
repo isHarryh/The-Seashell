@@ -16,7 +16,18 @@ abstract class Serializable {
 /// Note that subclasses should implement the `getEssentials` method.
 /// Fields in subclasses should be `final` to ensure immutability.
 abstract class BaseDataClass implements Serializable {
-  const BaseDataClass();
+  DateTime $lastUpdateTime;
+
+  BaseDataClass() : $lastUpdateTime = DateTime.now();
+
+  void updateLastUpdateTime() {
+    $lastUpdateTime = DateTime.now();
+  }
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'lastUpdateTime': $lastUpdateTime.toIso8601String(),
+  };
 
   Map<String, dynamic> getEssentials();
 

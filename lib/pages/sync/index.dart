@@ -164,10 +164,10 @@ class _SyncPageState extends State<SyncPage> {
       SyncDeviceData.fromJson,
     );
 
-    if (cachedData.value != null) {
+    if (cachedData != null) {
       // Device already registered, load the data
       if (mounted) {
-        setState(() => _syncData = cachedData.value);
+        setState(() => _syncData = cachedData);
       }
       return;
     }

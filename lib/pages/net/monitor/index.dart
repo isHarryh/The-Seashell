@@ -86,8 +86,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
           );
 
       // Check if credentials are cached and username is not empty
-      if (cachedNetData.isEmpty ||
-          (cachedNetData.value?.account.isEmpty ?? true)) {
+      if (cachedNetData == null || cachedNetData.account.isEmpty) {
         // No cached credentials
         clearError();
         setState(() {
@@ -99,7 +98,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
         return;
       }
 
-      final username = cachedNetData.value!.account;
+      final username = cachedNetData.account;
       _cachedUsername = username;
 
       // by default do not use VPN route

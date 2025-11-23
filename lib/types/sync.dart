@@ -9,7 +9,7 @@ class DeviceInfo extends BaseDataClass {
   final String deviceOs;
   final String deviceName;
 
-  const DeviceInfo({
+  DeviceInfo({
     required this.deviceId,
     required this.deviceOs,
     required this.deviceName,
@@ -36,7 +36,7 @@ class PairingInfo extends BaseDataClass {
   final String pairCode;
   final int ttl; // Time to live in seconds
 
-  const PairingInfo({required this.pairCode, required this.ttl});
+  PairingInfo({required this.pairCode, required this.ttl});
 
   @override
   Map<String, dynamic> getEssentials() {
@@ -55,7 +55,7 @@ class JoinGroupResult extends BaseDataClass {
   final String groupId; // UUID
   final List<DeviceInfo> devices;
 
-  const JoinGroupResult({required this.groupId, required this.devices});
+  JoinGroupResult({required this.groupId, required this.devices});
 
   @override
   Map<String, dynamic> getEssentials() {
@@ -76,12 +76,7 @@ class SyncDeviceData extends BaseDataClass {
   final String? deviceOs;
   final String? deviceName;
 
-  const SyncDeviceData({
-    this.deviceId,
-    this.groupId,
-    this.deviceOs,
-    this.deviceName,
-  });
+  SyncDeviceData({this.deviceId, this.groupId, this.deviceOs, this.deviceName});
 
   @override
   Map<String, dynamic> getEssentials() {

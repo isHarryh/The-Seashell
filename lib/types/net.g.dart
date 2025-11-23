@@ -11,10 +11,11 @@ LoginRequirements _$LoginRequirementsFromJson(Map<String, dynamic> json) =>
       checkCode: json['checkCode'] as String,
       tryTimes: (json['tryTimes'] as num).toInt(),
       tryTimesThreshold: (json['tryTimesThreshold'] as num).toInt(),
-    );
+    )..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$LoginRequirementsToJson(LoginRequirements instance) =>
     <String, dynamic>{
+      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
       'checkCode': instance.checkCode,
       'tryTimes': instance.tryTimes,
       'tryTimesThreshold': instance.tryTimesThreshold,
@@ -29,10 +30,11 @@ NetUserInfo _$NetUserInfoFromJson(Map<String, dynamic> json) => NetUserInfo(
   leftMoney: json['leftMoney'] as String?,
   overDate: json['overDate'] as String?,
   onlineState: json['onlineState'] as String?,
-);
+)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$NetUserInfoToJson(NetUserInfo instance) =>
     <String, dynamic>{
+      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
       'account': instance.account,
       'subscription': instance.subscription,
       'status': instance.status,
@@ -48,19 +50,22 @@ NetUserIntegratedData _$NetUserIntegratedDataFromJson(
 ) => NetUserIntegratedData(
   account: json['account'] as String,
   password: json['password'] as String,
-);
+)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$NetUserIntegratedDataToJson(
   NetUserIntegratedData instance,
 ) => <String, dynamic>{
+  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
   'account': instance.account,
   'password': instance.password,
 };
 
 MacDevice _$MacDeviceFromJson(Map<String, dynamic> json) =>
-    MacDevice(name: json['name'] as String, mac: json['mac'] as String);
+    MacDevice(name: json['name'] as String, mac: json['mac'] as String)
+      ..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$MacDeviceToJson(MacDevice instance) => <String, dynamic>{
+  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
   'name': instance.name,
   'mac': instance.mac,
 };
@@ -74,10 +79,11 @@ MonthlyBill _$MonthlyBillFromJson(Map<String, dynamic> json) => MonthlyBill(
   usageDurationMinutes: (json['usageDurationMinutes'] as num).toDouble(),
   usageFlowMb: (json['usageFlowMb'] as num).toDouble(),
   createTime: DateTime.parse(json['createTime'] as String),
-);
+)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$MonthlyBillToJson(MonthlyBill instance) =>
     <String, dynamic>{
+      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
       'startDate': instance.startDate.toIso8601String(),
       'endDate': instance.endDate.toIso8601String(),
       'packageName': instance.packageName,
@@ -93,10 +99,11 @@ RealtimeUsage _$RealtimeUsageFromJson(Map<String, dynamic> json) =>
       v4: (json['v4'] as num).toDouble(),
       v6: (json['v6'] as num).toDouble(),
       time: DateTime.parse(json['time'] as String),
-    );
+    )..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
 
 Map<String, dynamic> _$RealtimeUsageToJson(RealtimeUsage instance) =>
     <String, dynamic>{
+      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
       'v4': instance.v4,
       'v6': instance.v6,
       'time': instance.time.toIso8601String(),

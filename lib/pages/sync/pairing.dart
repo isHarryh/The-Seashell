@@ -73,12 +73,12 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
 
     // Check if group state changed
     final oldGroupId = _syncData?.groupId;
-    final newGroupId = cache.value?.groupId;
+    final newGroupId = cache?.groupId;
     final groupChanged = oldGroupId != newGroupId;
 
     if (mounted) {
       setState(() {
-        _syncData = cache.value;
+        _syncData = cache;
         // If group was reset or changed, clear pairing-related state
         if (groupChanged && newGroupId == null) {
           _pairCode = null;
@@ -179,7 +179,7 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
         'course_account_data',
         (json) => UserLoginIntegratedData.fromJson(json),
       );
-      byytCookie = courseData.value?.cookie;
+      byytCookie = courseData?.cookie;
     } catch (e) {
       // Ignore error if cache not found
     }

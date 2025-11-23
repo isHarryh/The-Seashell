@@ -108,7 +108,7 @@ extension ThemeModeExtension on ThemeMode {
 }
 
 @JsonSerializable()
-class CurriculumSettings extends Serializable {
+class CurriculumSettings extends BaseDataClass {
   WeekendDisplayMode weekendMode;
   TableSize tableSize;
   AnimationMode animationMode;
@@ -120,6 +120,14 @@ class CurriculumSettings extends Serializable {
     required this.animationMode,
     this.activated = true,
   });
+
+  @override
+  Map<String, dynamic> getEssentials() => {
+    'weekendMode': weekendMode,
+    'tableSize': tableSize,
+    'animationMode': animationMode,
+    'activated': activated,
+  };
 
   static final CurriculumSettings defaultSettings = CurriculumSettings(
     weekendMode: WeekendDisplayMode.auto,
@@ -165,10 +173,13 @@ class CurriculumSettings extends Serializable {
 }
 
 @JsonSerializable()
-class AppSettings extends Serializable {
+class AppSettings extends BaseDataClass {
   ThemeMode themeMode;
 
   AppSettings({required this.themeMode});
+
+  @override
+  Map<String, dynamic> getEssentials() => {'themeMode': themeMode};
 
   static final AppSettings defaultSettings = AppSettings(
     themeMode: ThemeMode.system,

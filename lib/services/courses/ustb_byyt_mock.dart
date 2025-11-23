@@ -8,7 +8,7 @@ import '/services/courses/exceptions.dart';
 import '/services/courses/ustb_byyt.dart';
 
 class UstbByytMockService extends BaseCoursesService {
-  CourseSelectionState _selectionState = const CourseSelectionState();
+  CourseSelectionState _selectionState = CourseSelectionState();
 
   @override
   Future<void> doLogin() async {

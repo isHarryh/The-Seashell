@@ -94,7 +94,7 @@ class _CourseSelectionSharedParams {
 
 class UstbByytProdService extends BaseCoursesService {
   String? _cookie;
-  CourseSelectionState _selectionState = const CourseSelectionState();
+  CourseSelectionState _selectionState = CourseSelectionState();
 
   static const String _baseUrl = 'https://byyt.ustb.edu.cn';
 
@@ -144,7 +144,7 @@ class UstbByytProdService extends BaseCoursesService {
   @override
   Future<void> doLogout() async {
     _cookie = null;
-    _selectionState = const CourseSelectionState();
+    _selectionState = CourseSelectionState();
     setOffline();
   }
 

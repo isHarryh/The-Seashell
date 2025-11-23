@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import '/types/courses.dart';
-import '/types/caching.dart';
+import '/types/base.dart';
 
-String formatCacheTime(CacheHolder cachedData) {
-  final time = cachedData.lastUpdateTime!;
+String formatCacheTime(BaseDataClass cachedData) {
+  final time = cachedData.$lastUpdateTime;
   final dateString =
       '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')}';
   final timeString =
@@ -13,7 +13,7 @@ String formatCacheTime(CacheHolder cachedData) {
 }
 
 class ChooseCacheCard extends StatelessWidget {
-  final CacheHolder<CurriculumIntegratedData> cachedData;
+  final CurriculumIntegratedData cachedData;
   final VoidCallback onSubmit;
   final bool useFlexLayout;
   final bool isLoading;
@@ -28,7 +28,7 @@ class ChooseCacheCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = cachedData.value!;
+    final data = cachedData;
 
     return Card(
       margin: const EdgeInsets.all(16),

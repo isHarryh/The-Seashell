@@ -13,7 +13,7 @@ class UserInfo extends BaseDataClass {
   final String userSchoolAlt;
   final String userId;
 
-  const UserInfo({
+  UserInfo({
     required this.userName,
     required this.userNameAlt,
     required this.userSchool,
@@ -44,7 +44,7 @@ class UserLoginIntegratedData extends BaseDataClass {
   final String? cookie;
   final String? lastSmsPhone;
 
-  const UserLoginIntegratedData({
+  UserLoginIntegratedData({
     this.user,
     this.method,
     this.cookie,
@@ -85,7 +85,7 @@ class CourseGradeItem extends BaseDataClass {
   final double credit;
   final double score;
 
-  const CourseGradeItem({
+  CourseGradeItem({
     required this.courseId,
     required this.courseName,
     this.courseNameAlt,
@@ -130,7 +130,7 @@ class ClassItem extends BaseDataClass {
   final String? periodNameAlt; // 课节文字描述（英文）
   final int? colorId; // 背景颜色编号
 
-  const ClassItem({
+  ClassItem({
     required this.day,
     required this.period,
     required this.weeks,
@@ -216,7 +216,7 @@ class ClassPeriod extends BaseDataClass {
   final String minorStartTime; // 小节开始时间
   final String minorEndTime; // 小节结束时间
 
-  const ClassPeriod({
+  ClassPeriod({
     required this.termYear,
     required this.termSeason,
     required this.majorId,
@@ -267,7 +267,7 @@ class CalendarDay extends BaseDataClass {
   final int weekday;
   final int weekIndex;
 
-  const CalendarDay({
+  CalendarDay({
     required this.year,
     required this.month,
     required this.day,
@@ -296,7 +296,7 @@ class TermInfo extends BaseDataClass {
   final String year; // eg. "2024-2025"
   final int season;
 
-  const TermInfo({required this.year, required this.season});
+  TermInfo({required this.year, required this.season});
 
   @override
   Map<String, dynamic> getEssentials() {
@@ -315,7 +315,7 @@ class CurriculumIntegratedData extends BaseDataClass {
   final List<ClassPeriod> allPeriods;
   final List<CalendarDay>? calendarDays;
 
-  const CurriculumIntegratedData({
+  CurriculumIntegratedData({
     required this.currentTerm,
     required this.allClasses,
     required this.allPeriods,
@@ -486,7 +486,7 @@ class CourseDetail extends BaseDataClass {
   final String? detailExtra; // 额外信息
   final String? detailExtraAlt; // 额外信息英文
 
-  const CourseDetail({
+  CourseDetail({
     required this.classId,
     this.extraName,
     this.extraNameAlt,
@@ -591,7 +591,7 @@ class CourseInfo extends BaseDataClass {
   final CourseDetail? classDetail; // 讲台详情
   final String? fromTabId; // 来源标签页ID
 
-  const CourseInfo({
+  CourseInfo({
     required this.courseId,
     required this.courseName,
     this.courseNameAlt,
@@ -631,7 +631,7 @@ class CourseTab extends BaseDataClass {
   final String? selectionStartTime; // 选课开始时间
   final String? selectionEndTime; // 选课结束时间
 
-  const CourseTab({
+  CourseTab({
     required this.tabId,
     required this.tabName,
     this.tabNameAlt,
@@ -654,7 +654,7 @@ class CourseSelectionState extends BaseDataClass {
   final TermInfo? termInfo;
   final List<CourseInfo> wantedCourses;
 
-  const CourseSelectionState({this.termInfo, this.wantedCourses = const []});
+  CourseSelectionState({this.termInfo, this.wantedCourses = const []});
 
   @override
   Map<String, dynamic> getEssentials() {
@@ -700,7 +700,7 @@ class CourseSelectionState extends BaseDataClass {
   }
 
   CourseSelectionState clear() {
-    return const CourseSelectionState();
+    return CourseSelectionState();
   }
 
   bool containsCourse(String courseId, [String? classId]) {

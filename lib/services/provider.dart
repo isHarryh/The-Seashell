@@ -9,8 +9,8 @@ import '/services/net/base.dart';
 import '/services/net/drcom_net_mock.dart';
 import '/services/net/drcom_net_prod.dart';
 import '/services/sync/base.dart';
-import '/services/sync/mock.dart';
-import '/services/sync/prod.dart';
+import '/services/sync/sync_service_mock.dart';
+import '/services/sync/sync_service_prod.dart';
 import '/types/courses.dart';
 
 enum CoursesServiceType { mock, production }
@@ -141,7 +141,7 @@ class ServiceProvider extends ChangeNotifier {
         CurriculumIntegratedData.fromJson,
       );
 
-      if (cachedData.isEmpty) {
+      if (cachedData == null) {
         // Load fresh curriculum data
         await getCurriculumData();
       }
@@ -158,8 +158,8 @@ class ServiceProvider extends ChangeNotifier {
       CurriculumIntegratedData.fromJson,
     );
 
-    if (cachedData.isNotEmpty) {
-      return cachedData.value;
+    if (cachedData != null) {
+      return cachedData;
     }
 
     if (!coursesService.isOnline) {
@@ -264,9 +264,9 @@ class ServiceProvider extends ChangeNotifier {
         UserLoginIntegratedData.fromJson,
       );
 
-      if (cachedData.isEmpty) return;
+      if (cachedData == null) return;
 
-      final data = cachedData.value!;
+      final data = cachedData;
       final method = data.method;
 
       if (method == "mock") {
