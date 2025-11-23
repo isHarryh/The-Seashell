@@ -1,19 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '/types/base.dart';
 import 'base.dart';
 
 class GeneralStoreService extends BaseStoreService {
-  static const String _cacheDir = 'cache';
+  static const String _storeDir = 'store';
   static const String _prefDir = 'pref';
 
   late final String _rootPath;
-  late final Directory _cacheDirectory;
+  late final Directory _storeDirectory;
   late final Directory _prefDirectory;
 
-  final Map<String, BaseDataClass> _memoryCache = {};
-  final Map<String, BaseDataClass> _memoryPref = {};
+  final Map<String, BaseDataClass> _storeMemory = {};
+  final Map<String, BaseDataClass> _prefMemory = {};
 
   bool _initialized = false;
 
@@ -25,10 +26,10 @@ class GeneralStoreService extends BaseStoreService {
       final rootDir = await getApplicationSupportDirectory();
       _rootPath = rootDir.path;
 
-      _cacheDirectory = Directory('$_rootPath/$_cacheDir');
+      _storeDirectory = Directory('$_rootPath/$_storeDir');
       _prefDirectory = Directory('$_rootPath/$_prefDir');
 
-      await _cacheDirectory.create(recursive: true);
+      await _storeDirectory.create(recursive: true);
       await _prefDirectory.create(recursive: true);
 
       _initialized = true;
@@ -45,44 +46,69 @@ class GeneralStoreService extends BaseStoreService {
   }
 
   String _getCacheFilePath(String key) {
-    return '${_cacheDirectory.path}/$key.json';
+    return '${_storeDirectory.path}/$key.json';
   }
 
   String _getPrefFilePath(String key) {
     return '${_prefDirectory.path}/$key.json';
   }
 
-  @override
-  bool putCache<T extends BaseDataClass>(String key, T value) {
+  // Private Helpers
+
+  bool _has(
+    String key,
+    Map<String, BaseDataClass> memory,
+    String Function(String) pathProvider,
+  ) {
+    ensureInitialized();
+
+    if (memory.containsKey(key)) {
+      return true;
+    }
+
+    final file = File(pathProvider(key));
+    return file.existsSync();
+  }
+
+  bool _put<T extends BaseDataClass>(
+    String key,
+    T value,
+    Map<String, BaseDataClass> memory,
+    String Function(String) pathProvider, {
+    bool updateTime = false,
+  }) {
     ensureInitialized();
 
     try {
-      value.updateLastUpdateTime();
+      if (updateTime) {
+        value.updateLastUpdateTime();
+      }
 
       final jsonData = value.toJson();
-      final file = File(_getCacheFilePath(key));
+      final file = File(pathProvider(key));
       file.writeAsStringSync(json.encode(jsonData));
 
-      _memoryCache[key] = value;
+      memory[key] = value;
       return true;
     } catch (e) {
       return false;
     }
   }
 
-  @override
-  T? getCache<T extends BaseDataClass>(
+  T? _get<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
+    Map<String, BaseDataClass> memory,
+    String Function(String) pathProvider,
   ) {
     ensureInitialized();
 
     try {
-      if (_memoryCache.containsKey(key)) {
-        return _memoryCache[key] as T;
+      if (memory.containsKey(key)) {
+        return memory[key] as T;
       }
 
-      final file = File(_getCacheFilePath(key));
+      final file = File(pathProvider(key));
       if (!file.existsSync()) {
         return null;
       }
@@ -91,146 +117,91 @@ class GeneralStoreService extends BaseStoreService {
       final jsonData = json.decode(content) as Map<String, dynamic>;
       final value = factory(jsonData);
 
-      _memoryCache[key] = value;
+      memory[key] = value;
       return value;
     } catch (e) {
       return null;
     }
   }
 
-  @override
-  Future<void> removeCache(String key) async {
+  void _del(
+    String key,
+    Map<String, BaseDataClass> memory,
+    String Function(String) pathProvider,
+  ) {
     ensureInitialized();
 
     try {
-      final file = File(_getCacheFilePath(key));
+      final file = File(pathProvider(key));
       if (file.existsSync()) {
         file.deleteSync();
       }
 
-      _memoryCache.remove(key);
+      memory.remove(key);
     } catch (e) {
-      print('Failed to remove cache for key $key: $e');
+      if (kDebugMode) print('Failed to remove key $key: $e');
     }
   }
 
-  @override
-  void removeAllCache() async {
+  Future<void> _delAll(
+    Directory directory,
+    Map<String, BaseDataClass> memory,
+  ) async {
     ensureInitialized();
 
     try {
-      final files = await _cacheDirectory.list().toList();
-      for (final file in files) {
-        if (file is File) {
-          file.deleteSync();
+      if (await directory.exists()) {
+        final files = await directory.list().toList();
+        for (final file in files) {
+          if (file is File) {
+            file.deleteSync();
+          }
         }
       }
 
-      _memoryCache.clear();
+      memory.clear();
     } catch (e) {
-      print('Failed to remove all cache: $e');
+      if (kDebugMode) ('Failed to remove all: $e');
     }
   }
+
+  // Implementations
 
   @override
-  bool putPref<T extends BaseDataClass>(String key, T value) {
-    ensureInitialized();
+  bool hasStoreKey(String key) => _has(key, _storeMemory, _getCacheFilePath);
 
-    try {
-      final jsonData = value.toJson();
-      final file = File(_getPrefFilePath(key));
-      file.writeAsStringSync(json.encode(jsonData));
+  @override
+  bool putStore<T extends BaseDataClass>(String key, T value) =>
+      _put(key, value, _storeMemory, _getCacheFilePath, updateTime: true);
 
-      _memoryPref[key] = value;
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
+  @override
+  T? getStore<T extends BaseDataClass>(
+    String key,
+    T Function(Map<String, dynamic>) factory,
+  ) => _get(key, factory, _storeMemory, _getCacheFilePath);
+
+  @override
+  void delStore(String key) => _del(key, _storeMemory, _getCacheFilePath);
+
+  @override
+  void delAllStore() => _delAll(_storeDirectory, _storeMemory);
+
+  @override
+  bool hasPrefKey(String key) => _has(key, _prefMemory, _getPrefFilePath);
+
+  @override
+  bool putPref<T extends BaseDataClass>(String key, T value) =>
+      _put(key, value, _prefMemory, _getPrefFilePath, updateTime: true);
 
   @override
   T? getPref<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
-  ) {
-    ensureInitialized();
-
-    try {
-      if (_memoryPref.containsKey(key)) {
-        return _memoryPref[key] as T;
-      }
-
-      final file = File(_getPrefFilePath(key));
-      if (!file.existsSync()) {
-        return null;
-      }
-
-      final content = file.readAsStringSync();
-      final jsonData = json.decode(content) as Map<String, dynamic>;
-      final value = factory(jsonData);
-
-      _memoryPref[key] = value;
-      return value;
-    } catch (e) {
-      return null;
-    }
-  }
+  ) => _get(key, factory, _prefMemory, _getPrefFilePath);
 
   @override
-  void removePref(String key) {
-    ensureInitialized();
-
-    try {
-      final file = File(_getPrefFilePath(key));
-      if (file.existsSync()) {
-        file.deleteSync();
-      }
-
-      _memoryPref.remove(key);
-    } catch (e) {
-      print('Failed to remove preference for key $key: $e');
-    }
-  }
+  void delPref(String key) => _del(key, _prefMemory, _getPrefFilePath);
 
   @override
-  void removeAllPref() {
-    ensureInitialized();
-
-    try {
-      final files = _prefDirectory.listSync().toList();
-      for (final file in files) {
-        if (file is File) {
-          file.delete();
-        }
-      }
-
-      _memoryPref.clear();
-    } catch (e) {
-      print('Failed to remove all preferences: $e');
-    }
-  }
-
-  @override
-  bool hasCacheKey(String key) {
-    ensureInitialized();
-
-    if (_memoryCache.containsKey(key)) {
-      return true;
-    }
-
-    final file = File(_getCacheFilePath(key));
-    return file.existsSync();
-  }
-
-  @override
-  bool hasPrefKey(String key) {
-    ensureInitialized();
-
-    if (_memoryPref.containsKey(key)) {
-      return true;
-    }
-
-    final file = File(_getPrefFilePath(key));
-    return file.existsSync();
-  }
+  void delAllPref() => _delAll(_prefDirectory, _prefMemory);
 }

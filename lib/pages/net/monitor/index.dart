@@ -80,7 +80,7 @@ class _NetMonitorPageState extends State<NetMonitorPage>
     try {
       // Get the cached credentials
       final cachedNetData = serviceProvider.storeService
-          .getCache<NetUserIntegratedData>(
+          .getStore<NetUserIntegratedData>(
             "net_account_data",
             NetUserIntegratedData.fromJson,
           );

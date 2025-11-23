@@ -5,18 +5,22 @@ abstract class BaseStoreService {
 
   void ensureInitialized();
 
-  bool hasCacheKey(String key);
+  // Store: The common data that may be shared across devices.
 
-  bool putCache<T extends BaseDataClass>(String key, T value);
+  bool hasStoreKey(String key);
 
-  T? getCache<T extends BaseDataClass>(
+  bool putStore<T extends BaseDataClass>(String key, T value);
+
+  T? getStore<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
   );
 
-  void removeCache(String key);
+  void delStore(String key);
 
-  void removeAllCache();
+  void delAllStore();
+
+  // Pref: The local-only data that is device-specified and should not be shared.
 
   bool hasPrefKey(String key);
 
@@ -27,7 +31,7 @@ abstract class BaseStoreService {
     T Function(Map<String, dynamic>) factory,
   );
 
-  void removePref(String key);
+  void delPref(String key);
 
-  void removeAllPref();
+  void delAllPref();
 }

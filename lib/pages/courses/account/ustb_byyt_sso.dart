@@ -91,7 +91,7 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
   void _onUpdateSmsPhone(String phoneNumber) {
     final serviceProvider = ServiceProvider.instance;
     final existingData = serviceProvider.storeService
-        .getCache<UserLoginIntegratedData>(
+        .getStore<UserLoginIntegratedData>(
           "course_account_data",
           UserLoginIntegratedData.fromJson,
         );
@@ -101,7 +101,7 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
       cookie: existingData?.cookie,
       lastSmsPhone: phoneNumber,
     );
-    serviceProvider.storeService.putCache<UserLoginIntegratedData>(
+    serviceProvider.storeService.putStore<UserLoginIntegratedData>(
       "course_account_data",
       updatedData,
     );
@@ -138,7 +138,7 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
     // Get default SMS phone from cache
     final serviceProvider = ServiceProvider.instance;
     final cachedData = serviceProvider.storeService
-        .getCache<UserLoginIntegratedData>(
+        .getStore<UserLoginIntegratedData>(
           "course_account_data",
           UserLoginIntegratedData.fromJson,
         );

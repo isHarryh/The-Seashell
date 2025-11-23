@@ -96,7 +96,7 @@ class _CurriculumPageState extends State<CurriculumPage>
 
   Future<void> _loadCurriculumFromCacheOrService() async {
     final cachedData = _serviceProvider.storeService
-        .getCache<CurriculumIntegratedData>(
+        .getStore<CurriculumIntegratedData>(
           "curriculum_data",
           CurriculumIntegratedData.fromJson,
         );
@@ -157,7 +157,7 @@ class _CurriculumPageState extends State<CurriculumPage>
         calendarDays: calendarDays.isEmpty ? null : calendarDays,
       );
 
-      _serviceProvider.storeService.putCache<CurriculumIntegratedData>(
+      _serviceProvider.storeService.putStore<CurriculumIntegratedData>(
         "curriculum_data",
         integratedData,
       );
@@ -226,7 +226,7 @@ class _CurriculumPageState extends State<CurriculumPage>
     }
 
     final cachedData = _serviceProvider.storeService
-        .getCache<CurriculumIntegratedData>(
+        .getStore<CurriculumIntegratedData>(
           "curriculum_data",
           CurriculumIntegratedData.fromJson,
         );
@@ -347,7 +347,7 @@ class _CurriculumPageState extends State<CurriculumPage>
     await Future.delayed(const Duration(milliseconds: 300));
 
     final cachedData = _serviceProvider.storeService
-        .getCache<CurriculumIntegratedData>(
+        .getStore<CurriculumIntegratedData>(
           "curriculum_data",
           CurriculumIntegratedData.fromJson,
         );
@@ -433,12 +433,12 @@ class _CurriculumPageState extends State<CurriculumPage>
   }
 
   Future<void> _refreshCurriculumData() async {
-    _serviceProvider.storeService.removeCache("curriculum_data");
+    _serviceProvider.storeService.delStore("curriculum_data");
     await _loadCurriculumFromCacheOrService();
   }
 
   Future<void> _clearCacheAndSelectTerm() async {
-    _serviceProvider.storeService.removeCache("curriculum_data");
+    _serviceProvider.storeService.delStore("curriculum_data");
     if (mounted) {
       setState(() {
         _curriculumData = null;
@@ -745,7 +745,7 @@ class _CurriculumPageState extends State<CurriculumPage>
 
   Widget _buildCurriculumInfo() {
     final cachedData = _serviceProvider.storeService
-        .getCache<CurriculumIntegratedData>(
+        .getStore<CurriculumIntegratedData>(
           "curriculum_data",
           CurriculumIntegratedData.fromJson,
         );

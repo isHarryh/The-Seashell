@@ -66,7 +66,7 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
         widget.serviceProvider.currentSyncServiceType == SyncServiceType.mock;
     final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
 
-    final cache = widget.serviceProvider.storeService.getCache<SyncDeviceData>(
+    final cache = widget.serviceProvider.storeService.getStore<SyncDeviceData>(
       cacheKey,
       SyncDeviceData.fromJson,
     );
@@ -122,7 +122,7 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
         widget.serviceProvider.currentSyncServiceType == SyncServiceType.mock;
     final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
 
-    widget.serviceProvider.storeService.putCache<SyncDeviceData>(
+    widget.serviceProvider.storeService.putStore<SyncDeviceData>(
       cacheKey,
       data,
     );
@@ -175,7 +175,7 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
     String? byytCookie;
 
     try {
-      final courseData = widget.serviceProvider.storeService.getCache(
+      final courseData = widget.serviceProvider.storeService.getStore(
         'course_account_data',
         (json) => UserLoginIntegratedData.fromJson(json),
       );

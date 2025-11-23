@@ -177,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     setState(() => _isClearingCache = true);
     try {
-      _serviceProvider.storeService.removeAllCache();
+      _serviceProvider.storeService.delAllStore();
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -219,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     setState(() => _isClearingPrefs = true);
     try {
-      _serviceProvider.storeService.removeAllPref();
+      _serviceProvider.storeService.delAllPref();
       if (mounted) {
         ScaffoldMessenger.of(
           context,

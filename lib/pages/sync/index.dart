@@ -70,7 +70,7 @@ class _SyncPageState extends State<SyncPage> {
                   _serviceProvider.currentSyncServiceType ==
                   SyncServiceType.mock;
               final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
-              _serviceProvider.storeService.removeCache(cacheKey);
+              _serviceProvider.storeService.delStore(cacheKey);
               await _ensureRegisterDevice();
 
               setState(() {
@@ -147,7 +147,7 @@ class _SyncPageState extends State<SyncPage> {
         _serviceProvider.currentSyncServiceType == SyncServiceType.mock;
     final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
 
-    _serviceProvider.storeService.putCache<SyncDeviceData>(cacheKey, data);
+    _serviceProvider.storeService.putStore<SyncDeviceData>(cacheKey, data);
     if (mounted) {
       setState(() => _syncData = data);
     }
@@ -159,7 +159,7 @@ class _SyncPageState extends State<SyncPage> {
     final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
 
     // Check if device data exists in cache
-    final cachedData = _serviceProvider.storeService.getCache<SyncDeviceData>(
+    final cachedData = _serviceProvider.storeService.getStore<SyncDeviceData>(
       cacheKey,
       SyncDeviceData.fromJson,
     );
