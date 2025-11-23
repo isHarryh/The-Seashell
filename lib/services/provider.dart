@@ -9,7 +9,7 @@ import '/services/net/base.dart';
 import '/services/net/drcom_net_mock.dart';
 import '/services/net/drcom_net_prod.dart';
 import '/services/sync/base.dart';
-import '/services/sync/sync_service_mock.dart';
+import '/services/sync/sync_service_dev.dart';
 import '/services/sync/sync_service_prod.dart';
 import '/types/courses.dart';
 
@@ -17,7 +17,7 @@ enum CoursesServiceType { mock, production }
 
 enum NetServiceType { mock, production }
 
-enum SyncServiceType { mock, production }
+enum SyncServiceType { dev, production }
 
 class ServiceProvider extends ChangeNotifier {
   // Course Service
@@ -35,7 +35,7 @@ class ServiceProvider extends ChangeNotifier {
   // Sync Service
   late BaseSyncService _syncService;
   SyncServiceType _currentSyncServiceType = kDebugMode
-      ? SyncServiceType.mock
+      ? SyncServiceType.dev
       : SyncServiceType.production;
 
   // Store Service
@@ -52,8 +52,8 @@ class ServiceProvider extends ChangeNotifier {
     _netService = _currentNetServiceType == NetServiceType.mock
         ? DrcomNetMockService()
         : DrcomNetProdService();
-    _syncService = _currentSyncServiceType == SyncServiceType.mock
-        ? SyncServiceMock()
+    _syncService = _currentSyncServiceType == SyncServiceType.dev
+        ? SyncServiceDev()
         : SyncServiceProd();
     _storeService = GeneralStoreService();
   }
@@ -120,8 +120,8 @@ class ServiceProvider extends ChangeNotifier {
   void _switchSyncService(SyncServiceType type) {
     if (_currentSyncServiceType == type) return;
 
-    _syncService = type == SyncServiceType.mock
-        ? SyncServiceMock()
+    _syncService = type == SyncServiceType.dev
+        ? SyncServiceDev()
         : SyncServiceProd();
     _currentSyncServiceType = type;
     notifyListeners();

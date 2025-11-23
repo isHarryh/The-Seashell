@@ -6,8 +6,8 @@ import '/services/sync/sync_service.dart';
 import '/types/sync.dart';
 
 class SyncServiceProd extends BaseSyncService {
-  static const String baseUrl = 'https://thebeike.cn/api/client';
-  static const String userAgent = 'TheBeike-GUI/dev';
+  String get baseUrl => 'https://thebeike.cn/api/client';
+  String get userAgent => 'TheBeike-GUI/dev';
 
   @override
   Future<void> login() async {

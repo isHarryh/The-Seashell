@@ -62,12 +62,8 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
   }
 
   Future<void> _initializeDevice() async {
-    final isMock =
-        widget.serviceProvider.currentSyncServiceType == SyncServiceType.mock;
-    final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
-
-    final cache = widget.serviceProvider.storeService.getStore<SyncDeviceData>(
-      cacheKey,
+    final cache = widget.serviceProvider.storeService.getPref<SyncDeviceData>(
+      'sync_device',
       SyncDeviceData.fromJson,
     );
 
@@ -118,14 +114,11 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
   }
 
   Future<void> _saveSyncData(SyncDeviceData data) async {
-    final isMock =
-        widget.serviceProvider.currentSyncServiceType == SyncServiceType.mock;
-    final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
-
-    widget.serviceProvider.storeService.putStore<SyncDeviceData>(
-      cacheKey,
+    widget.serviceProvider.storeService.putPref<SyncDeviceData>(
+      'sync_device',
       data,
     );
+
     if (mounted) {
       setState(() => _syncData = data);
     }

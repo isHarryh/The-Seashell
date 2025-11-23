@@ -66,11 +66,7 @@ class _SyncPageState extends State<SyncPage> {
           action = _createErrorActionButton(
             label: '重置设备',
             onPressed: () async {
-              final isMock =
-                  _serviceProvider.currentSyncServiceType ==
-                  SyncServiceType.mock;
-              final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
-              _serviceProvider.storeService.delStore(cacheKey);
+              await _saveSyncData(null); // Null for reset all
               await _ensureRegisterDevice();
 
               setState(() {
@@ -90,7 +86,7 @@ class _SyncPageState extends State<SyncPage> {
                   deviceId: _syncData!.deviceId,
                   deviceOs: _syncData!.deviceOs,
                   deviceName: _syncData!.deviceName,
-                  groupId: null,
+                  groupId: null, // Only reset group ID
                 );
                 await _saveSyncData(resetData);
 
@@ -142,25 +138,24 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
-  Future<void> _saveSyncData(SyncDeviceData data) async {
-    final isMock =
-        _serviceProvider.currentSyncServiceType == SyncServiceType.mock;
-    final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
+  Future<void> _saveSyncData(SyncDeviceData? data) async {
+    if (data == null) {
+      _serviceProvider.storeService.delPref('sync_device');
+    } else {
+      _serviceProvider.storeService.putPref<SyncDeviceData>(
+        'sync_device',
+        data,
+      );
+    }
 
-    _serviceProvider.storeService.putStore<SyncDeviceData>(cacheKey, data);
     if (mounted) {
       setState(() => _syncData = data);
     }
   }
 
   Future<void> _ensureRegisterDevice() async {
-    final isMock =
-        _serviceProvider.currentSyncServiceType == SyncServiceType.mock;
-    final cacheKey = isMock ? 'sync_device_mock' : 'sync_device';
-
-    // Check if device data exists in cache
-    final cachedData = _serviceProvider.storeService.getStore<SyncDeviceData>(
-      cacheKey,
+    final cachedData = _serviceProvider.storeService.getPref<SyncDeviceData>(
+      'sync_device',
       SyncDeviceData.fromJson,
     );
 
@@ -437,25 +432,23 @@ class _SyncPageState extends State<SyncPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: SegmentedButton<SyncServiceType>(
-                    segments: const [
-                      ButtonSegment(
-                        value: SyncServiceType.mock,
-                        label: Text('Mock'),
-                        icon: Icon(Icons.code, size: 16),
-                      ),
-                      ButtonSegment(
-                        value: SyncServiceType.production,
-                        label: Text('Production'),
-                        icon: Icon(Icons.cloud, size: 16),
-                      ),
-                    ],
-                    selected: {_serviceProvider.currentSyncServiceType},
-                    onSelectionChanged: (Set<SyncServiceType> selected) {
-                      _serviceProvider.switchSyncService(selected.first);
-                    },
-                  ),
+                SegmentedButton<SyncServiceType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: SyncServiceType.dev,
+                      label: Text('开发'),
+                      icon: Icon(Icons.code, size: 16),
+                    ),
+                    ButtonSegment(
+                      value: SyncServiceType.production,
+                      label: Text('生产'),
+                      icon: Icon(Icons.cloud, size: 16),
+                    ),
+                  ],
+                  selected: {_serviceProvider.currentSyncServiceType},
+                  onSelectionChanged: (Set<SyncServiceType> selected) {
+                    _serviceProvider.switchSyncService(selected.first);
+                  },
                 ),
               ],
             ),
