@@ -71,7 +71,7 @@ class _AccountPageState extends State<AccountPage> {
     if (method == null) return;
 
     final existingData = _serviceProvider.storeService
-        .getStore<UserLoginIntegratedData>(
+        .getConfig<UserLoginIntegratedData>(
           "course_account_data",
           UserLoginIntegratedData.fromJson,
         );
@@ -83,7 +83,7 @@ class _AccountPageState extends State<AccountPage> {
       lastSmsPhone: existingData?.lastSmsPhone,
     );
 
-    _serviceProvider.storeService.putStore<UserLoginIntegratedData>(
+    _serviceProvider.storeService.putConfig<UserLoginIntegratedData>(
       "course_account_data",
       updatedData,
     );
@@ -173,7 +173,7 @@ class _AccountPageState extends State<AccountPage> {
 
       // Clear user cache data but preserve lastSmsPhone
       final existingData = _serviceProvider.storeService
-          .getStore<UserLoginIntegratedData>(
+          .getConfig<UserLoginIntegratedData>(
             "course_account_data",
             UserLoginIntegratedData.fromJson,
           );
@@ -186,13 +186,13 @@ class _AccountPageState extends State<AccountPage> {
           cookie: null,
           lastSmsPhone: existingData.lastSmsPhone,
         );
-        _serviceProvider.storeService.putStore<UserLoginIntegratedData>(
+        _serviceProvider.storeService.putConfig<UserLoginIntegratedData>(
           "course_account_data",
           preservedData,
         );
       } else {
         // No existing data or no lastSmsPhone, remove cache completely
-        _serviceProvider.storeService.delStore("course_account_data");
+        _serviceProvider.storeService.delConfig("course_account_data");
       }
 
       if (mounted) {

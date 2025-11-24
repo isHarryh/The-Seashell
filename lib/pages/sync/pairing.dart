@@ -168,7 +168,7 @@ class _SyncPairingCardState extends State<SyncPairingCard> {
     String? byytCookie;
 
     try {
-      final courseData = widget.serviceProvider.storeService.getStore(
+      final courseData = widget.serviceProvider.storeService.getConfig(
         'course_account_data',
         (json) => UserLoginIntegratedData.fromJson(json),
       );

@@ -6,14 +6,14 @@ import '/types/base.dart';
 import 'base.dart';
 
 class GeneralStoreService extends BaseStoreService {
-  static const String _storeDir = 'store';
+  static const String _configDir = 'config';
   static const String _prefDir = 'pref';
 
   late final String _rootPath;
-  late final Directory _storeDirectory;
+  late final Directory _configDirectory;
   late final Directory _prefDirectory;
 
-  final Map<String, BaseDataClass> _storeMemory = {};
+  final Map<String, BaseDataClass> _configMemory = {};
   final Map<String, BaseDataClass> _prefMemory = {};
 
   bool _initialized = false;
@@ -26,10 +26,10 @@ class GeneralStoreService extends BaseStoreService {
       final rootDir = await getApplicationSupportDirectory();
       _rootPath = rootDir.path;
 
-      _storeDirectory = Directory('$_rootPath/$_storeDir');
+      _configDirectory = Directory('$_rootPath/$_configDir');
       _prefDirectory = Directory('$_rootPath/$_prefDir');
 
-      await _storeDirectory.create(recursive: true);
+      await _configDirectory.create(recursive: true);
       await _prefDirectory.create(recursive: true);
 
       _initialized = true;
@@ -45,15 +45,15 @@ class GeneralStoreService extends BaseStoreService {
     }
   }
 
-  String _getCacheFilePath(String key) {
-    return '${_storeDirectory.path}/$key.json';
+  // Private Helpers
+
+  String _getConfigFilePath(String key) {
+    return '${_configDirectory.path}/$key.json';
   }
 
   String _getPrefFilePath(String key) {
     return '${_prefDirectory.path}/$key.json';
   }
-
-  // Private Helpers
 
   bool _has(
     String key,
@@ -168,23 +168,23 @@ class GeneralStoreService extends BaseStoreService {
   // Implementations
 
   @override
-  bool hasStoreKey(String key) => _has(key, _storeMemory, _getCacheFilePath);
+  bool hasConfigKey(String key) => _has(key, _configMemory, _getConfigFilePath);
 
   @override
-  bool putStore<T extends BaseDataClass>(String key, T value) =>
-      _put(key, value, _storeMemory, _getCacheFilePath, updateTime: true);
+  bool putConfig<T extends BaseDataClass>(String key, T value) =>
+      _put(key, value, _configMemory, _getConfigFilePath, updateTime: true);
 
   @override
-  T? getStore<T extends BaseDataClass>(
+  T? getConfig<T extends BaseDataClass>(
     String key,
     T Function(Map<String, dynamic>) factory,
-  ) => _get(key, factory, _storeMemory, _getCacheFilePath);
+  ) => _get(key, factory, _configMemory, _getConfigFilePath);
 
   @override
-  void delStore(String key) => _del(key, _storeMemory, _getCacheFilePath);
+  void delConfig(String key) => _del(key, _configMemory, _getConfigFilePath);
 
   @override
-  void delAllStore() => _delAll(_storeDirectory, _storeMemory);
+  void delAllConfig() => _delAll(_configDirectory, _configMemory);
 
   @override
   bool hasPrefKey(String key) => _has(key, _prefMemory, _getPrefFilePath);

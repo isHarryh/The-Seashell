@@ -103,7 +103,7 @@ class _NetChangePasswordDialogState extends State<NetChangePasswordDialog> {
         }
 
         final cachedData = _serviceProvider.storeService
-            .getStore<NetUserIntegratedData>(
+            .getConfig<NetUserIntegratedData>(
               "net_account_data",
               NetUserIntegratedData.fromJson,
             );
@@ -113,7 +113,7 @@ class _NetChangePasswordDialogState extends State<NetChangePasswordDialog> {
             account: cachedData.account,
             password: '',
           );
-          _serviceProvider.storeService.putStore<NetUserIntegratedData>(
+          _serviceProvider.storeService.putConfig<NetUserIntegratedData>(
             "net_account_data",
             updatedLoginData,
           );

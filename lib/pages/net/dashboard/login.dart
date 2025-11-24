@@ -41,7 +41,7 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
   Future<void> _loadCachedCredentials() async {
     try {
       final cachedNetData = _serviceProvider.storeService
-          .getStore<NetUserIntegratedData>(
+          .getConfig<NetUserIntegratedData>(
             "net_account_data",
             NetUserIntegratedData.fromJson,
           );
@@ -129,7 +129,7 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
 
   Future<void> _clearLoginHistory() async {
     try {
-      _serviceProvider.storeService.delStore("net_account_data");
+      _serviceProvider.storeService.delConfig("net_account_data");
       if (mounted) {
         setState(() {
           _usernameController.clear();
@@ -187,7 +187,7 @@ class _NetLoginDialogState extends State<NetLoginDialog> {
           account: _usernameController.text.trim(),
           password: _passwordController.text,
         );
-        _serviceProvider.storeService.putStore<NetUserIntegratedData>(
+        _serviceProvider.storeService.putConfig<NetUserIntegratedData>(
           "net_account_data",
           loginData,
         );

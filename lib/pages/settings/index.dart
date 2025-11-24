@@ -97,19 +97,26 @@ class _SettingsPageState extends State<SettingsPage> {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+            Text(
+              '除非您在使用本软件时出现问题，或技术支持人员要求您这么做，否则请勿轻易操作。',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
             const SizedBox(height: 16),
             _buildDataItem(
-              title: '缓存数据',
-              subtitle: '清除所有缓存的数据',
+              title: '配置数据',
+              subtitle: '清除所有配置数据，包括已登录的账号会话、数据缓存等。',
               isLoading: _isClearingCache,
-              onPressed: _clearCache,
+              onPressed: _clearConfig,
             ),
             const SizedBox(height: 8),
             _buildDataItem(
               title: '偏好设置',
-              subtitle: '清除所有偏好设置',
+              subtitle: '清除所有偏好设置，包括跨设备同步的绑定、本地设置等。',
               isLoading: _isClearingPrefs,
-              onPressed: _clearPreferences,
+              onPressed: _clearPref,
             ),
           ],
         ),
@@ -154,18 +161,18 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _clearCache() async {
+  Future<void> _clearConfig() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('确认清除'),
-        content: const Text('确定要清除所有缓存数据吗？此操作不可撤销。'),
+        content: const Text('确定要清除所有配置数据吗？此操作不可撤销。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('取消'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('确认'),
           ),
@@ -177,17 +184,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
     setState(() => _isClearingCache = true);
     try {
-      _serviceProvider.storeService.delAllStore();
+      _serviceProvider.storeService.delAllConfig();
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('缓存数据已清除')));
+        ).showSnackBar(const SnackBar(content: Text('配置数据已清除')));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('清除缓存失败: $e')));
+        ).showSnackBar(SnackBar(content: Text('清除配置数据失败: $e')));
       }
     } finally {
       if (mounted) {
@@ -196,7 +203,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _clearPreferences() async {
+  Future<void> _clearPref() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

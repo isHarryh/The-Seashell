@@ -218,7 +218,7 @@ class _NetDashboardPageState extends State<NetDashboardPage>
         try {
           await serviceProvider.logoutFromNetService();
           // Clear cached login data
-          serviceProvider.storeService.delStore("net_account_data");
+          serviceProvider.storeService.delConfig("net_account_data");
           if (mounted) {
             setState(() {
               _userInfo = null;

@@ -136,7 +136,7 @@ class ServiceProvider extends ChangeNotifier {
   Future<void> _loadCurriculumData() async {
     try {
       // Check cache
-      final cachedData = storeService.getStore<CurriculumIntegratedData>(
+      final cachedData = storeService.getConfig<CurriculumIntegratedData>(
         "curriculum_data",
         CurriculumIntegratedData.fromJson,
       );
@@ -153,7 +153,7 @@ class ServiceProvider extends ChangeNotifier {
   Future<CurriculumIntegratedData?> getCurriculumData([
     TermInfo? termInfo,
   ]) async {
-    final cachedData = storeService.getStore<CurriculumIntegratedData>(
+    final cachedData = storeService.getConfig<CurriculumIntegratedData>(
       "curriculum_data",
       CurriculumIntegratedData.fromJson,
     );
@@ -204,7 +204,7 @@ class ServiceProvider extends ChangeNotifier {
     );
 
     // Cache the data
-    storeService.putStore<CurriculumIntegratedData>(
+    storeService.putConfig<CurriculumIntegratedData>(
       "curriculum_data",
       integratedData,
     );
@@ -259,7 +259,7 @@ class ServiceProvider extends ChangeNotifier {
   /// Try to restore login from cache on app startup
   Future<void> _tryAutoLogin() async {
     try {
-      final cachedData = _storeService.getStore<UserLoginIntegratedData>(
+      final cachedData = _storeService.getConfig<UserLoginIntegratedData>(
         "course_account_data",
         UserLoginIntegratedData.fromJson,
       );
