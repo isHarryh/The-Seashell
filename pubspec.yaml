@@ -41,6 +41,8 @@ dependencies:
   ustb_sso: ^1.1.0
   crypto: ^3.0.7
   fl_chart: ^1.1.1
+  package_info_plus: ^9.0.0
+  device_info_plus: ^12.2.0
 
 dev_dependencies:
   flutter_test:
