@@ -4,10 +4,11 @@ import '/services/sync/base.dart';
 import '/services/sync/exceptions.dart';
 import '/services/sync/sync_service.dart';
 import '/types/sync.dart';
+import '/utils/meta_info.dart';
 
 class SyncServiceProd extends BaseSyncService {
   String get baseUrl => 'https://thebeike.cn/api/client';
-  String get userAgent => 'TheBeike-GUI/dev';
+  String get userAgent => 'TheBeike-GUI/${MetaInfo.instance.appVersion}';
 
   @override
   Future<void> login() async {

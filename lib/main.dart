@@ -3,11 +3,15 @@
 import 'package:flutter/material.dart';
 import 'services/provider.dart';
 import 'types/preferences.dart';
+import 'utils/meta_info.dart';
 import 'router.dart';
 
 void main() async {
   // Initialize services before running the GUI
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize app info first (meta information like version, platform, device)
+  await MetaInfo.instance.initialize();
+  // Initialize service provider
   await ServiceProvider.instance.initializeServices();
   // Run the GUI application
   runApp(const Main());

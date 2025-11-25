@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +5,7 @@ import '/services/provider.dart';
 import '/services/sync/exceptions.dart';
 import '/types/sync.dart';
 import '/utils/app_bar.dart';
+import '/utils/meta_info.dart';
 import 'pairing.dart';
 
 class SyncPage extends StatefulWidget {
@@ -169,8 +169,8 @@ class _SyncPageState extends State<SyncPage> {
 
     // Device not registered, register automatically
     try {
-      final deviceOs = _getCurrentDeviceOs();
-      final deviceName = await _getDeviceName();
+      final deviceOs = MetaInfo.instance.platformName;
+      final deviceName = MetaInfo.instance.deviceName;
 
       final deviceId = await _serviceProvider.syncService.registerDevice(
         deviceOs: deviceOs,
@@ -187,21 +187,6 @@ class _SyncPageState extends State<SyncPage> {
     } catch (e) {
       _handleError(e);
     }
-  }
-
-  String _getCurrentDeviceOs() {
-    if (Platform.isWindows) return 'windows';
-    if (Platform.isMacOS) return 'mac';
-    if (Platform.isLinux) return 'linux';
-    if (Platform.isIOS) return 'ios';
-    if (Platform.isAndroid) return 'android';
-    return 'unknown';
-  }
-
-  Future<String> _getDeviceName() async {
-    // Simple device name, can be enhanced later
-    final os = _getCurrentDeviceOs();
-    return '$os-device-${DateTime.now().millisecondsSinceEpoch % 10000}';
   }
 
   String _getDeviceOsIcon(String os) {
