@@ -34,4 +34,9 @@ abstract class BaseStoreService {
   void delPref(String key);
 
   void delAllPref();
+
+  // Bulk operations
+  Map<String, dynamic> getAllConfigs();
+
+  void updateConfigs(Map<String, dynamic> configs);
 }

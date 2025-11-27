@@ -12,6 +12,7 @@ import '/services/sync/base.dart';
 import '/services/sync/sync_service_dev.dart';
 import '/services/sync/sync_service_prod.dart';
 import '/types/courses.dart';
+import '/types/sync.dart';
 
 enum CoursesServiceType { mock, production }
 
@@ -210,6 +211,52 @@ class ServiceProvider extends ChangeNotifier {
     );
 
     return integratedData;
+  }
+
+  //
+
+  /// Maybe syncs config if last sync was more than 10 seconds ago.
+  /// Silently ignores any sync errors.
+  Future<void> maybeUpdateConfigAndApplyChanges() async {
+    try {
+      final syncData = _storeService.getPref<SyncDeviceData>(
+        'sync_device',
+        SyncDeviceData.fromJson,
+      );
+
+      if (syncData == null ||
+          syncData.deviceId == null ||
+          syncData.groupId == null) {
+        return; // No sync data available
+      }
+
+      // Check if last sync was too recent
+      final lastSync = _syncService.lastSyncStatus;
+      if (lastSync != null) {
+        final elapsed = DateTime.now().difference(lastSync.timestamp);
+        if (elapsed.inSeconds < 10) {
+          return; // Too soon, skip update
+        }
+      }
+
+      // Perform the sync
+      final configs = _storeService.getAllConfigs();
+      final newConfigs = await _syncService.update(
+        deviceId: syncData.deviceId!,
+        groupId: syncData.groupId!,
+        config: configs,
+      );
+
+      // Apply new configs if received
+      if (newConfigs != null) {
+        _storeService.updateConfigs(newConfigs);
+      }
+    } catch (e) {
+      // Silently ignore sync errors
+      if (kDebugMode) {
+        print('maybeUpdateConfigAndApplyChanges failed: $e');
+      }
+    }
   }
 
   //

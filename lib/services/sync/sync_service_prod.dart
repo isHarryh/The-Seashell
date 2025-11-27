@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '/services/sync/base.dart';
 import '/services/sync/exceptions.dart';
@@ -159,5 +160,80 @@ class SyncServiceProd extends BaseSyncService {
       'deviceId': deviceId,
       'groupId': groupId,
     });
+  }
+
+  @override
+  Future<Map<String, dynamic>?> update({
+    required String deviceId,
+    required String groupId,
+    required Map<String, dynamic> config,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/sync/update',
+    ).replace(queryParameters: {'deviceId': deviceId, 'groupId': groupId});
+
+    List<int> bodyBytes;
+    if (config.isEmpty) {
+      bodyBytes = [];
+    } else {
+      final jsonString = json.encode(config);
+      bodyBytes = gzip.encode(utf8.encode(jsonString));
+    }
+
+    http.Response response;
+    try {
+      response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Encoding': 'gzip',
+          'User-Agent': userAgent,
+        },
+        body: bodyBytes,
+      );
+    } catch (e) {
+      recordSyncStatus(SyncStatusType.failure);
+      throw SyncServiceNetworkError('Network error: $e', e);
+    }
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.bodyBytes.isEmpty) {
+        recordSyncStatus(SyncStatusType.success);
+        return null;
+      }
+      try {
+        final decodedBytes = gzip.decode(response.bodyBytes);
+        final decodedString = utf8.decode(decodedBytes);
+        final result = json.decode(decodedString) as Map<String, dynamic>;
+        recordSyncStatus(SyncStatusType.success);
+        return result;
+      } catch (e) {
+        recordSyncStatus(SyncStatusType.failure);
+        throw SyncServiceBadResponse('Invalid response format', e);
+      }
+    } else {
+      // Try to parse error from JSON if possible
+      int responseBusinessCode = -1;
+      try {
+        final responseJson = json.decode(response.body) as Map<String, dynamic>;
+        responseBusinessCode = responseJson['code'] as int;
+      } catch (_) {
+        // Ignore if not JSON
+      }
+
+      final errorMsg = getSyncErrorMessage(responseBusinessCode);
+      recordSyncStatus(SyncStatusType.failure);
+
+      if (response.statusCode == 400) {
+        throw SyncServiceBadRequest(errorMsg, responseBusinessCode);
+      } else if (response.statusCode == 401) {
+        throw SyncServiceAuthError(errorMsg, responseBusinessCode);
+      } else {
+        throw SyncServiceException(
+          'Server error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    }
   }
 }

@@ -200,5 +200,56 @@ class GeneralStoreService extends BaseStoreService {
   void delPref(String key) => _del(key, _prefMemory, _getPrefFilePath);
 
   @override
-  void delAllPref() => _delAll(_prefDirectory, _prefMemory);
+  void delAllPref() {
+    _delAll(_prefDirectory, _prefMemory);
+  }
+
+  @override
+  Map<String, dynamic> getAllConfigs() {
+    ensureInitialized();
+    final configs = <String, dynamic>{};
+
+    try {
+      final files = _configDirectory.listSync();
+      for (final file in files) {
+        if (file is File && file.path.endsWith('.json')) {
+          final filename = file.uri.pathSegments.last;
+          final key = filename.substring(
+            0,
+            filename.length - 5,
+          ); // remove .json
+          try {
+            final content = file.readAsStringSync();
+            final jsonContent = json.decode(content);
+            configs[key] = jsonContent;
+          } catch (e) {
+            // Ignore bad files
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    return configs;
+  }
+
+  @override
+  void updateConfigs(Map<String, dynamic> configs) {
+    ensureInitialized();
+
+    for (final entry in configs.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      try {
+        final file = File(_getConfigFilePath(key));
+        file.writeAsStringSync(json.encode(value));
+
+        // Invalidate memory cache as we updated the file
+        _configMemory.remove(key);
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+  }
 }
