@@ -5,6 +5,7 @@ import '/services/provider.dart';
 import '/types/net.dart';
 import '/utils/app_bar.dart';
 import '/utils/page_mixins.dart';
+import '/utils/sync_embeded.dart';
 import 'bill.dart';
 import 'change_pswd.dart';
 import 'login.dart';
@@ -366,86 +367,90 @@ class _NetDashboardPageState extends State<NetDashboardPage>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: const PageAppBar(title: '校园网自助服务'),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (hasError)
-                    Card(
-                      color: theme.colorScheme.errorContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              color: theme.colorScheme.error,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                errorMessage ?? '未知错误',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onErrorContainer,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: clearError,
-                              icon: Icon(
-                                Icons.close,
+      body: SyncPowered(childBuilder: (context) => _buildBody(context)),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasError)
+                  Card(
+                    color: theme.colorScheme.errorContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              errorMessage ?? '未知错误',
+                              style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onErrorContainer,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          IconButton(
+                            onPressed: clearError,
+                            icon: Icon(
+                              Icons.close,
+                              color: theme.colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                const SizedBox(height: 16),
+
+                if (_isOnline && _userInfo != null) ...[
+                  _buildUserInfoCard(
+                    theme,
+                    _userInfo!,
+                    onLogout: _showLogoutDialog,
+                  ),
                   const SizedBox(height: 16),
-
-                  if (_isOnline && _userInfo != null) ...[
-                    _buildUserInfoCard(
-                      theme,
-                      _userInfo!,
-                      onLogout: _showLogoutDialog,
-                    ),
+                  _buildMacListCard(theme),
+                  if (_monthlyBills != null || _isLoadingBills) ...[
                     const SizedBox(height: 16),
-                    _buildMacListCard(theme),
-                    if (_monthlyBills != null || _isLoadingBills) ...[
-                      const SizedBox(height: 16),
-                      NetMonthlyBillSection(
-                        year: _selectedYear,
-                        bills: _monthlyBills ?? [],
-                        onYearChanged: (newYear) {
-                          if (newYear < 1970 || newYear > DateTime.now().year) {
-                            return;
-                          }
-                          setState(() {
-                            _selectedYear = newYear;
-                          });
-                          _refreshBills();
-                        },
-                        isLoading: _isLoadingBills,
-                      ),
-                    ],
+                    NetMonthlyBillSection(
+                      year: _selectedYear,
+                      bills: _monthlyBills ?? [],
+                      onYearChanged: (newYear) {
+                        if (newYear < 1970 || newYear > DateTime.now().year) {
+                          return;
+                        }
+                        setState(() {
+                          _selectedYear = newYear;
+                        });
+                        _refreshBills();
+                      },
+                      isLoading: _isLoadingBills,
+                    ),
                   ],
-
-                  if (_userInfo == null && (!_isOnline || hasError))
-                    _buildLoginPromptCard(theme),
                 ],
-              ),
+
+                if (_userInfo == null && (!_isOnline || hasError))
+                  _buildLoginPromptCard(theme),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

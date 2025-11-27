@@ -8,6 +8,7 @@ import '/services/provider.dart';
 import '/types/net.dart';
 import '/utils/app_bar.dart';
 import '/utils/page_mixins.dart';
+import '/utils/sync_embeded.dart';
 import 'dial.dart';
 
 class NetMonitorPage extends StatefulWidget {
@@ -340,23 +341,25 @@ class _NetMonitorPageState extends State<NetMonitorPage>
         ],
       ),
       endDrawer: const Drawer(child: NetDialDrawer()),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('概览', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            _buildNetworkStatusCard(),
-            const SizedBox(height: 16),
-            _buildRealtimeUsageCard(),
-            if (_usageHistory.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text('实时图表', style: Theme.of(context).textTheme.titleLarge),
+      body: SyncPowered(
+        childBuilder: (context) => SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('概览', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              _buildNetworkStatusCard(),
               const SizedBox(height: 16),
-              _buildHistoryChart(),
+              _buildRealtimeUsageCard(),
+              if (_usageHistory.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Text('实时图表', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 16),
+                _buildHistoryChart(),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

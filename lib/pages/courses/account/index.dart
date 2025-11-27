@@ -3,6 +3,7 @@ import '/services/provider.dart';
 import '/services/base.dart';
 import '/types/courses.dart';
 import '/utils/app_bar.dart';
+import '/utils/sync_embeded.dart';
 import 'ustb_byyt_mock.dart';
 import 'ustb_byyt_cookie.dart';
 import 'ustb_byyt_sso.dart';
@@ -251,286 +252,280 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final service = _serviceProvider.coursesService;
-
     return Scaffold(
       appBar: const PageAppBar(title: '教务账户'),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status card with login/logout button
+      body: SyncPowered(
+        onSyncEnd: _loadUserInfoSilently,
+        childBuilder: (context) => _buildBody(context),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    final service = _serviceProvider.coursesService;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status card with login/logout button
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    service.isOnline ? Icons.check_circle : Icons.error_outline,
+                    color: _getStatusColor(),
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '本机登录状态',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          _getStatusText(),
+                          style: TextStyle(
+                            color: _getStatusColor(),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (service.errorMessage != null)
+                          Text(
+                            service.errorMessage!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+                        if (service.isOnline)
+                          Text(
+                            _getLastHeartbeatText()!,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Logout button (only show when logged in)
+                  if (!_showLoginButton)
+                    OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _handleLogout,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.red,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.logout),
+                      label: Text(_isLoading ? '请稍后' : '登出'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Login methods section (only show when not logged in)
+          if (_showLoginButton) ...[
+            Text('登录方式', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 16),
+            // Login methods list
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(
+                      Icons.security,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 32,
+                    ),
+                    title: const Text('统一身份认证登录'),
+                    subtitle: const Text('推荐方式，使用USTB SSO系统安全便捷登录'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      showSsoLoginDialog(
+                        context,
+                        onLoginSuccess: (method, cookie) {
+                          _currentLoginMethod = method;
+                          _currentLoginCookie = cookie;
+                        },
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: Icon(
+                      Icons.build_circle_outlined,
+                      color: Theme.of(context).colorScheme.secondary,
+                      size: 32,
+                    ),
+                    title: const Text('使用Mock进行测试'),
+                    subtitle: const Text('适用于开发者，将使用离线的模拟数据进行测试'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      showMockLoginDialog(
+                        context,
+                        onLoginSuccess: (method, cookie) {
+                          _currentLoginMethod = method;
+                          _currentLoginCookie = cookie;
+                        },
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: Icon(
+                      Icons.cookie_outlined,
+                      color: Theme.of(context).colorScheme.secondary,
+                      size: 32,
+                    ),
+                    title: const Text('使用Cookie登录账户'),
+                    subtitle: const Text('适用于高级用户，需要手动提供Cookie'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      showCookieLoginDialog(
+                        context,
+                        onLoginSuccess: (method, cookie) {
+                          _currentLoginMethod = method;
+                          _currentLoginCookie = cookie;
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+          // User information section
+          if (service.isOnline && _userInfo != null) ...[
+            Text('个人信息', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 16),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      service.isOnline
-                          ? Icons.check_circle
-                          : Icons.error_outline,
-                      color: _getStatusColor(),
-                      size: 32,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '本机登录状态',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          Text(
-                            _getStatusText(),
+                    // Avatar and name
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          child: Text(
+                            _userInfo!.userName.isNotEmpty
+                                ? _userInfo!.userName[0]
+                                : '?',
                             style: TextStyle(
-                              color: _getStatusColor(),
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
                           ),
-                          if (service.errorMessage != null)
-                            Text(
-                              service.errorMessage!,
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 12,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _userInfo!.userName,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          if (service.isOnline)
-                            Text(
-                              _getLastHeartbeatText()!,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    // Logout button (only show when logged in)
-                    if (!_showLoginButton)
-                      OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _handleLogout,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.red,
+                              if (_userInfo!.userNameAlt.isNotEmpty)
+                                Text(
+                                  _userInfo!.userNameAlt,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
                                   ),
                                 ),
-                              )
-                            : const Icon(Icons.logout),
-                        label: Text(_isLoading ? '请稍后' : '登出'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // User ID
+                    _buildDetailRow('学号', _userInfo!.userId, null),
+                    const SizedBox(height: 12),
+                    // School information
+                    _buildDetailRow(
+                      '学院',
+                      _userInfo!.userSchool,
+                      _userInfo!.userSchoolAlt.isNotEmpty
+                          ? _userInfo!.userSchoolAlt
+                          : null,
+                    ),
                   ],
                 ),
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            // Login methods section (only show when not logged in)
-            if (_showLoginButton) ...[
-              Text('登录方式', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
-
-              // Login methods list
-              Card(
+          ] else if (service.isOnline && _userInfo == null && !_isLoading) ...[
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: Text('暂无用户信息')),
+              ),
+            ),
+          ],
+          // On error
+          if (_errorMessage != null)
+            Card(
+              color: Colors.red.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ListTile(
-                      leading: Icon(
-                        Icons.security,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 32,
-                      ),
-                      title: const Text('统一身份认证登录'),
-                      subtitle: const Text('推荐方式，使用USTB SSO系统安全便捷登录'),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        showSsoLoginDialog(
-                          context,
-                          onLoginSuccess: (method, cookie) {
-                            _currentLoginMethod = method;
-                            _currentLoginCookie = cookie;
-                          },
-                        );
-                      },
+                    Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          '错误信息',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade700,
+                          ),
+                        ),
+                      ],
                     ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: Icon(
-                        Icons.build_circle_outlined,
-                        color: Theme.of(context).colorScheme.secondary,
-                        size: 32,
-                      ),
-                      title: const Text('使用Mock进行测试'),
-                      subtitle: const Text('适用于开发者，将使用离线的模拟数据进行测试'),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        showMockLoginDialog(
-                          context,
-                          onLoginSuccess: (method, cookie) {
-                            _currentLoginMethod = method;
-                            _currentLoginCookie = cookie;
-                          },
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: Icon(
-                        Icons.cookie_outlined,
-                        color: Theme.of(context).colorScheme.secondary,
-                        size: 32,
-                      ),
-                      title: const Text('使用Cookie登录账户'),
-                      subtitle: const Text('适用于高级用户，需要手动提供Cookie'),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        showCookieLoginDialog(
-                          context,
-                          onLoginSuccess: (method, cookie) {
-                            _currentLoginMethod = method;
-                            _currentLoginCookie = cookie;
-                          },
-                        );
-                      },
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.red.shade700),
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-            ],
-
-            // User information section
-            if (service.isOnline && _userInfo != null) ...[
-              Text('个人信息', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Avatar and name
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            child: Text(
-                              _userInfo!.userName.isNotEmpty
-                                  ? _userInfo!.userName[0]
-                                  : '?',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onPrimary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _userInfo!.userName,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                if (_userInfo!.userNameAlt.isNotEmpty)
-                                  Text(
-                                    _userInfo!.userNameAlt,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // User ID
-                      _buildDetailRow('学号', _userInfo!.userId, null),
-
-                      const SizedBox(height: 12),
-
-                      // School information
-                      _buildDetailRow(
-                        '学院',
-                        _userInfo!.userSchool,
-                        _userInfo!.userSchoolAlt.isNotEmpty
-                            ? _userInfo!.userSchoolAlt
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ] else if (service.isOnline &&
-                _userInfo == null &&
-                !_isLoading) ...[
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: Text('暂无用户信息')),
-                ),
-              ),
-            ],
-
-            // On error
-            if (_errorMessage != null)
-              Card(
-                color: Colors.red.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700),
-                          const SizedBox(width: 8),
-                          Text(
-                            '错误信息',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _errorMessage!,
-                        style: TextStyle(color: Colors.red.shade700),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

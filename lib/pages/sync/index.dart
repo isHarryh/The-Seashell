@@ -7,6 +7,7 @@ import '/types/sync.dart';
 import '/utils/app_bar.dart';
 import '/utils/meta_info.dart';
 import 'pairing.dart';
+import 'syncing.dart';
 
 class SyncPage extends StatefulWidget {
   const SyncPage({super.key});
@@ -249,6 +250,14 @@ class _SyncPageState extends State<SyncPage> {
               ),
             ),
             const SizedBox(height: 8),
+            if (_syncData?.groupId != null) ...[
+              SyncingCard(
+                serviceProvider: _serviceProvider,
+                syncData: _syncData!,
+                onError: _handleError,
+              ),
+              const SizedBox(height: 16),
+            ],
             SyncPairingCard(
               serviceProvider: _serviceProvider,
               onSyncDataChanged: _saveSyncData,

@@ -4,6 +4,7 @@ import '/services/provider.dart';
 import '/types/courses.dart';
 import '/types/preferences.dart';
 import '/utils/app_bar.dart';
+import '/utils/sync_embeded.dart';
 import 'common.dart';
 import 'table.dart';
 
@@ -197,7 +198,7 @@ class _CurriculumPageState extends State<CurriculumPage>
           ),
         ],
       ),
-      body: _buildBody(),
+      body: SyncPowered(childBuilder: (context) => _buildBody()),
       endDrawer: _buildSettingsDrawer(),
     );
   }
