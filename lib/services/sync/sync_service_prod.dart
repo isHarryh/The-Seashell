@@ -11,18 +11,6 @@ class SyncServiceProd extends BaseSyncService {
   String get baseUrl => 'https://thebeike.cn/api/client';
   String get userAgent => 'TheBeike-GUI/${MetaInfo.instance.appVersion}';
 
-  @override
-  Future<void> login() async {
-    // Sync service doesn't require login
-    setOnline();
-  }
-
-  @override
-  Future<void> logout() async {
-    // Sync service doesn't require logout
-    setOffline();
-  }
-
   Future<Map<String, dynamic>?> _sendRequest(
     String endpoint,
     Map<String, dynamic> body,

@@ -6,7 +6,7 @@ enum ServiceStatus {
   errorNetwork, // Network error
 }
 
-abstract class BaseService {
+mixin BaseService {
   ServiceStatus _status = ServiceStatus.offline;
   String? _errorMessage;
 
@@ -22,7 +22,6 @@ abstract class BaseService {
   void setStatus(ServiceStatus status, [String? errorMessage]) {
     _status = status;
     _errorMessage = errorMessage;
-    onStatusChanged(status, errorMessage);
   }
 
   void setOnline() {
@@ -44,10 +43,4 @@ abstract class BaseService {
   void setNetworkError([String? message]) {
     setStatus(ServiceStatus.errorNetwork, message);
   }
-
-  /// Override this method to handle status changes
-  void onStatusChanged(ServiceStatus status, String? errorMessage) {}
-
-  Future<void> login();
-  Future<void> logout();
 }

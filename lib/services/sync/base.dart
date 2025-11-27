@@ -14,7 +14,7 @@ class SyncStatus {
   bool get isSyncing => type == SyncStatusType.syncing;
 }
 
-abstract class BaseSyncService extends BaseService {
+abstract class BaseSyncService with BaseService {
   SyncStatus? _lastSyncStatus;
 
   SyncStatus? get lastSyncStatus => _lastSyncStatus;

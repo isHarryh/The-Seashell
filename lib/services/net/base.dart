@@ -6,7 +6,7 @@ import '/services/base.dart';
 import '/services/net/exceptions.dart';
 import '/types/net.dart';
 
-abstract class BaseNetService extends BaseService {
+abstract class BaseNetService with BaseService {
   LoginRequirements? _cachedLoginRequirements;
 
   // Methods need to be implemented:
@@ -88,12 +88,6 @@ abstract class BaseNetService extends BaseService {
     }
   }
 
-  @override
-  Future<void> login() async {
-    throw UnimplementedError('Use loginWithCredential for net service');
-  }
-
-  @override
   Future<void> logout() async {
     try {
       await doLogout();
