@@ -74,15 +74,12 @@ class GeneralStoreService extends BaseStoreService {
     String key,
     T value,
     Map<String, BaseDataClass> memory,
-    String Function(String) pathProvider, {
-    bool updateTime = false,
-  }) {
+    String Function(String) pathProvider,
+  ) {
     ensureInitialized();
 
     try {
-      if (updateTime) {
-        value.updateLastUpdateTime();
-      }
+      value.updateLastUpdateTime();
 
       final jsonData = value.toJson();
       final file = File(pathProvider(key));
@@ -172,7 +169,7 @@ class GeneralStoreService extends BaseStoreService {
 
   @override
   bool putConfig<T extends BaseDataClass>(String key, T value) =>
-      _put(key, value, _configMemory, _getConfigFilePath, updateTime: true);
+      _put(key, value, _configMemory, _getConfigFilePath);
 
   @override
   T? getConfig<T extends BaseDataClass>(
@@ -191,7 +188,7 @@ class GeneralStoreService extends BaseStoreService {
 
   @override
   bool putPref<T extends BaseDataClass>(String key, T value) =>
-      _put(key, value, _prefMemory, _getPrefFilePath, updateTime: true);
+      _put(key, value, _prefMemory, _getPrefFilePath);
 
   @override
   T? getPref<T extends BaseDataClass>(
