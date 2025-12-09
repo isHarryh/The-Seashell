@@ -223,15 +223,13 @@ class _AccountPageState extends State<AccountPage> {
         return '未登录';
       case ServiceStatus.pending:
         return '处理中';
-      case ServiceStatus.errorAuth:
-        return '认证错误';
-      case ServiceStatus.errorNetwork:
+      case ServiceStatus.error:
         if (service.errorMessage != null &&
             service.errorMessage!.contains('HTTP 302')) {
           // Special case: 302 redirect often indicates session expired
           return '登录可能已过期';
         }
-        return '网络错误';
+        return '错误';
     }
   }
 
@@ -244,8 +242,7 @@ class _AccountPageState extends State<AccountPage> {
         return Colors.grey;
       case ServiceStatus.pending:
         return Colors.blue;
-      case ServiceStatus.errorAuth:
-      case ServiceStatus.errorNetwork:
+      case ServiceStatus.error:
         return Colors.red;
     }
   }

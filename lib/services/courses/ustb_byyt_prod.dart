@@ -115,9 +115,9 @@ class UstbByytProdService extends BaseCoursesService {
     } catch (e) {
       _cookie = null;
       if (e is CourseServiceNetworkError) {
-        setNetworkError('Failed to login with cookie (network error): $e');
+        setError('Failed to login with cookie (network error): $e');
       } else if (e is CourseServiceException) {
-        setAuthError('Failed to login with cookie: $e');
+        setError('Failed to login with cookie: $e');
       } else {
         throw CourseServiceException(
           'Failed to login with cookie (unexpected exception)',
@@ -166,7 +166,7 @@ class UstbByytProdService extends BaseCoursesService {
         final success = data['code'] == 0;
 
         if (!success) {
-          setAuthError('Heartbeat failed: ${data['msg'] ?? 'No msg'}');
+          setError('Heartbeat failed: ${data['msg'] ?? 'No msg'}');
         }
 
         return success;
@@ -195,7 +195,7 @@ class UstbByytProdService extends BaseCoursesService {
     }
 
     CourseServiceException.raiseForStatus(response.statusCode, () {
-      setAuthError();
+      setError();
     });
 
     try {
@@ -238,7 +238,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get grades', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -289,7 +289,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get curriculum', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -358,7 +358,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get course periods', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -414,7 +414,7 @@ class UstbByytProdService extends BaseCoursesService {
       );
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -478,7 +478,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get selected courses', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -559,7 +559,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get selectable courses', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -613,7 +613,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get course tabs', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -650,7 +650,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get terms', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -710,7 +710,7 @@ class UstbByytProdService extends BaseCoursesService {
       throw CourseServiceNetworkError('Failed to get course detail', e);
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);
@@ -788,7 +788,7 @@ class UstbByytProdService extends BaseCoursesService {
       );
     }
 
-    CourseServiceException.raiseForStatus(response.statusCode, setAuthError);
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
 
     try {
       final data = json.decode(response.body);

@@ -17,11 +17,7 @@ class UstbByytMockService extends BaseCoursesService {
       await Future.delayed(Duration(seconds: 1));
       setOnline();
     } catch (e) {
-      if (e.toString().contains('Auth error')) {
-        setAuthError('Failed to login: $e');
-      } else if (e.toString().contains('Network error')) {
-        setNetworkError('Failed to login: $e');
-      }
+      setError('Failed to login: $e');
       rethrow;
     }
   }

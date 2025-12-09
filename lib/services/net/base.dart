@@ -83,7 +83,7 @@ abstract class BaseNetService with BaseService {
       setOffline();
       rethrow;
     } catch (e) {
-      setNetworkError(e.toString());
+      setError(e.toString());
       throw NetServiceNetworkError('Failed to login', e);
     }
   }

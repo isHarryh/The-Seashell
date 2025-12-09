@@ -37,6 +37,30 @@ class SyncServiceBadRequest extends SyncServiceException {
 /// Get human-readable error message
 String getSyncErrorMessage(int? errorCode) {
   switch (errorCode) {
+    case 1001:
+      return '无效的 Cookie';
+    case 1002:
+      return '无效的参数';
+    case 1003:
+      return '无效的 User Agent';
+    case 1011:
+      return '操作不允许';
+    case 1012:
+      return '未授权';
+    case 1013:
+      return '方法不允许';
+    case 1014:
+      return '请求过于频繁';
+    case 2001:
+      return '服务器内部错误';
+    case 2002:
+      return '数据库错误';
+    case 2003:
+      return '上游服务错误';
+    case 2011:
+      return '服务繁忙';
+    case 2012:
+      return '服务已关闭';
     case 10101:
       return '此设备ID未被注册';
     case 10102:
@@ -65,6 +89,12 @@ String getSyncErrorMessage(int? errorCode) {
       return '无法进行身份核验';
     case 10203:
       return '配对码与同步组不匹配';
+    case 10301:
+      return '不支持的编码';
+    case 10302:
+      return '客户端版本过旧';
+    case 10303:
+      return '无效的数据结构';
     default:
       return '未知错误（$errorCode）';
   }

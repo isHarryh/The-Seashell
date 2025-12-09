@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ustb_sso/ustb_sso.dart';
 import '/services/provider.dart';
@@ -78,7 +79,9 @@ class _SsoLoginDialogState extends State<_SsoLoginDialog> {
       widget.onLoginSuccess?.call("sso", cookie);
     } catch (e) {
       // Error handling is done by the auth widget
-      print('Login failed: $e');
+      if (kDebugMode) {
+        print('Login failed: $e');
+      }
     } finally {
       if (mounted) {
         setState(() {
