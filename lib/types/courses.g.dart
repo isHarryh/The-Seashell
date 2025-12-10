@@ -6,16 +6,24 @@ part of 'courses.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-UserInfo _$UserInfoFromJson(Map<String, dynamic> json) => UserInfo(
-  userName: json['userName'] as String,
-  userNameAlt: json['userNameAlt'] as String,
-  userSchool: json['userSchool'] as String,
-  userSchoolAlt: json['userSchoolAlt'] as String,
-  userId: json['userId'] as String,
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+UserInfo _$UserInfoFromJson(Map<String, dynamic> json) =>
+    UserInfo(
+        userName: json['userName'] as String,
+        userNameAlt: json['userNameAlt'] as String,
+        userSchool: json['userSchool'] as String,
+        userSchoolAlt: json['userSchoolAlt'] as String,
+        userId: json['userId'] as String,
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$UserInfoToJson(UserInfo instance) => <String, dynamic>{
-  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
   'userName': instance.userName,
   'userNameAlt': instance.userNameAlt,
   'userSchool': instance.userSchool,
@@ -23,21 +31,39 @@ Map<String, dynamic> _$UserInfoToJson(UserInfo instance) => <String, dynamic>{
   'userId': instance.userId,
 };
 
+Value? _$JsonConverterFromJson<Json, Value>(
+  Object? json,
+  Value? Function(Json json) fromJson,
+) => json == null ? null : fromJson(json as Json);
+
+Json? _$JsonConverterToJson<Json, Value>(
+  Value? value,
+  Json? Function(Value value) toJson,
+) => value == null ? null : toJson(value);
+
 UserLoginIntegratedData _$UserLoginIntegratedDataFromJson(
   Map<String, dynamic> json,
-) => UserLoginIntegratedData(
-  user: json['user'] == null
-      ? null
-      : UserInfo.fromJson(json['user'] as Map<String, dynamic>),
-  method: json['method'] as String?,
-  cookie: json['cookie'] as String?,
-  lastSmsPhone: json['lastSmsPhone'] as String?,
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+) =>
+    UserLoginIntegratedData(
+        user: json['user'] == null
+            ? null
+            : UserInfo.fromJson(json['user'] as Map<String, dynamic>),
+        method: json['method'] as String?,
+        cookie: json['cookie'] as String?,
+        lastSmsPhone: json['lastSmsPhone'] as String?,
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$UserLoginIntegratedDataToJson(
   UserLoginIntegratedData instance,
 ) => <String, dynamic>{
-  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
   'user': instance.user,
   'method': instance.method,
   'cookie': instance.cookie,
@@ -46,27 +72,34 @@ Map<String, dynamic> _$UserLoginIntegratedDataToJson(
 
 CourseGradeItem _$CourseGradeItemFromJson(Map<String, dynamic> json) =>
     CourseGradeItem(
-      courseId: json['courseId'] as String,
-      courseName: json['courseName'] as String,
-      courseNameAlt: json['courseNameAlt'] as String?,
-      termId: json['termId'] as String,
-      termName: json['termName'] as String,
-      termNameAlt: json['termNameAlt'] as String,
-      type: json['type'] as String,
-      category: json['category'] as String,
-      schoolName: json['schoolName'] as String?,
-      schoolNameAlt: json['schoolNameAlt'] as String?,
-      makeupStatus: json['makeupStatus'] as String?,
-      makeupStatusAlt: json['makeupStatusAlt'] as String?,
-      examType: json['examType'] as String?,
-      hours: (json['hours'] as num).toDouble(),
-      credit: (json['credit'] as num).toDouble(),
-      score: (json['score'] as num).toDouble(),
-    )..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+        courseId: json['courseId'] as String,
+        courseName: json['courseName'] as String,
+        courseNameAlt: json['courseNameAlt'] as String?,
+        termId: json['termId'] as String,
+        termName: json['termName'] as String,
+        termNameAlt: json['termNameAlt'] as String,
+        type: json['type'] as String,
+        category: json['category'] as String,
+        schoolName: json['schoolName'] as String?,
+        schoolNameAlt: json['schoolNameAlt'] as String?,
+        makeupStatus: json['makeupStatus'] as String?,
+        makeupStatusAlt: json['makeupStatusAlt'] as String?,
+        examType: json['examType'] as String?,
+        hours: (json['hours'] as num).toDouble(),
+        credit: (json['credit'] as num).toDouble(),
+        score: (json['score'] as num).toDouble(),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CourseGradeItemToJson(CourseGradeItem instance) =>
     <String, dynamic>{
-      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
       'courseId': instance.courseId,
       'courseName': instance.courseName,
       'courseNameAlt': instance.courseNameAlt,
@@ -85,26 +118,34 @@ Map<String, dynamic> _$CourseGradeItemToJson(CourseGradeItem instance) =>
       'score': instance.score,
     };
 
-ClassItem _$ClassItemFromJson(Map<String, dynamic> json) => ClassItem(
-  day: (json['day'] as num).toInt(),
-  period: (json['period'] as num).toInt(),
-  weeks: (json['weeks'] as List<dynamic>)
-      .map((e) => (e as num).toInt())
-      .toList(),
-  weeksText: json['weeksText'] as String,
-  className: json['className'] as String,
-  classNameAlt: json['classNameAlt'] as String?,
-  teacherName: json['teacherName'] as String,
-  teacherNameAlt: json['teacherNameAlt'] as String?,
-  locationName: json['locationName'] as String,
-  locationNameAlt: json['locationNameAlt'] as String?,
-  periodName: json['periodName'] as String,
-  periodNameAlt: json['periodNameAlt'] as String?,
-  colorId: (json['colorId'] as num?)?.toInt(),
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+ClassItem _$ClassItemFromJson(Map<String, dynamic> json) =>
+    ClassItem(
+        day: (json['day'] as num).toInt(),
+        period: (json['period'] as num).toInt(),
+        weeks: (json['weeks'] as List<dynamic>)
+            .map((e) => (e as num).toInt())
+            .toList(),
+        weeksText: json['weeksText'] as String,
+        className: json['className'] as String,
+        classNameAlt: json['classNameAlt'] as String?,
+        teacherName: json['teacherName'] as String,
+        teacherNameAlt: json['teacherNameAlt'] as String?,
+        locationName: json['locationName'] as String,
+        locationNameAlt: json['locationNameAlt'] as String?,
+        periodName: json['periodName'] as String,
+        periodNameAlt: json['periodNameAlt'] as String?,
+        colorId: (json['colorId'] as num?)?.toInt(),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$ClassItemToJson(ClassItem instance) => <String, dynamic>{
-  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
   'day': instance.day,
   'period': instance.period,
   'weeks': instance.weeks,
@@ -120,22 +161,30 @@ Map<String, dynamic> _$ClassItemToJson(ClassItem instance) => <String, dynamic>{
   'colorId': instance.colorId,
 };
 
-ClassPeriod _$ClassPeriodFromJson(Map<String, dynamic> json) => ClassPeriod(
-  termYear: json['termYear'] as String,
-  termSeason: (json['termSeason'] as num).toInt(),
-  majorId: (json['majorId'] as num).toInt(),
-  minorId: (json['minorId'] as num).toInt(),
-  majorName: json['majorName'] as String,
-  minorName: json['minorName'] as String,
-  majorStartTime: json['majorStartTime'] as String?,
-  majorEndTime: json['majorEndTime'] as String?,
-  minorStartTime: json['minorStartTime'] as String,
-  minorEndTime: json['minorEndTime'] as String,
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+ClassPeriod _$ClassPeriodFromJson(Map<String, dynamic> json) =>
+    ClassPeriod(
+        termYear: json['termYear'] as String,
+        termSeason: (json['termSeason'] as num).toInt(),
+        majorId: (json['majorId'] as num).toInt(),
+        minorId: (json['minorId'] as num).toInt(),
+        majorName: json['majorName'] as String,
+        minorName: json['minorName'] as String,
+        majorStartTime: json['majorStartTime'] as String?,
+        majorEndTime: json['majorEndTime'] as String?,
+        minorStartTime: json['minorStartTime'] as String,
+        minorEndTime: json['minorEndTime'] as String,
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$ClassPeriodToJson(ClassPeriod instance) =>
     <String, dynamic>{
-      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
       'termYear': instance.termYear,
       'termSeason': instance.termSeason,
       'majorId': instance.majorId,
@@ -148,17 +197,25 @@ Map<String, dynamic> _$ClassPeriodToJson(ClassPeriod instance) =>
       'minorEndTime': instance.minorEndTime,
     };
 
-CalendarDay _$CalendarDayFromJson(Map<String, dynamic> json) => CalendarDay(
-  year: (json['year'] as num).toInt(),
-  month: (json['month'] as num).toInt(),
-  day: (json['day'] as num).toInt(),
-  weekday: (json['weekday'] as num).toInt(),
-  weekIndex: (json['weekIndex'] as num).toInt(),
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+CalendarDay _$CalendarDayFromJson(Map<String, dynamic> json) =>
+    CalendarDay(
+        year: (json['year'] as num).toInt(),
+        month: (json['month'] as num).toInt(),
+        day: (json['day'] as num).toInt(),
+        weekday: (json['weekday'] as num).toInt(),
+        weekIndex: (json['weekIndex'] as num).toInt(),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CalendarDayToJson(CalendarDay instance) =>
     <String, dynamic>{
-      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
       'year': instance.year,
       'month': instance.month,
       'day': instance.day,
@@ -166,83 +223,109 @@ Map<String, dynamic> _$CalendarDayToJson(CalendarDay instance) =>
       'weekIndex': instance.weekIndex,
     };
 
-TermInfo _$TermInfoFromJson(Map<String, dynamic> json) => TermInfo(
-  year: json['year'] as String,
-  season: (json['season'] as num).toInt(),
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+TermInfo _$TermInfoFromJson(Map<String, dynamic> json) =>
+    TermInfo(
+        year: json['year'] as String,
+        season: (json['season'] as num).toInt(),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$TermInfoToJson(TermInfo instance) => <String, dynamic>{
-  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
   'year': instance.year,
   'season': instance.season,
 };
 
 CurriculumIntegratedData _$CurriculumIntegratedDataFromJson(
   Map<String, dynamic> json,
-) => CurriculumIntegratedData(
-  currentTerm: TermInfo.fromJson(json['currentTerm'] as Map<String, dynamic>),
-  allClasses: (json['allClasses'] as List<dynamic>)
-      .map((e) => ClassItem.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  allPeriods: (json['allPeriods'] as List<dynamic>)
-      .map((e) => ClassPeriod.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  calendarDays: (json['calendarDays'] as List<dynamic>?)
-      ?.map((e) => CalendarDay.fromJson(e as Map<String, dynamic>))
-      .toList(),
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+) =>
+    CurriculumIntegratedData(
+        currentTerm: TermInfo.fromJson(
+          json['currentTerm'] as Map<String, dynamic>,
+        ),
+        allClasses: (json['allClasses'] as List<dynamic>)
+            .map((e) => ClassItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        allPeriods: (json['allPeriods'] as List<dynamic>)
+            .map((e) => ClassPeriod.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        calendarDays: (json['calendarDays'] as List<dynamic>?)
+            ?.map((e) => CalendarDay.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CurriculumIntegratedDataToJson(
   CurriculumIntegratedData instance,
 ) => <String, dynamic>{
-  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
   'currentTerm': instance.currentTerm,
   'allClasses': instance.allClasses,
   'allPeriods': instance.allPeriods,
   'calendarDays': instance.calendarDays,
 };
 
-CourseDetail _$CourseDetailFromJson(Map<String, dynamic> json) => CourseDetail(
-  classId: json['classId'] as String,
-  extraName: json['extraName'] as String?,
-  extraNameAlt: json['extraNameAlt'] as String?,
-  detailHtml: json['detailHtml'] as String?,
-  detailHtmlAlt: json['detailHtmlAlt'] as String?,
-  detailTeacherId: json['detailTeacherId'] as String?,
-  detailTeacherName: json['detailTeacherName'] as String?,
-  detailTeacherNameAlt: json['detailTeacherNameAlt'] as String?,
-  detailSchedule: (json['detailSchedule'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
-  detailScheduleAlt: (json['detailScheduleAlt'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
-  detailClasses: json['detailClasses'] as String?,
-  detailClassesAlt: json['detailClassesAlt'] as String?,
-  detailTarget: (json['detailTarget'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
-  detailTargetAlt: (json['detailTargetAlt'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
-  detailExtra: json['detailExtra'] as String?,
-  detailExtraAlt: json['detailExtraAlt'] as String?,
-  selectionStatus: json['selectionStatus'] as String,
-  selectionStartTime: json['selectionStartTime'] as String,
-  selectionEndTime: json['selectionEndTime'] as String,
-  ugTotal: (json['ugTotal'] as num).toInt(),
-  ugReserved: (json['ugReserved'] as num).toInt(),
-  pgTotal: (json['pgTotal'] as num).toInt(),
-  pgReserved: (json['pgReserved'] as num).toInt(),
-  maleTotal: (json['maleTotal'] as num?)?.toInt(),
-  maleReserved: (json['maleReserved'] as num?)?.toInt(),
-  femaleTotal: (json['femaleTotal'] as num?)?.toInt(),
-  femaleReserved: (json['femaleReserved'] as num?)?.toInt(),
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+CourseDetail _$CourseDetailFromJson(Map<String, dynamic> json) =>
+    CourseDetail(
+        classId: json['classId'] as String,
+        extraName: json['extraName'] as String?,
+        extraNameAlt: json['extraNameAlt'] as String?,
+        detailHtml: json['detailHtml'] as String?,
+        detailHtmlAlt: json['detailHtmlAlt'] as String?,
+        detailTeacherId: json['detailTeacherId'] as String?,
+        detailTeacherName: json['detailTeacherName'] as String?,
+        detailTeacherNameAlt: json['detailTeacherNameAlt'] as String?,
+        detailSchedule: (json['detailSchedule'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList(),
+        detailScheduleAlt: (json['detailScheduleAlt'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList(),
+        detailClasses: json['detailClasses'] as String?,
+        detailClassesAlt: json['detailClassesAlt'] as String?,
+        detailTarget: (json['detailTarget'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList(),
+        detailTargetAlt: (json['detailTargetAlt'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList(),
+        detailExtra: json['detailExtra'] as String?,
+        detailExtraAlt: json['detailExtraAlt'] as String?,
+        selectionStatus: json['selectionStatus'] as String,
+        selectionStartTime: json['selectionStartTime'] as String,
+        selectionEndTime: json['selectionEndTime'] as String,
+        ugTotal: (json['ugTotal'] as num).toInt(),
+        ugReserved: (json['ugReserved'] as num).toInt(),
+        pgTotal: (json['pgTotal'] as num).toInt(),
+        pgReserved: (json['pgReserved'] as num).toInt(),
+        maleTotal: (json['maleTotal'] as num?)?.toInt(),
+        maleReserved: (json['maleReserved'] as num?)?.toInt(),
+        femaleTotal: (json['femaleTotal'] as num?)?.toInt(),
+        femaleReserved: (json['femaleReserved'] as num?)?.toInt(),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CourseDetailToJson(CourseDetail instance) =>
     <String, dynamic>{
-      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
       'classId': instance.classId,
       'extraName': instance.extraName,
       'extraNameAlt': instance.extraNameAlt,
@@ -272,33 +355,43 @@ Map<String, dynamic> _$CourseDetailToJson(CourseDetail instance) =>
       'detailExtraAlt': instance.detailExtraAlt,
     };
 
-CourseInfo _$CourseInfoFromJson(Map<String, dynamic> json) => CourseInfo(
-  courseId: json['courseId'] as String,
-  courseName: json['courseName'] as String,
-  courseNameAlt: json['courseNameAlt'] as String?,
-  courseType: json['courseType'] as String,
-  courseTypeAlt: json['courseTypeAlt'] as String?,
-  courseCategory: json['courseCategory'] as String,
-  courseCategoryAlt: json['courseCategoryAlt'] as String?,
-  districtName: json['districtName'] as String,
-  districtNameAlt: json['districtNameAlt'] as String?,
-  schoolName: json['schoolName'] as String,
-  schoolNameAlt: json['schoolNameAlt'] as String?,
-  termName: json['termName'] as String,
-  termNameAlt: json['termNameAlt'] as String?,
-  teachingLanguage: json['teachingLanguage'] as String,
-  teachingLanguageAlt: json['teachingLanguageAlt'] as String?,
-  credits: (json['credits'] as num).toDouble(),
-  hours: (json['hours'] as num).toDouble(),
-  classDetail: json['classDetail'] == null
-      ? null
-      : CourseDetail.fromJson(json['classDetail'] as Map<String, dynamic>),
-  fromTabId: json['fromTabId'] as String?,
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+CourseInfo _$CourseInfoFromJson(Map<String, dynamic> json) =>
+    CourseInfo(
+        courseId: json['courseId'] as String,
+        courseName: json['courseName'] as String,
+        courseNameAlt: json['courseNameAlt'] as String?,
+        courseType: json['courseType'] as String,
+        courseTypeAlt: json['courseTypeAlt'] as String?,
+        courseCategory: json['courseCategory'] as String,
+        courseCategoryAlt: json['courseCategoryAlt'] as String?,
+        districtName: json['districtName'] as String,
+        districtNameAlt: json['districtNameAlt'] as String?,
+        schoolName: json['schoolName'] as String,
+        schoolNameAlt: json['schoolNameAlt'] as String?,
+        termName: json['termName'] as String,
+        termNameAlt: json['termNameAlt'] as String?,
+        teachingLanguage: json['teachingLanguage'] as String,
+        teachingLanguageAlt: json['teachingLanguageAlt'] as String?,
+        credits: (json['credits'] as num).toDouble(),
+        hours: (json['hours'] as num).toDouble(),
+        classDetail: json['classDetail'] == null
+            ? null
+            : CourseDetail.fromJson(
+                json['classDetail'] as Map<String, dynamic>,
+              ),
+        fromTabId: json['fromTabId'] as String?,
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CourseInfoToJson(CourseInfo instance) =>
     <String, dynamic>{
-      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
       'courseId': instance.courseId,
       'courseName': instance.courseName,
       'courseNameAlt': instance.courseNameAlt,
@@ -320,16 +413,24 @@ Map<String, dynamic> _$CourseInfoToJson(CourseInfo instance) =>
       'fromTabId': instance.fromTabId,
     };
 
-CourseTab _$CourseTabFromJson(Map<String, dynamic> json) => CourseTab(
-  tabId: json['tabId'] as String,
-  tabName: json['tabName'] as String,
-  tabNameAlt: json['tabNameAlt'] as String?,
-  selectionStartTime: json['selectionStartTime'] as String?,
-  selectionEndTime: json['selectionEndTime'] as String?,
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+CourseTab _$CourseTabFromJson(Map<String, dynamic> json) =>
+    CourseTab(
+        tabId: json['tabId'] as String,
+        tabName: json['tabName'] as String,
+        tabNameAlt: json['tabNameAlt'] as String?,
+        selectionStartTime: json['selectionStartTime'] as String?,
+        selectionEndTime: json['selectionEndTime'] as String?,
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CourseTabToJson(CourseTab instance) => <String, dynamic>{
-  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
   'tabId': instance.tabId,
   'tabName': instance.tabName,
   'tabNameAlt': instance.tabNameAlt,
@@ -339,21 +440,29 @@ Map<String, dynamic> _$CourseTabToJson(CourseTab instance) => <String, dynamic>{
 
 CourseSelectionState _$CourseSelectionStateFromJson(
   Map<String, dynamic> json,
-) => CourseSelectionState(
-  termInfo: json['termInfo'] == null
-      ? null
-      : TermInfo.fromJson(json['termInfo'] as Map<String, dynamic>),
-  wantedCourses:
-      (json['wantedCourses'] as List<dynamic>?)
-          ?.map((e) => CourseInfo.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const [],
-)..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+) =>
+    CourseSelectionState(
+        termInfo: json['termInfo'] == null
+            ? null
+            : TermInfo.fromJson(json['termInfo'] as Map<String, dynamic>),
+        wantedCourses:
+            (json['wantedCourses'] as List<dynamic>?)
+                ?.map((e) => CourseInfo.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CourseSelectionStateToJson(
   CourseSelectionState instance,
 ) => <String, dynamic>{
-  r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
   'termInfo': instance.termInfo,
   'wantedCourses': instance.wantedCourses,
 };

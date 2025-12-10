@@ -8,18 +8,28 @@ part of 'preferences.dart';
 
 CurriculumSettings _$CurriculumSettingsFromJson(Map<String, dynamic> json) =>
     CurriculumSettings(
-      weekendMode: $enumDecode(
-        _$WeekendDisplayModeEnumMap,
-        json['weekendMode'],
-      ),
-      tableSize: $enumDecode(_$TableSizeEnumMap, json['tableSize']),
-      animationMode: $enumDecode(_$AnimationModeEnumMap, json['animationMode']),
-      activated: json['activated'] as bool? ?? true,
-    )..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+        weekendMode: $enumDecode(
+          _$WeekendDisplayModeEnumMap,
+          json['weekendMode'],
+        ),
+        tableSize: $enumDecode(_$TableSizeEnumMap, json['tableSize']),
+        animationMode: $enumDecode(
+          _$AnimationModeEnumMap,
+          json['animationMode'],
+        ),
+        activated: json['activated'] as bool? ?? true,
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$CurriculumSettingsToJson(CurriculumSettings instance) =>
     <String, dynamic>{
-      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
       'weekendMode': _$WeekendDisplayModeEnumMap[instance.weekendMode]!,
       'tableSize': _$TableSizeEnumMap[instance.tableSize]!,
       'animationMode': _$AnimationModeEnumMap[instance.animationMode]!,
@@ -44,13 +54,29 @@ const _$AnimationModeEnumMap = {
   AnimationMode.slide: 'slide',
 };
 
+Value? _$JsonConverterFromJson<Json, Value>(
+  Object? json,
+  Value? Function(Json json) fromJson,
+) => json == null ? null : fromJson(json as Json);
+
+Json? _$JsonConverterToJson<Json, Value>(
+  Value? value,
+  Json? Function(Value value) toJson,
+) => value == null ? null : toJson(value);
+
 AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) =>
     AppSettings(themeMode: $enumDecode(_$ThemeModeEnumMap, json['themeMode']))
-      ..$lastUpdateTime = DateTime.parse(json[r'$lastUpdateTime'] as String);
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
 
 Map<String, dynamic> _$AppSettingsToJson(AppSettings instance) =>
     <String, dynamic>{
-      r'$lastUpdateTime': instance.$lastUpdateTime.toIso8601String(),
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
       'themeMode': _$ThemeModeEnumMap[instance.themeMode]!,
     };
 

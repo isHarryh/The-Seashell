@@ -19,7 +19,7 @@ abstract class Serializable {
 /// Fields in subclasses should be `final` to ensure immutability.
 abstract class BaseDataClass implements Serializable {
   @UTCConverter()
-  DateTime $lastUpdateTime;
+  DateTime? $lastUpdateTime;
 
   BaseDataClass() : $lastUpdateTime = DateTime.now().toUtc();
 

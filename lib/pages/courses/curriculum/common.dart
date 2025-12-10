@@ -4,7 +4,7 @@ import '/types/courses.dart';
 import '/types/base.dart';
 
 String formatCacheTime(BaseDataClass cachedData) {
-  final time = cachedData.$lastUpdateTime;
+  final time = cachedData.$lastUpdateTime!;
   final dateString =
       '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')}';
   final timeString =
