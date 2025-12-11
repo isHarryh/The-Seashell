@@ -1,4 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 import 'base.dart';
 
 part 'sync.g.dart';
@@ -31,6 +33,15 @@ class Announcement extends BaseDataClass {
       'markdown': markdown,
       'source': source,
     };
+  }
+
+  /// Calculate unique key for this announcement based on essential fields
+  String calculateKey() {
+    final essentials = getEssentials();
+    final jsonString = json.encode(essentials);
+    final bytes = utf8.encode(jsonString);
+    final digest = md5.convert(bytes);
+    return digest.toString();
   }
 
   factory Announcement.fromJson(Map<String, dynamic> json) =>

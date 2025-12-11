@@ -189,3 +189,35 @@ class AppSettings extends BaseDataClass {
   factory AppSettings.fromJson(Map<String, dynamic> json) =>
       _$AppSettingsFromJson(json);
 }
+
+@JsonSerializable()
+class AnnouncementReadMap extends BaseDataClass {
+  @JsonKey(fromJson: _readTimestampFromJson, toJson: _readTimestampToJson)
+  Map<String, DateTime> readTimestamp;
+
+  AnnouncementReadMap({required this.readTimestamp});
+
+  @override
+  Map<String, dynamic> getEssentials() => {'readTimestamp': readTimestamp};
+
+  static final AnnouncementReadMap defaultMap = AnnouncementReadMap(
+    readTimestamp: {},
+  );
+
+  // JSON converters for DateTime
+  static Map<String, DateTime> _readTimestampFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return json.map(
+      (key, value) => MapEntry(key, DateTime.parse(value as String)),
+    );
+  }
+
+  static Map<String, dynamic> _readTimestampToJson(Map<String, DateTime> map) {
+    return map.map((key, value) => MapEntry(key, value.toIso8601String()));
+  }
+
+  Map<String, dynamic> toJson() => _$AnnouncementReadMapToJson(this);
+  factory AnnouncementReadMap.fromJson(Map<String, dynamic> json) =>
+      _$AnnouncementReadMapFromJson(json);
+}

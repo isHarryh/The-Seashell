@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import '/services/provider.dart';
 import '/types/sync.dart';
+import '/types/preferences.dart';
 import '/utils/app_bar.dart';
 
 class AnnouncementPage extends StatefulWidget {
@@ -18,6 +20,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
   String? _errorMessage;
   bool _isLoading = true;
   int? _expandedIndex; // Track which announcement is expanded
+  Set<String> _unreadKeys = {}; // Track unread announcement keys
 
   @override
   void initState() {
@@ -36,6 +39,9 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
           .getAnnouncements();
 
       if (mounted) {
+        // Process read status
+        await _processReadStatus(announcements);
+
         setState(() {
           _announcements = announcements;
           _isLoading = false;
@@ -48,6 +54,68 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _processReadStatus(List<Announcement> announcements) async {
+    // Load current read map
+    final store = _serviceProvider.storeService;
+    var readMap =
+        store.getConfig<AnnouncementReadMap>(
+          'announcement_read',
+          AnnouncementReadMap.fromJson,
+        ) ??
+        AnnouncementReadMap.defaultMap;
+
+    // Find unread announcements
+    final currentKeys = announcements.map((a) => a.calculateKey()).toSet();
+    final unreadKeys = <String>{};
+    for (final announcement in announcements) {
+      final key = announcement.calculateKey();
+      if (!readMap.readTimestamp.containsKey(key)) {
+        unreadKeys.add(key);
+      }
+    }
+
+    // Remove deleted announcements from read map
+    final keysToRemove = readMap.readTimestamp.keys
+        .where((key) => !currentKeys.contains(key))
+        .toList();
+    if (keysToRemove.isNotEmpty) {
+      for (final key in keysToRemove) {
+        readMap.readTimestamp.remove(key);
+      }
+      store.putConfig('announcement_read', readMap);
+    }
+
+    _unreadKeys = unreadKeys;
+  }
+
+  Future<void> _markReadStatus(Announcement announcement, bool isRead) async {
+    final key = announcement.calculateKey();
+    final store = _serviceProvider.storeService;
+
+    var readMap =
+        store.getConfig<AnnouncementReadMap>(
+          'announcement_read',
+          AnnouncementReadMap.fromJson,
+        ) ??
+        AnnouncementReadMap.defaultMap;
+
+    if (isRead) {
+      // Update read timestamp
+      readMap.readTimestamp[key] = DateTime.now();
+      store.putConfig('announcement_read', readMap);
+      setState(() {
+        _unreadKeys.remove(key);
+      });
+    } else {
+      // Remove from read timestamp to mark as unread
+      readMap.readTimestamp.remove(key);
+      store.putConfig('announcement_read', readMap);
+      setState(() {
+        _unreadKeys.add(key);
+      });
     }
   }
 
@@ -113,18 +181,24 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
       itemBuilder: (context, index) {
         final announcement = _announcements![index];
         final isExpanded = _expandedIndex == index;
+        final key = announcement.calculateKey();
+        final isUnread = _unreadKeys.contains(key);
+
         return _AnnouncementCard(
           announcement: announcement,
           isExpanded: isExpanded,
+          isUnread: isUnread,
           onExpandChanged: (expanded) {
             setState(() {
               if (expanded) {
                 _expandedIndex = index;
+                _markReadStatus(announcement, true);
               } else if (_expandedIndex == index) {
                 _expandedIndex = null;
               }
             });
           },
+          onMarkReadStatus: (isRead) => _markReadStatus(announcement, isRead),
         );
       },
     );
@@ -134,12 +208,16 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 class _AnnouncementCard extends StatefulWidget {
   final Announcement announcement;
   final bool isExpanded;
+  final bool isUnread;
   final Function(bool) onExpandChanged;
+  final Function(bool) onMarkReadStatus;
 
   const _AnnouncementCard({
     required this.announcement,
     required this.isExpanded,
+    required this.isUnread,
     required this.onExpandChanged,
+    required this.onMarkReadStatus,
   });
 
   @override
@@ -176,6 +254,23 @@ class _AnnouncementCardState extends State<_AnnouncementCard>
         return '紧急公告';
       default:
         return null; // Don't show label for unknown groups
+    }
+  }
+
+  // Helper method to format date
+  String? _formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return null;
+    }
+
+    try {
+      // Try to parse the date string
+      DateTime dateTime = DateTime.parse(dateString);
+      // Format as yyyy-MM-dd
+      return '${dateTime.year.toString().padLeft(4, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+    } catch (e) {
+      // If parsing fails, return null to hide the date
+      return null;
     }
   }
 
@@ -241,7 +336,7 @@ class _AnnouncementCardState extends State<_AnnouncementCard>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title
+                          // Title (without unread indicator)
                           Text(
                             widget.announcement.title,
                             style: Theme.of(context).textTheme.titleMedium
@@ -253,7 +348,8 @@ class _AnnouncementCardState extends State<_AnnouncementCard>
                           // Meta info (date)
                           Row(
                             children: [
-                              if (widget.announcement.date != null) ...[
+                              if (_formatDate(widget.announcement.date) !=
+                                  null) ...[
                                 Icon(
                                   Icons.calendar_today,
                                   size: 14,
@@ -263,7 +359,7 @@ class _AnnouncementCardState extends State<_AnnouncementCard>
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  widget.announcement.date!,
+                                  _formatDate(widget.announcement.date)!,
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ],
@@ -273,17 +369,37 @@ class _AnnouncementCardState extends State<_AnnouncementCard>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Expand/collapse button
-                    RotationTransition(
-                      turns: Tween<double>(
-                        begin: -0.25,
-                        end: 0.25,
-                      ).animate(_animationController),
-                      child: Icon(
-                        Icons.chevron_right,
-                        color: Theme.of(context).colorScheme.secondary,
+                    // Expand/collapse button or unread indicator
+                    if (widget.isUnread)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getBorderColor(),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '未读',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      )
+                    else
+                      RotationTransition(
+                        turns: Tween<double>(
+                          begin: -0.25,
+                          end: 0.25,
+                        ).animate(_animationController),
+                        child: Icon(
+                          Icons.chevron_right,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -300,79 +416,112 @@ class _AnnouncementCardState extends State<_AnnouncementCard>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Group and Language tags
+                      // Group and Language tags with mark as unread button
                       const SizedBox(height: 12),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Group tag
-                          if (_getGroupLabelText() != null) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    size: 12,
+                          // Left side: Group and Language tags
+                          Row(
+                            children: [
+                              // Group tag
+                              if (_getGroupLabelText() != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.secondary,
+                                    ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _getGroupLabelText()!,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelSmall,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        size: 12,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.secondary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        _getGroupLabelText()!,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.labelSmall,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                          // Language tag if available
-                          if (widget.announcement.language != null) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.translate,
-                                    size: 12,
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              // Language tag if available
+                              if (widget.announcement.language != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.secondary,
+                                    ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    widget.announcement.language!.toUpperCase(),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelSmall,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.translate,
+                                        size: 12,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.secondary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        widget.announcement.language!
+                                            .toUpperCase(),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.labelSmall,
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (!widget.isUnread && kDebugMode)
+                            // Right side: Mark as unread button
+                            TextButton.icon(
+                              onPressed: () => widget.onMarkReadStatus(false),
+                              icon: Icon(
+                                Icons.mark_email_unread,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              label: Text(
+                                '标为未读',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 12,
+                                ),
+                                minimumSize: Size.zero,
                               ),
                             ),
-                          ],
                         ],
                       ),
                       // Content (Markdown)

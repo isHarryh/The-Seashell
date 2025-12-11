@@ -85,3 +85,26 @@ const _$ThemeModeEnumMap = {
   ThemeMode.light: 'light',
   ThemeMode.dark: 'dark',
 };
+
+AnnouncementReadMap _$AnnouncementReadMapFromJson(Map<String, dynamic> json) =>
+    AnnouncementReadMap(
+        readTimestamp: AnnouncementReadMap._readTimestampFromJson(
+          json['readTimestamp'] as Map<String, dynamic>,
+        ),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
+
+Map<String, dynamic> _$AnnouncementReadMapToJson(
+  AnnouncementReadMap instance,
+) => <String, dynamic>{
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
+  'readTimestamp': AnnouncementReadMap._readTimestampToJson(
+    instance.readTimestamp,
+  ),
+};
