@@ -43,6 +43,7 @@ dependencies:
   fl_chart: ^1.1.1
   package_info_plus: ^9.0.0
   device_info_plus: ^12.2.0
+  markdown_widget: ^2.3.2
 
 dev_dependencies:
   flutter_test:
