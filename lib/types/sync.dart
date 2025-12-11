@@ -4,6 +4,43 @@ import 'base.dart';
 part 'sync.g.dart';
 
 @JsonSerializable()
+class Announcement extends BaseDataClass {
+  final String title;
+  final String? date;
+  final String group;
+  final String? language;
+  final String markdown;
+  final String? source;
+
+  Announcement({
+    required this.title,
+    this.date,
+    required this.group,
+    this.language,
+    required this.markdown,
+    this.source,
+  });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'title': title,
+      'date': date,
+      'group': group,
+      'language': language,
+      'markdown': markdown,
+      'source': source,
+    };
+  }
+
+  factory Announcement.fromJson(Map<String, dynamic> json) =>
+      _$AnnouncementFromJson(json);
+
+  @override
+  Map<String, dynamic> toJson() => _$AnnouncementToJson(this);
+}
+
+@JsonSerializable()
 class DeviceInfo extends BaseDataClass {
   final String? deviceId; // UUID
   final String deviceOs;

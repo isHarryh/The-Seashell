@@ -6,6 +6,44 @@ part of 'sync.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+Announcement _$AnnouncementFromJson(Map<String, dynamic> json) =>
+    Announcement(
+        title: json['title'] as String,
+        date: json['date'] as String?,
+        group: json['group'] as String,
+        language: json['language'] as String?,
+        markdown: json['markdown'] as String,
+        source: json['source'] as String?,
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
+
+Map<String, dynamic> _$AnnouncementToJson(Announcement instance) =>
+    <String, dynamic>{
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
+      'title': instance.title,
+      'date': instance.date,
+      'group': instance.group,
+      'language': instance.language,
+      'markdown': instance.markdown,
+      'source': instance.source,
+    };
+
+Value? _$JsonConverterFromJson<Json, Value>(
+  Object? json,
+  Value? Function(Json json) fromJson,
+) => json == null ? null : fromJson(json as Json);
+
+Json? _$JsonConverterToJson<Json, Value>(
+  Value? value,
+  Json? Function(Value value) toJson,
+) => value == null ? null : toJson(value);
+
 DeviceInfo _$DeviceInfoFromJson(Map<String, dynamic> json) =>
     DeviceInfo(
         deviceId: json['deviceId'] as String?,
@@ -27,16 +65,6 @@ Map<String, dynamic> _$DeviceInfoToJson(DeviceInfo instance) =>
       'deviceOs': instance.deviceOs,
       'deviceName': instance.deviceName,
     };
-
-Value? _$JsonConverterFromJson<Json, Value>(
-  Object? json,
-  Value? Function(Json json) fromJson,
-) => json == null ? null : fromJson(json as Json);
-
-Json? _$JsonConverterToJson<Json, Value>(
-  Value? value,
-  Json? Function(Value value) toJson,
-) => value == null ? null : toJson(value);
 
 PairingInfo _$PairingInfoFromJson(Map<String, dynamic> json) =>
     PairingInfo(

@@ -23,6 +23,9 @@ abstract class BaseSyncService with BaseService {
     _lastSyncStatus = SyncStatus(type: type, timestamp: DateTime.now());
   }
 
+  /// Gets announcements from the server.
+  Future<List<Announcement>> getAnnouncements();
+
   /// Registers a new device and get a unique device ID.
   Future<String> registerDevice({
     required String deviceOs,

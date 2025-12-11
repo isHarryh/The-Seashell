@@ -12,6 +12,7 @@ import 'pages/settings/index.dart';
 import 'pages/net/dashboard/index.dart';
 import 'pages/net/monitor/index.dart';
 import 'pages/sync/index.dart';
+import 'pages/about/anno.dart';
 
 // App constants
 class _AppConstants {
@@ -66,6 +67,12 @@ class _AppConstants {
       title: '跨设备同步',
       path: '/sync',
       category: '同步',
+    ),
+    _NavigationItem(
+      icon: Icons.notifications,
+      title: '公告',
+      path: '/about/anno',
+      category: '关于',
     ),
   ];
 }
@@ -134,6 +141,11 @@ class AppRouter {
         name: 'SyncRoute',
         path: '/sync',
         builder: (context, data) => const MainLayout(child: SyncPage()),
+      ),
+      NamedRouteDef(
+        name: 'AnnouncementRoute',
+        path: '/about/anno',
+        builder: (context, data) => const MainLayout(child: AnnouncementPage()),
       ),
     ],
   );

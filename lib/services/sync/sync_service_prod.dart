@@ -11,6 +11,20 @@ class SyncServiceProd extends BaseSyncService {
   String get baseUrl => 'https://thebeike.cn/api/client';
   String get userAgent => 'TheBeike-GUI/${MetaInfo.instance.appVersion}';
 
+  @override
+  Future<List<Announcement>> getAnnouncements() async {
+    final response = await _sendRequest('announcement', {});
+
+    if (response == null || response['contents'] == null) {
+      return [];
+    }
+
+    final announcements = response['contents'] as List<dynamic>;
+    return announcements
+        .map((a) => Announcement.fromJson(a as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<Map<String, dynamic>?> _sendRequest(
     String endpoint,
     Map<String, dynamic> body,
