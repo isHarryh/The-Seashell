@@ -64,10 +64,10 @@ class _SyncPoweredState extends State<SyncPowered>
       // Silently ignore sync errors
     } finally {
       if (mounted && !_syncCancelled) {
+        await _loadingOpacityController.reverse();
         setState(() {
           _syncCompleted = true;
         });
-        await _loadingOpacityController.reverse();
 
         widget.onSyncEnd?.call();
       }

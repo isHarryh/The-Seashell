@@ -5,6 +5,7 @@ import '/services/provider.dart';
 import '/types/sync.dart';
 import '/types/preferences.dart';
 import '/utils/app_bar.dart';
+import '/utils/sync_embeded.dart';
 
 class AnnouncementPage extends StatefulWidget {
   const AnnouncementPage({super.key});
@@ -123,9 +124,27 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const PageAppBar(title: '公告'),
-      body: RefreshIndicator(
-        onRefresh: _loadAnnouncements,
-        child: _buildContent(),
+      body: SyncPowered(
+        childBuilder: (context) => RefreshIndicator(
+          onRefresh: _loadAnnouncements,
+          child: _buildContent(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeMessage() {
+    return Padding(
+      padding: EdgeInsets.all(8),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.campaign, size: 56, color: Colors.grey),
+            SizedBox(height: 8),
+            Text('欢迎查看大贝壳公告栏', style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
       ),
     );
   }
@@ -175,32 +194,40 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _announcements!.length,
-      itemBuilder: (context, index) {
-        final announcement = _announcements![index];
-        final isExpanded = _expandedIndex == index;
-        final key = announcement.calculateKey();
-        final isUnread = _unreadKeys.contains(key);
+    return Column(
+      children: [
+        _buildWelcomeMessage(),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _announcements!.length,
+            itemBuilder: (context, index) {
+              final announcement = _announcements![index];
+              final isExpanded = _expandedIndex == index;
+              final key = announcement.calculateKey();
+              final isUnread = _unreadKeys.contains(key);
 
-        return _AnnouncementCard(
-          announcement: announcement,
-          isExpanded: isExpanded,
-          isUnread: isUnread,
-          onExpandChanged: (expanded) {
-            setState(() {
-              if (expanded) {
-                _expandedIndex = index;
-                _markReadStatus(announcement, true);
-              } else if (_expandedIndex == index) {
-                _expandedIndex = null;
-              }
-            });
-          },
-          onMarkReadStatus: (isRead) => _markReadStatus(announcement, isRead),
-        );
-      },
+              return _AnnouncementCard(
+                announcement: announcement,
+                isExpanded: isExpanded,
+                isUnread: isUnread,
+                onExpandChanged: (expanded) {
+                  setState(() {
+                    if (expanded) {
+                      _expandedIndex = index;
+                      _markReadStatus(announcement, true);
+                    } else if (_expandedIndex == index) {
+                      _expandedIndex = null;
+                    }
+                  });
+                },
+                onMarkReadStatus: (isRead) =>
+                    _markReadStatus(announcement, isRead),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
