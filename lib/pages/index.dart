@@ -4,6 +4,22 @@ import 'package:auto_route/auto_route.dart';
 import '/utils/page_mixins.dart';
 import '/types/courses.dart';
 
+class _FeatureCardConfig {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final String route;
+
+  const _FeatureCardConfig({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.route,
+  });
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -19,6 +35,48 @@ class _HomePageState extends State<HomePage>
   ClassItem? _upcomingClass;
   CurriculumIntegratedData? _curriculumData;
   Timer? _refreshTimer;
+
+  // Feature card configurations
+  late final List<_FeatureCardConfig> _courseFeatureCards = [
+    _FeatureCardConfig(
+      title: '选课',
+      description: '查看和管理课程',
+      icon: Icons.school,
+      color: Colors.blue,
+      route: '/courses/selection',
+    ),
+    _FeatureCardConfig(
+      title: '考试',
+      description: '查看考试时间和地点',
+      icon: Icons.event,
+      color: Colors.orangeAccent,
+      route: '/courses/exam',
+    ),
+    _FeatureCardConfig(
+      title: '成绩',
+      description: '查看考试成绩',
+      icon: Icons.assessment,
+      color: Colors.orange,
+      route: '/courses/grade',
+    ),
+  ];
+
+  late final List<_FeatureCardConfig> _netFeatureCards = [
+    _FeatureCardConfig(
+      title: '流量监视',
+      description: '实时监控网络流量',
+      icon: Icons.swap_vert,
+      color: Colors.green,
+      route: '/net/monitor',
+    ),
+    _FeatureCardConfig(
+      title: '自助服务',
+      description: '账户管理和账单查询',
+      icon: Icons.wifi,
+      color: Colors.teal,
+      route: '/net/dashboard',
+    ),
+  ];
 
   @override
   void onServiceInit() {
@@ -204,30 +262,24 @@ class _HomePageState extends State<HomePage>
         ),
         const SizedBox(height: 8),
         SizedBox(height: 100, child: _buildAccountCard(context)),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 100,
-          child: _buildFeatureCard(
-            context,
-            '选课',
-            '查看和管理课程',
-            Icons.school,
-            Colors.blue,
-            () => context.router.pushPath('/courses/selection'),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 100,
-          child: _buildFeatureCard(
-            context,
-            '成绩',
-            '查看考试成绩',
-            Icons.assessment,
-            Colors.blueAccent,
-            () => context.router.pushPath('/courses/grade'),
-          ),
-        ),
+        ..._courseFeatureCards.map((card) {
+          return Column(
+            children: [
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 100,
+                child: _buildFeatureCard(
+                  context,
+                  card.title,
+                  card.description,
+                  card.icon,
+                  card.color,
+                  () => context.router.pushPath(card.route),
+                ),
+              ),
+            ],
+          );
+        }),
       ],
     );
   }
@@ -242,35 +294,44 @@ class _HomePageState extends State<HomePage>
         const SizedBox(height: 8),
         SizedBox(
           height: 120,
-          child: Row(
-            children: [
-              Expanded(child: _buildAccountCard(context)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFeatureCard(
-                  context,
-                  '选课',
-                  '查看和管理课程',
-                  Icons.school,
-                  Colors.blue,
-                  () => context.router.pushPath('/courses/selection'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFeatureCard(
-                  context,
-                  '成绩',
-                  '查看考试成绩',
-                  Icons.assessment,
-                  Colors.blueAccent,
-                  () => context.router.pushPath('/courses/grade'),
-                ),
-              ),
-            ],
-          ),
+          child: _buildCardRow([
+            _buildAccountCard(context),
+            _courseFeatureCards[0],
+          ]),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 120,
+          child: _buildCardRow([
+            _courseFeatureCards[1],
+            _courseFeatureCards[2],
+          ]),
         ),
       ],
+    );
+  }
+
+  Widget _buildCardRow(List<dynamic> items) {
+    return Row(
+      children: items.asMap().entries.expand((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        return [
+          if (index > 0) const SizedBox(width: 8),
+          Expanded(
+            child: item is Widget
+                ? item
+                : _buildFeatureCard(
+                    context,
+                    item.title,
+                    item.description,
+                    item.icon,
+                    item.color,
+                    () => context.router.pushPath(item.route),
+                  ),
+          ),
+        ];
+      }).toList(),
     );
   }
 
@@ -583,63 +644,29 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildNetNarrowLayout() {
     return Column(
-      children: [
-        SizedBox(
-          height: 100,
-          child: _buildFeatureCard(
-            context,
-            '流量监视',
-            '实时监控网络流量',
-            Icons.network_check,
-            Colors.green,
-            () => context.router.pushPath('/net/monitor'),
+      children: _netFeatureCards.asMap().entries.expand((entry) {
+        final index = entry.key;
+        final card = entry.value;
+        return [
+          if (index > 0) const SizedBox(height: 8),
+          SizedBox(
+            height: 100,
+            child: _buildFeatureCard(
+              context,
+              card.title,
+              card.description,
+              card.icon,
+              card.color,
+              () => context.router.pushPath(card.route),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 100,
-          child: _buildFeatureCard(
-            context,
-            '自助服务',
-            '账户管理和账单查询',
-            Icons.settings,
-            Colors.teal,
-            () => context.router.pushPath('/net/dashboard'),
-          ),
-        ),
-      ],
+        ];
+      }).toList(),
     );
   }
 
   Widget _buildNetWideLayout() {
-    return SizedBox(
-      height: 120,
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildFeatureCard(
-              context,
-              '流量监视',
-              '实时监控网络流量',
-              Icons.swap_vert,
-              Colors.green,
-              () => context.router.pushPath('/net/monitor'),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildFeatureCard(
-              context,
-              '自助服务',
-              '账户管理和账单查询',
-              Icons.wifi,
-              Colors.teal,
-              () => context.router.pushPath('/net/dashboard'),
-            ),
-          ),
-        ],
-      ),
-    );
+    return SizedBox(height: 120, child: _buildCardRow(_netFeatureCards));
   }
 
   Widget _buildAccountCard(BuildContext context) {
