@@ -6,6 +6,7 @@ import 'utils/app_bar.dart';
 import 'pages/index.dart';
 import 'pages/courses/selection/index.dart';
 import 'pages/courses/curriculum/index.dart';
+import 'pages/courses/exam/index.dart';
 import 'pages/courses/grade/index.dart';
 import 'pages/courses/account/index.dart';
 import 'pages/settings/index.dart';
@@ -42,6 +43,12 @@ class _AppConstants {
       icon: Icons.school,
       title: '选课',
       path: '/courses/selection',
+      category: '教务',
+    ),
+    _NavigationItem(
+      icon: Icons.assignment,
+      title: '考试',
+      path: '/courses/exam',
       category: '教务',
     ),
     _NavigationItem(
@@ -116,6 +123,11 @@ class AppRouter {
         path: '/courses/selection',
         builder: (context, data) =>
             const MainLayout(child: CourseSelectionPage()),
+      ),
+      NamedRouteDef(
+        name: 'ExamRoute',
+        path: '/courses/exam',
+        builder: (context, data) => const MainLayout(child: ExamPage()),
       ),
       NamedRouteDef(
         name: 'GradeRoute',
