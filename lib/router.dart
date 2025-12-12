@@ -19,9 +19,6 @@ import 'pages/about/anno.dart';
 class _AppConstants {
   static const double wideScreenBreakpoint = 768.0;
   static const double sideNavigationWidth = 240.0;
-  static const Duration navigationAnimationDuration = Duration(
-    milliseconds: 200,
-  );
   static const String appName = '大贝壳';
   static const IconData appIcon = Icons.waves;
 
@@ -74,12 +71,6 @@ class _AppConstants {
       title: '跨设备同步',
       path: '/sync',
       category: '同步',
-    ),
-    _NavigationItem(
-      icon: Icons.notifications,
-      title: '公告',
-      path: '/about/anno',
-      category: '关于',
     ),
   ];
 }
@@ -146,7 +137,7 @@ class AppRouter {
       ),
       NamedRouteDef(
         name: 'SettingsRoute',
-        path: '/settings',
+        path: '/more/settings',
         builder: (context, data) => const MainLayout(child: SettingsPage()),
       ),
       NamedRouteDef(
@@ -156,7 +147,7 @@ class AppRouter {
       ),
       NamedRouteDef(
         name: 'AnnouncementRoute',
-        path: '/about/anno',
+        path: '/more/anno',
         builder: (context, data) => const MainLayout(child: AnnouncementPage()),
       ),
     ],
@@ -175,6 +166,7 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   bool _isWideScreen = false;
   Widget? _cachedChild;
+  bool _showMore = false;
 
   // GlobalKey to maintain page state during screen size transitions
   // Using an instance key instead of a static map prevents duplicate key errors
@@ -241,10 +233,12 @@ class _MainLayoutState extends State<MainLayout> {
             isDrawer: false,
             currentPath: _currentPath,
             onNavigate: _navigateToPage,
+            showMore: _showMore,
+            onToggleMore: () => setState(() => _showMore = !_showMore),
           ),
           Expanded(
             child: AnimatedSwitcher(
-              duration: _AppConstants.navigationAnimationDuration,
+              duration: const Duration(milliseconds: 200),
               transitionBuilder: (child, animation) {
                 return FadeTransition(opacity: animation, child: child);
               },
@@ -264,6 +258,8 @@ class _MainLayoutState extends State<MainLayout> {
           isDrawer: true,
           currentPath: _currentPath,
           onNavigate: (path) => _navigateToPage(path, isDrawer: true),
+          showMore: _showMore,
+          onToggleMore: () => setState(() => _showMore = !_showMore),
         ),
       ),
       body: KeyedSubtree(key: _contentKey, child: _cachedChild!),
@@ -271,33 +267,93 @@ class _MainLayoutState extends State<MainLayout> {
   }
 }
 
-class _SideNavigation extends StatelessWidget {
+class _SideNavigation extends StatefulWidget {
   final bool isDrawer;
   final String currentPath;
   final void Function(String path) onNavigate;
+  final bool showMore;
+  final VoidCallback onToggleMore;
 
   const _SideNavigation({
     required this.isDrawer,
     required this.currentPath,
     required this.onNavigate,
+    required this.showMore,
+    required this.onToggleMore,
   });
 
   @override
+  State<_SideNavigation> createState() => _SideNavigationState();
+}
+
+class _SideNavigationState extends State<_SideNavigation> {
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.showMore ? 1 : 0);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SideNavigation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.showMore != widget.showMore) {
+      _pageController.animateToPage(
+        widget.showMore ? 1 : 0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final homeItem = _AppConstants.navigationItems[0];
+    final mainItems = _AppConstants.navigationItems.sublist(1);
+
     return Container(
-      width: isDrawer ? null : _AppConstants.sideNavigationWidth,
+      width: widget.isDrawer ? null : _AppConstants.sideNavigationWidth,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: isDrawer
+        border: widget.isDrawer
             ? null
             : Border(right: BorderSide(color: Theme.of(context).dividerColor)),
       ),
       child: Column(
         children: [
-          if (!isDrawer) ...[
-            const SizedBox(height: 20),
+          // Banner
+          if (!widget.isDrawer)
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+              child: Row(
+                children: [
+                  Icon(
+                    _AppConstants.appIcon,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    _AppConstants.appName,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+              decoration: const BoxDecoration(
+                color: Colors.transparent,
+                border: Border(bottom: BorderSide.none),
+              ),
               child: Row(
                 children: [
                   Icon(
@@ -313,39 +369,52 @@ class _SideNavigation extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(),
-          ] else ...[
-            DrawerHeader(
-              decoration: const BoxDecoration(color: Colors.transparent),
-              child: Row(
-                children: [
-                  Icon(
-                    _AppConstants.appIcon,
-                    size: 32,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    _AppConstants.appName,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-          ],
+
+          // Navigation item
+          _buildNavItem(
+            context: context,
+            icon: homeItem.icon,
+            title: homeItem.title,
+            isSelected: widget.currentPath == homeItem.path,
+            onTap: () => widget.onNavigate(homeItem.path),
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: _buildNavigationItems(context),
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                ListView(children: _buildNavItems(context, mainItems)),
+                ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  children: [
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.notifications,
+                      title: '公告',
+                      isSelected: widget.currentPath == '/more/anno',
+                      onTap: () => widget.onNavigate('/more/anno'),
+                    ),
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.settings,
+                      title: '设置',
+                      isSelected: widget.currentPath == '/more/settings',
+                      onTap: () => widget.onNavigate('/more/settings'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const Divider(),
           _buildNavItem(
             context: context,
-            icon: Icons.settings,
-            title: '设置',
-            isSelected: currentPath == '/settings',
-            onTap: () => onNavigate('/settings'),
+            icon: widget.showMore ? Icons.arrow_back : Icons.more_horiz,
+            title: widget.showMore ? '收起' : '更多',
+            isSelected: false,
+            onTap: widget.onToggleMore,
           ),
           const SizedBox(height: 8),
         ],
@@ -353,18 +422,24 @@ class _SideNavigation extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildNavigationItems(BuildContext context) {
-    final groupedItems = _getGroupedNavigationItems();
+  List<Widget> _buildNavItems(
+    BuildContext context,
+    List<_NavigationItem> items,
+  ) {
+    final Map<String?, List<_NavigationItem>> grouped = {};
+    for (final item in items) {
+      grouped.putIfAbsent(item.category, () => []).add(item);
+    }
+    final groupedItems = grouped;
     final widgets = <Widget>[];
 
     for (final entry in groupedItems.entries) {
       final category = entry.key;
-      final items = entry.value;
+      final categoryItems = entry.value;
 
-      // Add category header if not null and not the first category (main)
-      if (category != null && widgets.isNotEmpty) {
+      if (category != null) {
         widgets.addAll([
-          const Divider(),
+          if (widgets.isNotEmpty) const Divider(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
@@ -379,29 +454,20 @@ class _SideNavigation extends StatelessWidget {
         ]);
       }
 
-      // Add navigation items
-      for (final item in items) {
+      for (final item in categoryItems) {
         widgets.add(
           _buildNavItem(
             context: context,
             icon: item.icon,
             title: item.title,
-            isSelected: currentPath == item.path,
-            onTap: () => onNavigate(item.path),
+            isSelected: widget.currentPath == item.path,
+            onTap: () => widget.onNavigate(item.path),
           ),
         );
       }
     }
 
     return widgets;
-  }
-
-  Map<String?, List<_NavigationItem>> _getGroupedNavigationItems() {
-    final Map<String?, List<_NavigationItem>> grouped = {};
-    for (final item in _AppConstants.navigationItems) {
-      grouped.putIfAbsent(item.category, () => []).add(item);
-    }
-    return grouped;
   }
 
   Widget _buildNavItem({
