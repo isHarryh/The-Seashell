@@ -134,19 +134,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
   }
 
   Widget _buildWelcomeMessage() {
-    return Padding(
-      padding: EdgeInsets.all(8),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.campaign, size: 56, color: Colors.grey),
-            SizedBox(height: 8),
-            Text('欢迎查看大贝壳公告栏', style: Theme.of(context).textTheme.titleMedium),
-          ],
-        ),
-      ),
-    );
+    return SizedBox(height: 8); // Preserved
   }
 
   Widget _buildContent() {
