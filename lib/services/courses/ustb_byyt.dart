@@ -476,3 +476,40 @@ extension CourseTabUstbByytExtension on CourseTab {
     );
   }
 }
+
+extension ExamInfoUstbByytExtension on ExamInfo {
+  static ExamInfo parse(Map<String, dynamic> data) {
+    // Parse KSRQ datetime string (ISO format)
+    DateTime examDate = DateTime.now();
+    try {
+      final ksrq = data['KSRQ'] as String?;
+      if (ksrq != null) {
+        examDate = DateTime.parse(ksrq);
+      }
+    } catch (e) {
+      // If parsing fails, use current datetime
+    }
+
+    return ExamInfo(
+      courseId: data['KCDM'] as String? ?? '',
+      examRange: data['KSSJDMC'] as String? ?? '',
+      examRangeAlt: data['KSSJDMC_EN'] as String?,
+      courseName: data['KCMC'] as String? ?? '',
+      courseNameAlt: data['KCMC_EN'] as String?,
+      termYear: data['XN'] as String? ?? '',
+      termSeason: int.tryParse(data['XQ']?.toString() ?? '0') ?? 0,
+      examRoom: data['CDMC'] as String? ?? '',
+      examRoomAlt: data['CDMC_EN'] as String?,
+      examBuilding: data['JXLMC'] as String?,
+      examBuildingAlt: data['JXLMC_EN'] as String?,
+      examWeek: data['DJZ'] as int,
+      examDate: examDate,
+      examDateDisplay: data['KSRQ2'] as String? ?? '',
+      examDateDisplayAlt: data['KSRQ_EN'] as String?,
+      examDayName: data['XQJMC'] as String? ?? '',
+      examDayNameAlt: data['XQJMC_EN'] as String?,
+      examTime: data['KSJTSJ'] as String? ?? '',
+      minorId: int.tryParse(data['KSJC']?.toString() ?? '0') ?? 0,
+    );
+  }
+}

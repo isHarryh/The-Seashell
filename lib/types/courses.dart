@@ -715,3 +715,77 @@ class CourseSelectionState extends BaseDataClass {
       _$CourseSelectionStateFromJson(json);
   Map<String, dynamic> toJson() => _$CourseSelectionStateToJson(this);
 }
+
+@JsonSerializable()
+class ExamInfo extends BaseDataClass {
+  final String courseId; // 课程代码
+  final String examRange; // 考试范围 如"期末"
+  final String? examRangeAlt; // 考试范围英文
+  final String courseName; // 课程名称
+  final String? courseNameAlt; // 课程名称英文
+  final String termYear; // 学年
+  final int termSeason; // 学期
+  final String examRoom; // 考试地点
+  final String? examRoomAlt; // 考试地点英文
+  final String? examBuilding; // 教学楼名称
+  final String? examBuildingAlt; // 教学楼名称英文
+  final int examWeek; // 考试周次
+  final DateTime examDate; // 考试日期
+  final String examDateDisplay; // 考试日期显示 如"12月29日"
+  final String? examDateDisplayAlt; // 考试日期显示英文
+  final String examDayName; // 星期名称 如"星期一"
+  final String? examDayNameAlt; // 星期名称英文
+  final String examTime; // 考试时间 如"13:30-15:30"
+  final int minorId; // 考试小节编号
+
+  ExamInfo({
+    required this.courseId,
+    required this.examRange,
+    this.examRangeAlt,
+    required this.courseName,
+    this.courseNameAlt,
+    required this.termYear,
+    required this.termSeason,
+    required this.examRoom,
+    this.examRoomAlt,
+    this.examBuilding,
+    this.examBuildingAlt,
+    required this.examWeek,
+    required this.examDate,
+    required this.examDateDisplay,
+    this.examDateDisplayAlt,
+    required this.examDayName,
+    this.examDayNameAlt,
+    required this.examTime,
+    required this.minorId,
+  });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'courseId': courseId,
+      'courseName': courseName,
+      'examDate': examDate.toString(),
+      'examTime': examTime,
+    };
+  }
+
+  factory ExamInfo.fromJson(Map<String, dynamic> json) =>
+      _$ExamInfoFromJson(json);
+  Map<String, dynamic> toJson() => _$ExamInfoToJson(this);
+
+  DateTime? getStartTime() {
+    try {
+      final utcDate = examDate.toLocal(); // Server returns UTC date
+      final startTimeStr = examTime.split('-')[0];
+      final timeParts = startTimeStr.split(':');
+      if (timeParts.length != 2) return null;
+      final hour = int.tryParse(timeParts[0]);
+      final minute = int.tryParse(timeParts[1]);
+      if (hour == null || minute == null) return null;
+      return DateTime(utcDate.year, utcDate.month, utcDate.day, hour, minute);
+    } catch (e) {
+      return null;
+    }
+  }
+}

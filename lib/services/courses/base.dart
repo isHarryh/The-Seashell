@@ -23,6 +23,8 @@ abstract class BaseCoursesService with BaseService {
 
   Future<List<CourseGradeItem>> getGrades();
 
+  Future<List<ExamInfo>> getExams(TermInfo termInfo);
+
   Future<List<ClassItem>> getCurriculum(TermInfo termInfo);
 
   Future<List<ClassPeriod>> getCoursePeriods(TermInfo termInfo);

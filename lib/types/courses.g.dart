@@ -466,3 +466,56 @@ Map<String, dynamic> _$CourseSelectionStateToJson(
   'termInfo': instance.termInfo,
   'wantedCourses': instance.wantedCourses,
 };
+
+ExamInfo _$ExamInfoFromJson(Map<String, dynamic> json) =>
+    ExamInfo(
+        courseId: json['courseId'] as String,
+        examRange: json['examRange'] as String,
+        examRangeAlt: json['examRangeAlt'] as String?,
+        courseName: json['courseName'] as String,
+        courseNameAlt: json['courseNameAlt'] as String?,
+        termYear: json['termYear'] as String,
+        termSeason: (json['termSeason'] as num).toInt(),
+        examRoom: json['examRoom'] as String,
+        examRoomAlt: json['examRoomAlt'] as String?,
+        examBuilding: json['examBuilding'] as String?,
+        examBuildingAlt: json['examBuildingAlt'] as String?,
+        examWeek: (json['examWeek'] as num).toInt(),
+        examDate: DateTime.parse(json['examDate'] as String),
+        examDateDisplay: json['examDateDisplay'] as String,
+        examDateDisplayAlt: json['examDateDisplayAlt'] as String?,
+        examDayName: json['examDayName'] as String,
+        examDayNameAlt: json['examDayNameAlt'] as String?,
+        examTime: json['examTime'] as String,
+        minorId: (json['minorId'] as num).toInt(),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
+
+Map<String, dynamic> _$ExamInfoToJson(ExamInfo instance) => <String, dynamic>{
+  r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+    instance.$lastUpdateTime,
+    const UTCConverter().toJson,
+  ),
+  'courseId': instance.courseId,
+  'examRange': instance.examRange,
+  'examRangeAlt': instance.examRangeAlt,
+  'courseName': instance.courseName,
+  'courseNameAlt': instance.courseNameAlt,
+  'termYear': instance.termYear,
+  'termSeason': instance.termSeason,
+  'examRoom': instance.examRoom,
+  'examRoomAlt': instance.examRoomAlt,
+  'examBuilding': instance.examBuilding,
+  'examBuildingAlt': instance.examBuildingAlt,
+  'examWeek': instance.examWeek,
+  'examDate': instance.examDate.toIso8601String(),
+  'examDateDisplay': instance.examDateDisplay,
+  'examDateDisplayAlt': instance.examDateDisplayAlt,
+  'examDayName': instance.examDayName,
+  'examDayNameAlt': instance.examDayNameAlt,
+  'examTime': instance.examTime,
+  'minorId': instance.minorId,
+};

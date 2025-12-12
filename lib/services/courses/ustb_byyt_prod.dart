@@ -273,6 +273,54 @@ class UstbByytProdService extends BaseCoursesService {
   }
 
   @override
+  Future<List<ExamInfo>> getExams(TermInfo termInfo) async {
+    if (status == ServiceStatus.offline || _cookie == null) {
+      throw const CourseServiceOffline();
+    }
+
+    http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse('$_baseUrl/kscxtj/queryXsksByxhList'),
+        headers: _getHeaders(),
+        body:
+            'ppylx=1&pkkyx=&pxn=${termInfo.year}&pxq=${termInfo.season}&pageNum=1&pageSize=40',
+      );
+    } catch (e) {
+      throw CourseServiceNetworkError('Failed to get exams', e);
+    }
+
+    CourseServiceException.raiseForStatus(response.statusCode, setError);
+
+    try {
+      final data = json.decode(response.body);
+
+      if (data['code'] != null && data['code'] != 200) {
+        throw CourseServiceBadRequest(
+          'API returned error: ${data['msg'] ?? 'No msg'}',
+          data['code'] as int?,
+        );
+      }
+      if (data['list'] == null) {
+        return [];
+      }
+
+      final examList = data['list'] as List<dynamic>;
+
+      return examList
+          .map(
+            (item) =>
+                ExamInfoUstbByytExtension.parse(item as Map<String, dynamic>),
+          )
+          .toList();
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceBadResponse('Failed to parse exams response', e);
+    }
+  }
+
+  @override
   Future<List<ClassItem>> getCurriculum(TermInfo termInfo) async {
     if (status == ServiceStatus.offline || _cookie == null) {
       throw const CourseServiceOffline();

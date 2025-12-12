@@ -109,6 +109,34 @@ class UstbByytMockService extends BaseCoursesService {
   }
 
   @override
+  Future<List<ExamInfo>> getExams(TermInfo termInfo) async {
+    try {
+      if (status == ServiceStatus.offline) {
+        throw const CourseServiceOffline();
+      }
+      await Future.delayed(Duration(seconds: 1));
+
+      final String jsonString = await rootBundle.loadString(
+        'assets/mock/ustb_byyt/queryExam.json',
+      );
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      final examList = jsonData['list'] as List<dynamic>? ?? [];
+
+      return examList
+          .map(
+            (item) =>
+                ExamInfoUstbByytExtension.parse(item as Map<String, dynamic>),
+          )
+          .toList();
+    } on CourseServiceException {
+      rethrow;
+    } catch (e) {
+      throw CourseServiceNetworkError('Failed to load exams from mock', e);
+    }
+  }
+
+  @override
   Future<List<ClassItem>> getCurriculum(TermInfo termInfo) async {
     try {
       if (status == ServiceStatus.offline) {
