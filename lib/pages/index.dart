@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage>
     _FeatureCardConfig(
       title: '考试',
       description: '查看考试时间和地点',
-      icon: Icons.event,
+      icon: Icons.assignment,
       color: Colors.orangeAccent,
       route: '/courses/exam',
     ),

@@ -391,7 +391,7 @@ class _SideNavigationState extends State<_SideNavigation> {
                   children: [
                     _buildNavItem(
                       context: context,
-                      icon: Icons.notifications,
+                      icon: Icons.campaign,
                       title: '公告',
                       isSelected: widget.currentPath == '/more/anno',
                       onTap: () => widget.onNavigate('/more/anno'),
