@@ -9,11 +9,11 @@ import 'pages/courses/curriculum/index.dart';
 import 'pages/courses/exam/index.dart';
 import 'pages/courses/grade/index.dart';
 import 'pages/courses/account/index.dart';
-import 'pages/settings/index.dart';
 import 'pages/net/dashboard/index.dart';
 import 'pages/net/monitor/index.dart';
 import 'pages/sync/index.dart';
-import 'pages/about/anno.dart';
+import 'pages/more/anno.dart';
+import 'pages/more/settings.dart';
 
 // App constants
 class _AppConstants {
