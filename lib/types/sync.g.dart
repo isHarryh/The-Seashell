@@ -131,3 +131,31 @@ Map<String, dynamic> _$SyncDeviceDataToJson(SyncDeviceData instance) =>
       'deviceOs': instance.deviceOs,
       'deviceName': instance.deviceName,
     };
+
+ReleaseInfo _$ReleaseInfoFromJson(Map<String, dynamic> json) =>
+    ReleaseInfo(
+        stableVersion: json['stableVersion'] as String,
+        stableDownloads: (json['stableDownloads'] as Map<String, dynamic>).map(
+          (k, e) => MapEntry(k, Map<String, String>.from(e as Map)),
+        ),
+        betaVersion: json['betaVersion'] as String?,
+        betaDownloads: (json['betaDownloads'] as Map<String, dynamic>).map(
+          (k, e) => MapEntry(k, Map<String, String>.from(e as Map)),
+        ),
+      )
+      ..$lastUpdateTime = _$JsonConverterFromJson<String, DateTime>(
+        json[r'$lastUpdateTime'],
+        const UTCConverter().fromJson,
+      );
+
+Map<String, dynamic> _$ReleaseInfoToJson(ReleaseInfo instance) =>
+    <String, dynamic>{
+      r'$lastUpdateTime': _$JsonConverterToJson<String, DateTime>(
+        instance.$lastUpdateTime,
+        const UTCConverter().toJson,
+      ),
+      'stableVersion': instance.stableVersion,
+      'stableDownloads': instance.stableDownloads,
+      'betaVersion': instance.betaVersion,
+      'betaDownloads': instance.betaDownloads,
+    };

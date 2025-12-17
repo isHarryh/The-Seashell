@@ -8,12 +8,12 @@ import '/types/sync.dart';
 import '/utils/meta_info.dart';
 
 class SyncServiceProd extends BaseSyncService {
-  String get baseUrl => 'https://thebeike.cn/api/client';
+  String get baseUrl => 'https://thebeike.cn/api';
   String get userAgent => 'TheBeike-GUI/${MetaInfo.instance.appVersion}';
 
   @override
   Future<List<Announcement>> getAnnouncements() async {
-    final response = await _sendRequest('announcement', {});
+    final response = await _postClientRequest('announcement', {});
 
     if (response == null || response['contents'] == null) {
       return [];
@@ -25,7 +25,40 @@ class SyncServiceProd extends BaseSyncService {
         .toList();
   }
 
-  Future<Map<String, dynamic>?> _sendRequest(
+  @override
+  Future<ReleaseInfo?> getRelease() async {
+    http.Response response;
+
+    try {
+      response = await http.get(
+        Uri.parse('$baseUrl/release/version'),
+        headers: {'User-Agent': userAgent},
+      );
+    } catch (e) {
+      throw SyncServiceNetworkError('Network error: $e', e);
+    }
+
+    Map<String, dynamic>? responseData;
+
+    try {
+      final responseJson = json.decode(response.body) as Map<String, dynamic>;
+      responseData = responseJson['data'] as Map<String, dynamic>?;
+    } catch (e) {
+      throw SyncServiceBadResponse('Invalid response format', e);
+    }
+
+    if (response.statusCode == 200) {
+      if (responseData == null) return null;
+      return ReleaseInfo.fromJson(responseData);
+    } else {
+      throw SyncServiceException(
+        'Server error: ${response.statusCode}',
+        response.statusCode,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> _postClientRequest(
     String endpoint,
     Map<String, dynamic> body,
   ) async {
@@ -33,7 +66,7 @@ class SyncServiceProd extends BaseSyncService {
 
     try {
       response = await http.post(
-        Uri.parse('$baseUrl/$endpoint'),
+        Uri.parse('$baseUrl/client/$endpoint'),
         headers: {'Content-Type': 'application/json', 'User-Agent': userAgent},
         body: json.encode(body),
       );
@@ -77,7 +110,7 @@ class SyncServiceProd extends BaseSyncService {
     required String deviceOs,
     required String deviceName,
   }) async {
-    final response = await _sendRequest('device/register', {
+    final response = await _postClientRequest('device/register', {
       'deviceOs': deviceOs,
       'deviceName': deviceName,
     });
@@ -91,7 +124,7 @@ class SyncServiceProd extends BaseSyncService {
     required String deviceId,
     required String byytCookie,
   }) async {
-    final response = await _sendRequest('sync/create', {
+    final response = await _postClientRequest('sync/create', {
       'deviceId': deviceId,
       'byytCookie': byytCookie,
     });
@@ -104,7 +137,7 @@ class SyncServiceProd extends BaseSyncService {
     required String deviceId,
     required String groupId,
   }) async {
-    final response = await _sendRequest('sync/open', {
+    final response = await _postClientRequest('sync/open', {
       'deviceId': deviceId,
       'groupId': groupId,
     });
@@ -117,7 +150,7 @@ class SyncServiceProd extends BaseSyncService {
     required String pairCode,
     required String groupId,
   }) async {
-    await _sendRequest('sync/close', {
+    await _postClientRequest('sync/close', {
       'pairCode': pairCode,
       'groupId': groupId,
     });
@@ -132,7 +165,7 @@ class SyncServiceProd extends BaseSyncService {
     if (deviceId != null) {
       body['deviceId'] = deviceId;
     }
-    final response = await _sendRequest('sync/list', body);
+    final response = await _postClientRequest('sync/list', body);
 
     final devices = response!['devices'] as List<dynamic>;
     return devices
@@ -145,7 +178,7 @@ class SyncServiceProd extends BaseSyncService {
     required String deviceId,
     required String pairCode,
   }) async {
-    final response = await _sendRequest('sync/join', {
+    final response = await _postClientRequest('sync/join', {
       'deviceId': deviceId,
       'pairCode': pairCode,
     });
@@ -158,7 +191,7 @@ class SyncServiceProd extends BaseSyncService {
     required String deviceId,
     required String groupId,
   }) async {
-    await _sendRequest('sync/leave', {
+    await _postClientRequest('sync/leave', {
       'deviceId': deviceId,
       'groupId': groupId,
     });
@@ -171,7 +204,7 @@ class SyncServiceProd extends BaseSyncService {
     required Map<String, dynamic> config,
   }) async {
     final uri = Uri.parse(
-      '$baseUrl/sync/update',
+      '$baseUrl/client/sync/update',
     ).replace(queryParameters: {'deviceId': deviceId, 'groupId': groupId});
 
     List<int> bodyBytes;

@@ -26,6 +26,9 @@ abstract class BaseSyncService with BaseService {
   /// Gets announcements from the server.
   Future<List<Announcement>> getAnnouncements();
 
+  /// Gets release info from the server.
+  Future<ReleaseInfo?> getRelease();
+
   /// Registers a new device and get a unique device ID.
   Future<String> registerDevice({
     required String deviceOs,

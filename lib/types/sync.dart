@@ -156,3 +156,34 @@ class SyncDeviceData extends BaseDataClass {
     );
   }
 }
+
+@JsonSerializable()
+class ReleaseInfo extends BaseDataClass {
+  final String stableVersion;
+  final Map<String, Map<String, String>> stableDownloads;
+  final String? betaVersion;
+  final Map<String, Map<String, String>> betaDownloads;
+
+  ReleaseInfo({
+    required this.stableVersion,
+    required this.stableDownloads,
+    this.betaVersion,
+    required this.betaDownloads,
+  });
+
+  @override
+  Map<String, dynamic> getEssentials() {
+    return {
+      'stableVersion': stableVersion,
+      'stableDownloads': stableDownloads,
+      'betaVersion': betaVersion,
+      'betaDownloads': betaDownloads,
+    };
+  }
+
+  factory ReleaseInfo.fromJson(Map<String, dynamic> json) =>
+      _$ReleaseInfoFromJson(json);
+
+  @override
+  Map<String, dynamic> toJson() => _$ReleaseInfoToJson(this);
+}

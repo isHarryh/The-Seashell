@@ -14,6 +14,7 @@ import 'pages/net/monitor/index.dart';
 import 'pages/sync/index.dart';
 import 'pages/more/anno.dart';
 import 'pages/more/settings.dart';
+import 'pages/more/update.dart';
 
 // App constants
 class _AppConstants {
@@ -149,6 +150,11 @@ class AppRouter {
         name: 'AnnouncementRoute',
         path: '/more/anno',
         builder: (context, data) => const MainLayout(child: AnnouncementPage()),
+      ),
+      NamedRouteDef(
+        name: 'UpdateRoute',
+        path: '/more/update',
+        builder: (context, data) => const MainLayout(child: UpdatePage()),
       ),
     ],
   );
@@ -395,6 +401,13 @@ class _SideNavigationState extends State<_SideNavigation> {
                       title: '公告',
                       isSelected: widget.currentPath == '/more/anno',
                       onTap: () => widget.onNavigate('/more/anno'),
+                    ),
+                    _buildNavItem(
+                      context: context,
+                      icon: Icons.cloud_download_outlined,
+                      title: '更新',
+                      isSelected: widget.currentPath == '/more/update',
+                      onTap: () => widget.onNavigate('/more/update'),
                     ),
                     _buildNavItem(
                       context: context,
